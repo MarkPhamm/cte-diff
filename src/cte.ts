@@ -171,7 +171,7 @@ export const cteLabel = (name: string, path: string[] = []) => [...path, name].j
  * nested in others' WITHs (`path`, outermost first) keeps that nesting: each holder selects the CTE inside it, so names
  * resolve as they do in the model. */
 export function cteQuery(sql: string, name?: string, path: string[] = []): string {
-  if (name === undefined) return sql.trim().replace(/;+$/, "").trimEnd();
+  if (name === undefined) return withoutFinalSemicolon(sql);
   const found = findCte(sql, name, path);
   if (!found) throw new Error(`No CTE named ${cteLabel(name, path)}`);
   // shortcut: a holder with a column list, `h (a, b) as (...)`, renames the inner CTE's columns or fails on a count
@@ -184,6 +184,17 @@ export function cteQuery(sql: string, name?: string, path: string[] = []): strin
   let wraps = 0;
   for (const t of tokens(sql.slice(0, parse(sql).withStart))) if (t.text === "(") wraps++;
   return `${kept}${jinjaClosers(kept)}${tail}\nselect * from ${names[0]}${")".repeat(wraps)}`;
+}
+
+/** `sql` trimmed, without the `;` that ends it and any comments after that: the query goes inside other SQL. */
+function withoutFinalSemicolon(sql: string): string {
+  let cut: number | undefined;
+  for (const t of tokens(sql)) {
+    if (t.kind === "jinja" && t.text.startsWith("{#")) continue; // a Jinja comment
+    if (t.text === ";") cut ??= t.start;
+    else cut = undefined;
+  }
+  return (cut === undefined ? sql : sql.slice(0, cut)).trim();
 }
 
 /** Jinja tags that open a block closed by `{% end<tag> %}`. `set` opens one only without `=`: `{% set x %}...{% endset %}`. */
