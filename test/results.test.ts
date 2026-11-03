@@ -65,8 +65,14 @@ test("comparisonHtml marks a decimal that differs past a double's 17 digits", ()
     ]),
     100,
   );
-  assert.match(html, /<td class="chg">0\.123456789012345678<\/td>/);
-  assert.match(html, /<td class="chg">0\.123456789012345679<\/td>/);
+  assert.match(html, /<td class="chg num">0\.123456789012345678<\/td>/);
+  assert.match(html, /<td class="chg num">0\.123456789012345679<\/td>/);
+});
+
+test("rowsHtml right-aligns an integer past 2^53 and shows its digits", () => {
+  const html = rowsHtml("big", [{ id: "9007199254740993" }, { id: 7 }], 100);
+  assert.match(html, /<th tabindex="0" title="Sort" class="num">id<\/th>/);
+  assert.match(html, /<td class="num">9007199254740993<\/td>/);
 });
 
 test("comparisonHtml says when both sides match", () => {
