@@ -3,7 +3,7 @@
 /* The landing page's playground: the extension's own parser marks each CTE of two queries, and shows the SQL the
  * extension would send through `dbt show`. Bundled by `npm run site:js` into docs/javascripts/playground.js. */
 import { compareCtes, cteQuery, type Status } from "../src/cte.ts";
-import { compareQuery } from "../src/query.ts";
+import { compareQuery, forAdapter } from "../src/query.ts";
 import { after, before } from "./sample.ts";
 
 // The sidebar's words for each status (src/tree.ts LOOK).
@@ -17,6 +17,8 @@ if (root) {
   const list = root.querySelector<HTMLUListElement>(".qp-ctes")!;
   const summary = root.querySelector<HTMLElement>(".qp-summary")!;
   const actions = [...root.querySelectorAll<HTMLButtonElement>("[data-action]")];
+  const adapters = [...root.querySelectorAll<HTMLButtonElement>("[data-adapter]")];
+  let adapter = "snowflake"; // the compare SQL holds both adapters' Jinja; show what dbt renders for one
   const out = root.querySelector<HTMLElement>("#qp-sql")!;
   const reset = root.querySelector<HTMLButtonElement>(".qp-reset")!;
   let selected: string | undefined = "order_payments"; // undefined: the whole query
@@ -59,10 +61,12 @@ if (root) {
       b.setAttribute("aria-pressed", String(a === action));
     }
 
+    for (const b of adapters) b.setAttribute("aria-pressed", String(b.dataset.adapter === adapter));
+
     try {
       out.textContent =
         action === "compare"
-          ? compareQuery(cteQuery(left.value, selected), cteQuery(right.value, selected))
+          ? forAdapter(compareQuery(cteQuery(left.value, selected), cteQuery(right.value, selected)), adapter)
           : cteQuery(action === "left" ? left.value : right.value, selected);
     } catch (e) {
       out.textContent = `-- ${(e as Error).message}`;
@@ -72,6 +76,11 @@ if (root) {
   for (const b of actions)
     b.addEventListener("click", () => {
       action = b.dataset.action as Action;
+      render();
+    });
+  for (const b of adapters)
+    b.addEventListener("click", () => {
+      adapter = b.dataset.adapter!;
       render();
     });
   reset.addEventListener("click", () => {

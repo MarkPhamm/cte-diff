@@ -88,17 +88,18 @@
 
         <section class="cd-res">
           <div class="cd-res__tab">Compare: order_payments</div>
-          <p><b>order_payments</b>: left 99 rows · right 99 rows · <span class="cd-l">only left 3</span> · <span class="cd-r">only right 3</span></p>
-          <p class="cd-muted">Rows on one side only.</p>
+          <p class="cd-stats"><span>Left 99 rows</span><span>Right 99 rows</span><span class="cd-stat-l">Only left 3</span><span class="cd-stat-r">Only right 3</span></p>
+          <p><span class="cd-l">✗</span> The sides differ: 3 changed rows.</p>
           <table>
             <thead><tr><th></th><th>ORDER_ID</th><th>TOTAL_AMOUNT</th></tr></thead>
             <tbody>
-              <tr style="--i:0"><td class="cd-l">− left</td><td>14</td><td>32.00</td></tr>
-              <tr style="--i:1"><td class="cd-r">+ right</td><td>14</td><td>24.00</td></tr>
-              <tr style="--i:2"><td class="cd-l">− left</td><td>52</td><td>45.00</td></tr>
-              <tr style="--i:3"><td class="cd-r">+ right</td><td>52</td><td>30.00</td></tr>
-              <tr style="--i:4"><td class="cd-l">− left</td><td>87</td><td>18.00</td></tr>
-              <tr style="--i:5"><td class="cd-r">+ right</td><td>87</td><td>9.00</td></tr>
+              <tr class="cd-group"><td colspan="3">3 changed rows, matched on ORDER_ID</td></tr>
+              <tr style="--i:0"><td class="cd-l">−</td><td>14</td><td class="cd-chg-l">32.00</td></tr>
+              <tr style="--i:1"><td class="cd-r">+</td><td>14</td><td class="cd-chg-r">24.00</td></tr>
+              <tr style="--i:2"><td class="cd-l">−</td><td>52</td><td class="cd-chg-l">45.00</td></tr>
+              <tr style="--i:3"><td class="cd-r">+</td><td>52</td><td class="cd-chg-r">30.00</td></tr>
+              <tr style="--i:4"><td class="cd-l">−</td><td>87</td><td class="cd-chg-l">18.00</td></tr>
+              <tr style="--i:5"><td class="cd-r">+</td><td>87</td><td class="cd-chg-r">9.00</td></tr>
             </tbody>
           </table>
         </section>
@@ -117,7 +118,7 @@
   <!-- --------------------------------------------------------------- playground -->
   <section class="qh-section qh-wrap" id="playground">
     <h2>Try it on two queries</h2>
-    <p class="qh-sub">Edit either side. The extension’s own parser, running in your browser, marks each CTE and writes the SQL the extension would send through <code>dbt show</code>. Nothing reaches a warehouse here: rows need dbt and your profile.</p>
+    <p class="qh-sub">Edit either side. The extension’s own parser, running in your browser, marks each CTE and writes the SQL the extension would send through <code>dbt show</code>, for Snowflake or DuckDB. Nothing reaches a warehouse here: rows need dbt and your profile.</p>
     <div class="qh-fig">
       <div class="qp" id="qp">
         <div class="qp-panes">
@@ -135,6 +136,10 @@
               <button type="button" data-action="left">← Preview old</button>
               <button type="button" data-action="right">→ Preview new</button>
               <button type="button" data-action="compare">⇄ Compare sides</button>
+              <span class="qp-adapter" role="group" aria-label="Warehouse the SQL is for">
+                <button type="button" data-adapter="snowflake">Snowflake</button>
+                <button type="button" data-adapter="duckdb">DuckDB</button>
+              </span>
             </div>
             <pre><code id="qp-sql"></code></pre>
           </div>
@@ -150,7 +155,7 @@
     <div class="qh-ways">
       <div>
         <h3>A git change</h3>
-        <p>Open the model from Source Control. The buttons appear on both sides of the diff.</p>
+        <p>Open the model from Source Control, then click <b>⇄ Compare a CTE…</b> in the editor’s title bar.</p>
       </div>
       <div>
         <h3>Any two files</h3>
