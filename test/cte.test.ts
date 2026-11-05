@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cteQuery, parse } from "../src/cte.ts";
+import { compareCtes, cteQuery, parse } from "../src/cte.ts";
 
 const names = (sql: string) => parse(sql).ctes.map((c) => c.name);
 
@@ -72,4 +72,30 @@ test("no WITH: no CTEs, the whole query still previews", () => {
   assert.deepEqual(parse("select 1").ctes, []);
   assert.equal(parse("select 1").withStart, -1);
   assert.equal(cteQuery("  select 1;\n"), "select 1");
+});
+
+test("compareCtes: changed, added, removed, and affected downstream", () => {
+  const left = `with a as (select 1 x), b as (select * from a), c as (select 2 y), gone as (select 3)
+select * from b`;
+  const right = `with a as (select   1 x  ), b as (select * from A), c as (select 22 y), d as (select * from c), e as (select 1)
+select * from b;`;
+  assert.deepEqual(compareCtes(left, right), [
+    { name: "a", status: "same" }, // whitespace only
+    { name: "b", status: "changed" }, // a -> A is a text change, even though Snowflake reads it the same
+    { name: "c", status: "changed" },
+    { name: "d", status: "added" },
+    { name: "e", status: "added" },
+    { name: "gone", status: "removed" },
+    { status: "affected" }, // same final select, but it reads b
+  ]);
+});
+
+test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs compares the whole text", () => {
+  assert.deepEqual(compareCtes("with a as (select 1), b as (select * from a) select * from b", "with b as (select * from a) select * from b"), [
+    { name: "b", status: "affected" },
+    { name: "a", status: "removed" },
+    { status: "affected" },
+  ]);
+  assert.deepEqual(compareCtes("select 1", "select  1;"), [{ status: "same" }]);
+  assert.deepEqual(compareCtes("select 1", "select 2"), [{ status: "changed" }]);
 });

@@ -7,6 +7,17 @@ Reviewing a change to a dbt model? Open the two versions in a diff editor and cl
 
 Queries run through `dbt show`, in your dbt project, so Jinja (`ref`, `source`, macros, `var`) renders as in a real run. dbt connects with your profile, so key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first; variables already set in the environment take precedence.
 
+## The sidebar
+
+Click the **CTE Diff** icon in the Activity Bar. It lists the CTEs of the SQL you're on.
+
+When that SQL is one side of a diff, it lists every CTE of both sides, marked:
+- **changed**: its text changed.
+- **new** or **removed**: it's only on one side.
+- **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
+
+Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Click a CTE to jump to it.
+
 ## Use it
 
 - **A git change:** open the model from Source Control. Lenses appear on both sides of the diff.

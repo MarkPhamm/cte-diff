@@ -2,7 +2,7 @@
   "name": "cte-diff",
   "displayName": "CTE Diff for dbt and Snowflake",
   "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your Snowflake profile just work.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "MarkPhamm",
   "author": "Minh (Mark) Pham",
   "license": "Apache-2.0",
@@ -58,6 +58,35 @@
         "title": "New Comparison (Paste Two Queries)",
         "category": "CTE Diff",
         "icon": "$(diff)"
+      },
+      {
+        "command": "cteDiff.tree.previewLeft",
+        "title": "Preview Left (Old)",
+        "category": "CTE Diff",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "cteDiff.tree.previewRight",
+        "title": "Preview Right (New)",
+        "category": "CTE Diff",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "cteDiff.tree.compare",
+        "title": "Compare Both Sides",
+        "category": "CTE Diff",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "cteDiff.tree.preview",
+        "title": "Preview",
+        "category": "CTE Diff",
+        "icon": "$(play)"
+      },
+      {
+        "command": "cteDiff.tree.reveal",
+        "title": "Go to CTE",
+        "category": "CTE Diff"
       }
     ],
     "menus": {
@@ -69,6 +98,55 @@
         {
           "command": "cteDiff.compare",
           "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.previewLeft",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.previewRight",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.compare",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.preview",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.reveal",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "cteDiff.newComparison",
+          "when": "view == cteDiff.ctes",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cteDiff.tree.previewLeft",
+          "when": "view == cteDiff.ctes && viewItem =~ /\\bleft\\b/",
+          "group": "inline@1"
+        },
+        {
+          "command": "cteDiff.tree.previewRight",
+          "when": "view == cteDiff.ctes && viewItem =~ /\\bright\\b/",
+          "group": "inline@2"
+        },
+        {
+          "command": "cteDiff.tree.compare",
+          "when": "view == cteDiff.ctes && viewItem == 'left right'",
+          "group": "inline@3"
+        },
+        {
+          "command": "cteDiff.tree.preview",
+          "when": "view == cteDiff.ctes && viewItem == single",
+          "group": "inline@1"
         }
       ]
     },
@@ -98,19 +176,46 @@
           "description": "The most rows to fetch for a preview, and the most differing rows for a comparison."
         }
       }
-    }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cteDiff",
+          "title": "CTE Diff",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "cteDiff": [
+        {
+          "id": "cteDiff.ctes",
+          "name": "CTEs",
+          "icon": "media/activity.svg",
+          "contextualTitle": "CTE Diff"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "cteDiff.ctes",
+        "contents": "Open a SQL file to list its CTEs, or open two versions in a diff (click a changed model in Source Control) to see which CTEs changed and compare their rows.\n[New Comparison](command:cteDiff.newComparison)\nPaste an old and a new query side by side."
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
+    "test:integration": "node esbuild.mjs && node test/integration/run.mjs",
     "vscode:prepublish": "node esbuild.mjs --production",
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@types/vscode": "1.85.0",
+    "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.2",
     "ovsx": "1.3.0",

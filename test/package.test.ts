@@ -17,16 +17,17 @@ function shipped(file: string): boolean {
 
 test("every file package.json points at ships in the .vsix", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-  for (const f of [pkg.main, pkg.icon].map((f: string) => path.normalize(f).replace(/\\/g, "/"))) {
+  for (const f of [pkg.main, pkg.icon, ...pkg.contributes.viewsContainers.activitybar.map((v: { icon: string }) => v.icon)].map((f: string) => path.normalize(f).replace(/\\/g, "/"))) {
     assert.ok(fs.existsSync(path.join(root, f)) || f.startsWith("out/"), `${f} exists`);
     assert.ok(shipped(f), `${f} is listed in .vscodeignore`);
   }
 });
 
-test("every command the lenses run is contributed", () => {
+test("every command the code runs is contributed", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
   const contributed = pkg.contributes.commands.map((c: { command: string }) => c.command);
-  const used = [...fs.readFileSync(path.join(root, "src/lens.ts"), "utf8").matchAll(/command: "([\w.]+)"/g)].map((m) => m[1]);
+  const src = ["lens.ts", "tree.ts", "extension.ts"].map((f) => fs.readFileSync(path.join(root, "src", f), "utf8")).join("\n");
+  const used = [...src.matchAll(/(?:command: |registerCommand\()"([\w.]+)"/g)].map((m) => m[1]);
   assert.ok(used.length > 0);
   for (const c of used) assert.ok(contributed.includes(c), c);
 });

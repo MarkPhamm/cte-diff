@@ -3,3 +3,4 @@ out/
 *.vsix
 .env
 .DS_Store
+.vscode-test/

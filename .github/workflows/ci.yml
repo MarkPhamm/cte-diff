@@ -16,6 +16,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Downloads VS Code and checks the CodeLens and sidebar on a diff.
+      - run: xvfb-run -a npm run test:integration
       - run: npm run package
       - uses: actions/upload-artifact@v4
         with:

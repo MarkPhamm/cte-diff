@@ -5,23 +5,48 @@ import { findDbt, projectDirOf, show } from "./dbt.ts";
 import { CteLens, diffOf } from "./lens.ts";
 import { showComparison, showError, showRows, showRunning } from "./panel.ts";
 import { compareQuery, readComparison, type Row } from "./query.ts";
+import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 
-const SQL = ["sql", "jinja-sql", "snowflake-sql"].map((language) => ({ language }));
 let log: vscode.OutputChannel;
 let picked: string | undefined; // the project chosen for files outside any dbt project, e.g. pasted SQL
 let latest = 0;
 
-export function activate(context: vscode.ExtensionContext): void {
+/** Returns the sidebar, for the integration test. */
+export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
   log = vscode.window.createOutputChannel("CTE Diff");
   const lens = new CteLens();
+  const tree = new CteTree();
+  tree.view = vscode.window.createTreeView("cteDiff.ctes", { treeDataProvider: tree });
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  const update = () => {
+    clearTimeout(pending);
+    pending = setTimeout(() => void tree.update(), 300);
+  };
+  update();
   context.subscriptions.push(
     log,
-    vscode.languages.registerCodeLensProvider(SQL, lens),
-    vscode.window.tabGroups.onDidChangeTabs(() => lens.refresh()),
+    tree.view,
+    vscode.languages.registerCodeLensProvider(
+      SQL_LANGUAGES.map((language) => ({ language })),
+      lens,
+    ),
+    vscode.window.tabGroups.onDidChangeTabs(() => {
+      lens.refresh();
+      update();
+    }),
+    vscode.window.onDidChangeActiveTextEditor(update),
+    vscode.workspace.onDidChangeTextDocument((e) => tree.shows(e.document.uri) && update()),
+    vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),
+    vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guard(() => preview(n.uri!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guard(() => preview(n.left!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guard(() => preview(n.right!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guard(() => compare(n.right!, n.name))),
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
+    { dispose: () => clearTimeout(pending) },
   );
+  return { tree };
 }
 
 async function guard(f: () => Promise<void>): Promise<void> {

@@ -1,4 +1,4 @@
-// Bundles the extension into out/.
+// Bundles the extension (and, for development, the integration test suite) into out/.
 import * as esbuild from "esbuild";
 
 const production = process.argv.includes("--production");
@@ -14,6 +14,7 @@ const common = {
   logLevel: "info",
 };
 const builds = [{ ...common, entryPoints: ["src/extension.ts"], outfile: "out/extension.js" }];
+if (!production) builds.push({ ...common, entryPoints: ["test/integration/suite.ts"], outfile: "out/test/suite.js" });
 
 if (watch) {
   for (const b of builds) await (await esbuild.context(b)).watch();

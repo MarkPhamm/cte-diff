@@ -119,7 +119,42 @@ export function cteQuery(sql: string, name?: string): string {
   return `${sql.slice(0, cte.bodyEnd)}\nselect * from ${cte.name}`;
 }
 
+const norm = (s: string) => (s.startsWith('"') ? s : s.toUpperCase());
+
 export function sameName(a: string, b: string): boolean {
-  const norm = (s: string) => (s.startsWith('"') ? s : s.toUpperCase());
   return norm(a) === norm(b);
+}
+
+/** How a CTE differs between two versions of a query. `affected`: same text, but it reads a CTE that changed. */
+export type Status = "added" | "removed" | "changed" | "affected" | "same";
+
+/** One entry per CTE (the right side's order, then CTEs only on the left), then the whole query (`name` undefined). */
+export function compareCtes(left: string, right: string): { name?: string; status: Status }[] {
+  const l = parse(left).ctes;
+  const r = parse(right).ctes;
+  // A CTE's text from after its name to its closing parenthesis, whitespace collapsed; the final select after the last.
+  const text = (sql: string, from: number, to: number) =>
+    sql.slice(from, to).replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1").trim();
+  const finalText = (sql: string, ctes: Cte[]) => text(sql, ctes.at(-1)?.bodyEnd ?? 0, sql.length).replace(/;$/, "");
+  // Names (normalised) that a stretch of SQL reads.
+  const reads = (sql: string, from: number, to: number) => {
+    const out = new Set<string>();
+    for (const t of tokens(sql)) if (t.start >= from && t.end <= to && t.kind !== "punct") out.add(norm(t.text));
+    return out;
+  };
+  const dirty = new Set<string>(); // changed, added, removed or affected: whatever reads them is affected
+  const out: { name?: string; status: Status }[] = [];
+  const removed = l.filter((c) => !r.some((x) => sameName(x.name, c.name)));
+  for (const c of removed) dirty.add(norm(c.name));
+  const statusOf = (changed: boolean, from: number, to: number): Status =>
+    changed ? "changed" : [...reads(right, from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
+  for (const c of r) {
+    const old = l.find((x) => sameName(x.name, c.name));
+    const status = old ? statusOf(text(left, old.end, old.bodyEnd) !== text(right, c.end, c.bodyEnd), c.end, c.bodyEnd) : "added";
+    if (status !== "same") dirty.add(norm(c.name));
+    out.push({ name: c.name, status });
+  }
+  for (const c of removed) out.push({ name: c.name, status: "removed" });
+  out.push({ status: statusOf(finalText(left, l) !== finalText(right, r), r.at(-1)?.bodyEnd ?? 0, right.length) });
+  return out;
 }
