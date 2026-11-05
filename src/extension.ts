@@ -10,12 +10,14 @@ import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 let log: vscode.OutputChannel;
 let picked: string | undefined; // the project chosen for files outside any dbt project, e.g. pasted SQL
 let latest = 0;
+let again: (() => Promise<void>) | undefined; // the last preview or compare, for Run Again
+let tree: CteTree;
 
 /** Returns the sidebar, for the integration test. */
 export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
   log = vscode.window.createOutputChannel("CTE Diff");
   const lens = new CteLens();
-  const tree = new CteTree();
+  tree = new CteTree();
   tree.view = vscode.window.createTreeView("cteDiff.ctes", { treeDataProvider: tree });
   let pending: ReturnType<typeof setTimeout> | undefined;
   const update = () => {
@@ -45,6 +47,10 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
+    vscode.commands.registerCommand("cteDiff.compareCte", () => guard(pickCte)),
+    vscode.commands.registerCommand("cteDiff.previewCte", () => guard(pickCte)),
+    vscode.commands.registerCommand("cteDiff.rerun", () => guard(async () => again?.())),
+    vscode.commands.registerCommand("cteDiff.showLog", () => log.show(true)),
     { dispose: () => clearTimeout(pending) },
   );
   return { tree };
@@ -60,7 +66,14 @@ async function guard(f: () => Promise<void>): Promise<void> {
 
 const label = (name?: string) => name ?? "the whole query";
 
+/** Remembers a run for Run Again, which shows in the results' title bar from the first run on. */
+function remember(f: () => Promise<void>): void {
+  again = f;
+  void vscode.commands.executeCommand("setContext", "cteDiff.ran", true);
+}
+
 async function preview(uri: vscode.Uri, name?: string): Promise<void> {
+  remember(() => preview(uri, name));
   const doc = await vscode.workspace.openTextDocument(uri);
   const sql = cteQuery(doc.getText(), name);
   const what = `${label(name)} (${path.basename(uri.path) || "untitled"})`;
@@ -71,6 +84,7 @@ async function preview(uri: vscode.Uri, name?: string): Promise<void> {
 async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   const diff = diffOf(uri);
   if (!diff) throw new Error("Open the two versions in a diff editor first.");
+  remember(() => compare(uri, name));
   const [left, right] = await Promise.all([diff.left, diff.right].map((u) => vscode.workspace.openTextDocument(u)));
   const side = (doc: vscode.TextDocument, which: string) => {
     try {
@@ -84,6 +98,29 @@ async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
   const result = await run(diff.right, title, label(name), sql);
   if (result) showComparison(title, label(name), readComparison(result.rows), result.limit);
+}
+
+/** The editor title bar's button: pick one of the active SQL's CTEs, as the sidebar lists them. In a diff it compares,
+ * or previews the one side a new or removed CTE is on; elsewhere it previews. */
+async function pickCte(): Promise<void> {
+  await tree.update();
+  const nodes = tree.getChildren();
+  if (!nodes.length) throw new Error("Open a SQL file first.");
+  const inDiff = nodes.some((n) => n.status);
+  const items = nodes.map((node) => {
+    const item = tree.getTreeItem(node);
+    return { label: String(item.label), description: String(item.description ?? ""), iconPath: item.iconPath as vscode.ThemeIcon, node };
+  });
+  const picked = await vscode.window.showQuickPick(items, {
+    title: inDiff ? "Compare a CTE on both sides" : "Preview a CTE",
+    placeHolder: inDiff ? "A new or removed CTE previews the one side it is on" : "Type to filter the CTEs",
+    matchOnDescription: true,
+  });
+  if (!picked) return;
+  const n = picked.node;
+  if (n.uri) await preview(n.uri, n.name);
+  else if (n.left && n.right) await compare(n.right, n.name);
+  else await preview((n.left ?? n.right)!, n.name);
 }
 
 async function newComparison(): Promise<void> {

@@ -22,11 +22,13 @@ Hover a CTE for its buttons: **←** previews the left (old) side, **→** previ
 
 ## Use it
 
-- **A git change:** open the model from Source Control. Lenses appear on both sides of the diff. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the sidebar's buttons work either way.
+- **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
 - **Any two files:** select both in the Explorer, then use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)**. Paste the old query on the left and the new one on the right.
 
 Every SQL file also gets **▶ Preview** outside a diff. The last lens previews the whole query.
+
+Results open in the **CTE Diff** tab of the bottom panel. A comparison lists a changed row as a pair, old above new, with the changed cells highlighted; rows pair up by their id columns (`id`, `*_id`, `*_key`). **Run Again** in the panel's title bar reruns the last query after you edit it.
 
 Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new run cancels the one still going.
 

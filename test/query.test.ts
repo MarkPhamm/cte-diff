@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, cutFrom, dbtError, parseShow, readComparison } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseShow, readComparison, type Comparison, type Row } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
@@ -9,14 +9,10 @@ test("compareQuery wraps each side and diffs both ways", () => {
   assert.match(q, /__only_r as \(select __row from __r except select __row from __l\)/);
 });
 
-/** What dbt renders: `{% if target.type == 'duckdb' %}a{% else %}b{% endif %}` picks a or b. */
-const render = (sql: string, type: string) =>
-  sql.replace(/{% if target\.type == '(\w+)' %}(.*?){% else %}(.*?){% endif %}/gs, (_, t, a, b) => (t === type ? a : b));
-
 test("compareQuery picks each adapter's SQL", () => {
   const q = compareQuery("select 1 x", "select 2 x");
-  const snowflake = render(q, "snowflake");
-  const duckdb = render(q, "duckdb");
+  const snowflake = forAdapter(q, "snowflake");
+  const duckdb = forAdapter(q, "duckdb");
   assert.doesNotMatch(snowflake + duckdb, /{%/);
   assert.match(snowflake, /to_json\(object_construct_keep_null\(\*\)\)/);
   assert.match(snowflake, /to_json\(object_construct\(/);
@@ -88,4 +84,41 @@ test("cutFrom spots a comparison cut by the limit", () => {
   assert.equal(cutFrom({ counts: { ...counts, only_left: 1, only_right: 1 }, rows: rows(2) }, 100), undefined);
   assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, a full result is taken as cut");
   assert.equal(cutFrom({ rows: rows(3) }, 100), undefined);
+});
+
+test("forAdapter keeps other Jinja", () => {
+  assert.equal(forAdapter("select {{ ref('a') }}, {% if target.type == 'duckdb' %}1{% else %}2{% endif %}", "duckdb"), "select {{ ref('a') }}, 1");
+});
+
+const sides = (left: Row[], right: Row[]): Comparison => ({
+  rows: [...left.map((row) => ({ side: "left" as const, row })), ...right.map((row) => ({ side: "right" as const, row }))],
+});
+
+test("pairRows pairs a changed row's two versions by its id column", () => {
+  const p = pairRows(
+    sides(
+      [{ amount: 32, order_id: 14 }, { amount: 45, order_id: 52 }, { amount: 5, order_id: 60 }],
+      [{ amount: 24, order_id: 14 }, { amount: 30, order_id: 52 }, { amount: 7, order_id: 61 }],
+    ),
+  );
+  assert.deepEqual(p.key, ["order_id"]);
+  assert.deepEqual(p.pairs.map(([l, r]) => [l.order_id, l.amount, r.amount]), [[14, 32, 24], [52, 45, 30]]);
+  assert.deepEqual(p.left, [{ amount: 5, order_id: 60 }]);
+  assert.deepEqual(p.right, [{ amount: 7, order_id: 61 }]);
+});
+
+test("pairRows needs every id column that is unique on both sides to agree", () => {
+  // Order 5 removed and order 9 added, both customer 1's: different rows, not one changed row.
+  const p = pairRows(sides([{ CUSTOMER_ID: 1, ORDER_ID: 5 }], [{ CUSTOMER_ID: 1, ORDER_ID: 9 }]));
+  assert.deepEqual(p.key, ["CUSTOMER_ID", "ORDER_ID"]);
+  assert.equal(p.pairs.length, 0);
+  // customer_id repeats on the left, so only order_id keys the rows.
+  const q = pairRows(sides([{ customer_id: 1, order_id: 5, x: 1 }, { customer_id: 1, order_id: 6, x: 1 }], [{ customer_id: 1, order_id: 5, x: 2 }]));
+  assert.deepEqual(q.key, ["order_id"]);
+  assert.equal(q.pairs.length, 1);
+});
+
+test("pairRows pairs nothing without an id column", () => {
+  const p = pairRows(sides([{ name: "a", n: 1 }], [{ name: "a", n: 2 }]));
+  assert.deepEqual(p, { key: [], pairs: [], left: [{ name: "a", n: 1 }], right: [{ name: "a", n: 2 }] });
 });
