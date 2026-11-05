@@ -77,7 +77,7 @@
 
   var h1 = root.querySelector(".qh-hero h1, .qh-play h1");
   if (h1) splitWords(h1);
-  root.querySelectorAll(".qh-section > h2, .qh-gap__text > h2, .qh-final > h2").forEach(function (h) {
+  root.querySelectorAll(".qh-section > h2, .qh-final > h2").forEach(function (h) {
     splitWords(h);
     onView(h, function () { h.classList.add("qh-in"); });
   });

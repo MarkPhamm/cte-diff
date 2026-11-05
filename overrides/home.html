@@ -59,27 +59,29 @@
   </section>
 
   <!-- -------------------------------------------------------------- the problem -->
-  {#- The demo's model CTE by CTE: what its SQL diff shows next to what its data did. The counts are the comparisons'
-      in web/demo-rows.json (compare.<cte>[0]); rerun scripts/demo-rows.ts and they can move. home.js fills the
-      data column in after the diff column, then lights order_payments. -#}
+  {#- Three CTEs of the demo's model: what the SQL diff shows for each, next to what its data did. The counts are the
+      comparisons' in web/demo-rows.json (compare.<cte>[0]); rerun scripts/demo-rows.ts and they can move. home.js
+      fills the data column in after the diff column, then lights order_payments. -#}
   <section class="qh-section qh-wrap qh-gap">
-    <div class="qh-gap__text">
-      <h2><span>A diff shows what the SQL changed.</span> <span>It can’t show what the data did.</span></h2>
-      <p class="qh-sub">Add one <code>where</code> to <code>payments</code> and the diff shows one green line. <code>order_payments</code> has no changed line, yet three of its totals moved. To check that by hand, you copy both versions into a worksheet, render the Jinja and write the <code>except</code> yourself, CTE by CTE.</p>
-      <p class="qh-sub">cte-diff marks every CTE that reads a changed one, and runs any CTE on both sides: from a diff, the sidebar, or two SQL files.</p>
+    <h2><span>A diff shows what the SQL changed.</span> <span>It can’t show what the data did.</span></h2>
+    <div class="qh-gap__body">
+      <div class="qh-gap__text">
+        <p class="qh-sub">Checking it by hand means copying both versions into a worksheet, rendering the Jinja and writing the <code>except</code> yourself, CTE by CTE.</p>
+        <p class="qh-sub">cte-diff marks every CTE that reads a changed one, and runs any CTE on both sides: from a diff, the sidebar, or two SQL files.</p>
+      </div>
+      <figure class="qh-fig qh-gap__fig">
+        <table class="qh-gap__t">
+          <caption>From the demo above. Counts from running both sides on its sample data.</caption>
+          <colgroup><col class="qh-gap__c1"><col class="qh-gap__c2"><col></colgroup>
+          <thead><tr><th scope="col">CTE</th><th scope="col">The SQL diff shows</th><th scope="col">The data did</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">orders</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v qh-gap__same">same 8 rows</span></td></tr>
+            <tr><th scope="row">payments</th><td data-label="SQL diff"><code class="qh-gap__add"><b aria-hidden="true">+</b> where status = 'success'</code></td><td data-label="Data"><span class="qh-gap__v">3 of 12 rows gone</span></td></tr>
+            <tr class="qh-gap__hit"><th scope="row">order_payments</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v">3 of 8 totals changed</span><span class="qh-gap__note"><b aria-hidden="true">↓</b> reads a changed CTE</span></td></tr>
+          </tbody>
+        </table>
+      </figure>
     </div>
-    <figure class="qh-fig qh-gap__fig">
-      <table class="qh-gap__t">
-        <caption>The demo above, CTE by CTE. Counts from running both sides on its sample data.</caption>
-        <thead><tr><th scope="col">CTE</th><th scope="col">The SQL diff shows</th><th scope="col">The data did</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">orders</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v qh-gap__same">same 8 rows</span></td></tr>
-          <tr><th scope="row">payments</th><td data-label="SQL diff"><code class="qh-gap__add"><b aria-hidden="true">+</b> where status = 'success'</code></td><td data-label="Data"><span class="qh-gap__v">3 of 12 rows gone</span></td></tr>
-          <tr class="qh-gap__hit"><th scope="row">order_payments</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v">3 of 8 totals changed</span><span class="qh-gap__note"><b aria-hidden="true">↓</b> reads a changed CTE</span></td></tr>
-          <tr><th scope="row">final</th><td data-label="SQL diff"><span class="qh-gap__chg"><b aria-hidden="true">~</b> changed</span></td><td data-label="Data"><span class="qh-gap__v">all 8 rows differ</span></td></tr>
-        </tbody>
-      </table>
-    </figure>
   </section>
 
   <!-- ---------------------------------------------------------- ways to open one -->
