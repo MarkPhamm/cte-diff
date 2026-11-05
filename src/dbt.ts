@@ -28,6 +28,28 @@ export function findDbt(setting: string, dirs: string[], platform = process.plat
   return candidates.find((c) => fs.existsSync(c)) ?? "dbt";
 }
 
+/** KEY=VALUE lines of a .env file (`export `, quotes and # comments allowed). dbt projects often keep profile
+ * values there, and VS Code doesn't load it. */
+export function parseEnv(text: string): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_]\w*)\s*=\s*(.*?)\s*$/);
+    if (!m) continue;
+    const v = m[2];
+    const q = v[0];
+    env[m[1]] = (q === '"' || q === "'") && v.endsWith(q) && v.length > 1 ? v.slice(1, -1) : v.replace(/\s+#.*$/, "");
+  }
+  return env;
+}
+
+function projectEnv(dir: string): Record<string, string> {
+  try {
+    return parseEnv(fs.readFileSync(path.join(dir, ".env"), "utf8"));
+  } catch {
+    return {}; // no .env
+  }
+}
+
 export interface ShowOptions {
   dbt: string;
   projectDir: string;
@@ -46,9 +68,9 @@ export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise
   if (o.target) args.push("--target", o.target);
   o.log?.(`$ cd ${o.projectDir} && ${o.dbt} show -q --inline <sql> --output json --limit ${o.limit}${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
   return new Promise((resolve, reject) => {
-    // DBT_STATIC_ANALYSIS: dbt Fusion would otherwise type-check the SQL first, which fails on tables outside the
-    // project and adds time; dbt-core ignores it.
-    const env = { ...process.env, DBT_STATIC_ANALYSIS: "off", NO_COLOR: "1" };
+    // The project's .env fills in what VS Code's environment lacks. DBT_STATIC_ANALYSIS: dbt Fusion would otherwise
+    // type-check the SQL first, which fails on tables outside the project and adds time; dbt-core ignores it.
+    const env = { ...projectEnv(o.projectDir), ...process.env, DBT_STATIC_ANALYSIS: "off", NO_COLOR: "1" };
     // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
     const child = execFile(o.dbt, args, { cwd: o.projectDir, env, maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (running === child) running = undefined;
