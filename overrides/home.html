@@ -1,0 +1,201 @@
+{% extends "main.html" %}
+
+{#- Landing page (docs/index.md sets `template: home.html`). The hero is a static drawing of the extension on
+    web/sample.ts's example; the playground below runs the real parser (web/playground.ts). -#}
+
+{% block site_nav %}{% endblock %}
+
+{% set marketplace = "https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff" %}
+{% set openvsx = "https://open-vsx.org/extension/MarkPhamm/cte-diff" %}
+
+{% macro install(center=false) %}
+  <div class="qh-cta{% if center %} qh-cta--center{% endif %}">
+    <a class="qh-btn qh-btn--primary" href="{{ marketplace }}">Install from VS Code Marketplace</a>
+    <a class="qh-btn" href="{{ openvsx }}">Open VSX, for Cursor</a>
+  </div>
+  <div class="qh-install{% if center %} qh-install--center{% endif %}">
+    <span class="qh-install__prompt">⌘P</span>
+    <code>ext install MarkPhamm.cte-diff</code>
+    <button class="qh-copy" type="button" data-copy="ext install MarkPhamm.cte-diff" title="Copy" aria-label="Copy the install command">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+    </button>
+  </div>
+{% endmacro %}
+
+{% macro lens(active=false) -%}
+  <div class="cd-lens"><span>▶ Preview</span> | <span{% if active %} class="cd-lens__hit"{% endif %}>⇄ Compare sides</span></div>
+{%- endmacro %}
+
+{% block container %}
+<div class="qh">
+
+  <!-- ------------------------------------------------------------------ hero -->
+  <section class="qh-hero qh-wrap">
+    <div class="qh-hero__head">
+      <a class="qh-author" href="https://github.com/MarkPhamm">
+        <img src="https://github.com/MarkPhamm.png?size=64" alt="" width="28" height="28">
+        <span>Made by <b>Minh (Mark) Pham</b></span>
+      </a>
+      <p class="qh-meta">A VS Code extension for dbt. Open source under Apache 2.0, <a href="{{ config.repo_url }}/releases/tag/v{{ config.extra.version }}">version {{ config.extra.version }}</a></p>
+      <h1>See what a dbt change did to the data, <span>one CTE at a time.</span></h1>
+    </div>
+    <div class="qh-hero__text">
+      <p class="qh-lead">Open a model’s diff in VS Code and click above any CTE. Preview its rows on either side, or compare both sides and get the rows only one of them returns. Queries run through <code>dbt show</code>, so Jinja, refs and your Snowflake profile work as in a real run.</p>
+      {{ install() }}
+    </div>
+
+    {#- The extension, drawn: sidebar, the diff with its CodeLens, and the results of comparing order_payments.
+        Same example as the playground (web/sample.ts); the rows are made up. -#}
+    <figure class="cd-win qh-hero__shot" aria-label="The extension on a change to jaffle_shop's orders model: the sidebar marks payments changed, customers new, refunds removed and order_payments as reading a changed CTE. Comparing order_payments lists three orders whose totals differ between the two sides.">
+      <div class="cd-win__bar" aria-hidden="true"><i></i><i></i><i></i><span>orders.sql (HEAD) ↔ orders.sql</span></div>
+      <div class="cd-win__body" aria-hidden="true">
+        <aside class="cd-side">
+          <div class="cd-side__head"><b>CTE Diff</b> orders.sql</div>
+          <ul class="cd-side__list">
+            <li style="--i:0"><span class="cd-mark"></span>orders</li>
+            <li class="cd-changed" style="--i:1"><span class="cd-mark">~</span>payments <em>changed</em></li>
+            <li class="cd-added" style="--i:2"><span class="cd-mark">+</span>customers <em>new</em></li>
+            <li class="cd-affected cd-sel" style="--i:3"><span class="cd-mark">↓</span>order_payments <em>reads a changed CTE</em><span class="cd-side__btns">← → ⇄</span></li>
+            <li class="cd-changed" style="--i:4"><span class="cd-mark">~</span>final <em>changed</em></li>
+            <li class="cd-removed" style="--i:5"><span class="cd-mark">−</span>refunds <em>removed</em></li>
+            <li class="cd-affected" style="--i:6"><span class="cd-mark">↓</span>(whole query) <em>reads a changed CTE</em></li>
+          </ul>
+        </aside>
+
+        <div class="cd-diff">
+          <div class="cd-row cd-row--head"><span class="cd-count cd-count--rm">8 removals</span><span class="cd-count cd-count--add">7 additions</span></div>
+          <div class="cd-row cd-row--lens">{{ lens() }}{{ lens() }}</div>
+          <div class="cd-row"><span><i>5</i>payments <b>as</b> (</span><span><i>5</i>payments <b>as</b> (</span></div>
+          <div class="cd-row"><span><i>6</i>    <b>select</b> * <b>from</b> <u>{{ "{{" }} ref('stg_payments') {{ "}}" }}</u></span><span><i>6</i>    <b>select</b> * <b>from</b> <u>{{ "{{" }} ref('stg_payments') {{ "}}" }}</u></span></div>
+          <div class="cd-row"><span class="cd-fill"></span><span class="cd-add" style="--i:0"><i>7</i>    <mark><b>where</b> status = <s>'success'</s></mark></span></div>
+          <div class="cd-row"><span><i>7</i>),</span><span><i>8</i>),</span></div>
+          <div class="cd-row"><span><i>8</i></span><span><i>9</i></span></div>
+          <div class="cd-row cd-row--lens">{{ lens() }}{{ lens() }}</div>
+          <div class="cd-row"><span class="cd-del" style="--i:1"><i>9</i><mark>refunds <b>as</b> (</mark></span><span class="cd-add" style="--i:1"><i>10</i><mark>customers <b>as</b> (</mark></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:2"><i>10</i>    <mark><b>select</b> order_id, sum(amount) <b>as</b> refunded</mark></span><span class="cd-add" style="--i:2"><i>11</i>    <mark><b>select</b> customer_id, first_name</mark></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:3"><i>11</i>    <mark><b>from</b> payments</mark></span><span class="cd-add" style="--i:3"><i>12</i>    <mark><b>from</b> <u>{{ "{{" }} ref('stg_customers') {{ "}}" }}</u></mark></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:4"><i>12</i>    <mark><b>where</b> amount &lt; 0</mark></span><span class="cd-add" style="--i:4"><i>13</i><mark>),</mark></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:5"><i>13</i>    <mark><b>group by</b> order_id</mark></span><span class="cd-add" style="--i:5"><i>14</i></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:6"><i>14</i><mark>),</mark></span><span class="cd-fill"></span></div>
+          <div class="cd-row"><span class="cd-del" style="--i:7"><i>15</i></span><span class="cd-fill"></span></div>
+          <div class="cd-row cd-row--lens">{{ lens(true) }}{{ lens(true) }}</div>
+          <div class="cd-row"><span><i>16</i>order_payments <b>as</b> (</span><span><i>15</i>order_payments <b>as</b> (</span></div>
+          <div class="cd-row"><span><i>17</i>    <b>select</b> order_id, sum(amount) <b>as</b> total_amount</span><span><i>16</i>    <b>select</b> order_id, sum(amount) <b>as</b> total_amount</span></div>
+          <div class="cd-row"><span><i>18</i>    <b>from</b> payments</span><span><i>17</i>    <b>from</b> payments</span></div>
+          <div class="cd-row"><span><i>19</i>    <b>group by</b> order_id</span><span><i>18</i>    <b>group by</b> order_id</span></div>
+          <div class="cd-row"><span><i>20</i>),</span><span><i>19</i>),</span></div>
+        </div>
+
+        <section class="cd-res">
+          <div class="cd-res__tab">Compare: order_payments</div>
+          <p><b>order_payments</b>: left 99 rows · right 99 rows · <span class="cd-l">only left 3</span> · <span class="cd-r">only right 3</span></p>
+          <p class="cd-muted">Rows on one side only.</p>
+          <table>
+            <thead><tr><th></th><th>ORDER_ID</th><th>TOTAL_AMOUNT</th></tr></thead>
+            <tbody>
+              <tr style="--i:0"><td class="cd-l">− left</td><td>14</td><td>32.00</td></tr>
+              <tr style="--i:1"><td class="cd-r">+ right</td><td>14</td><td>24.00</td></tr>
+              <tr style="--i:2"><td class="cd-l">− left</td><td>52</td><td>45.00</td></tr>
+              <tr style="--i:3"><td class="cd-r">+ right</td><td>52</td><td>30.00</td></tr>
+              <tr style="--i:4"><td class="cd-l">− left</td><td>87</td><td>18.00</td></tr>
+              <tr style="--i:5"><td class="cd-r">+ right</td><td>87</td><td>9.00</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character.</figcaption>
+    </figure>
+  </section>
+
+  <!-- -------------------------------------------------------------- the problem -->
+  <section class="qh-section qh-wrap qh-prose">
+    <h2>A diff shows what the SQL changed. It can’t show what the data did.</h2>
+    <p>A one-line filter in an upstream CTE moves the numbers in every CTE that reads it. The diff shows one green line. To see the effect, you copy both versions into a worksheet, render the Jinja by hand, and write the <code>except</code> yourself, CTE by CTE.</p>
+    <p>cte-diff does that from the diff editor. It marks the CTEs that read a changed one, runs the same CTE on both sides, and lists the rows only one side returns.</p>
+  </section>
+
+  <!-- --------------------------------------------------------------- playground -->
+  <section class="qh-section qh-wrap" id="playground">
+    <h2>Try it on two queries</h2>
+    <p class="qh-sub">Edit either side. The extension’s own parser, running in your browser, marks each CTE and writes the SQL the extension would send through <code>dbt show</code>. Nothing reaches a warehouse here: rows need dbt and your profile.</p>
+    <div class="qh-fig">
+      <div class="qp" id="qp">
+        <div class="qp-panes">
+          <label class="qp-pane"><span>Old (left)</span><textarea id="qp-left" spellcheck="false" autocapitalize="off" autocomplete="off" rows="16"></textarea></label>
+          <label class="qp-pane"><span>New (right)</span><textarea id="qp-right" spellcheck="false" autocapitalize="off" autocomplete="off" rows="16"></textarea></label>
+        </div>
+        <div class="qp-result">
+          <div class="qp-side">
+            <div class="qp-side__head"><b>CTEs</b> <span class="qp-summary" aria-live="polite"></span></div>
+            <ul class="qp-ctes" aria-label="CTEs of both sides"></ul>
+            <button class="qp-reset" type="button">Reset the example</button>
+          </div>
+          <div class="qp-sql">
+            <div class="qp-actions" role="group" aria-label="What to run">
+              <button type="button" data-action="left">← Preview old</button>
+              <button type="button" data-action="right">→ Preview new</button>
+              <button type="button" data-action="compare">⇄ Compare sides</button>
+            </div>
+            <pre><code id="qp-sql"></code></pre>
+          </div>
+        </div>
+      </div>
+      <noscript><p>The playground needs JavaScript.</p></noscript>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- ways to open one -->
+  <section class="qh-section qh-wrap">
+    <h2>Open a comparison from what you already have</h2>
+    <div class="qh-ways">
+      <div>
+        <h3>A git change</h3>
+        <p>Open the model from Source Control. The buttons appear on both sides of the diff.</p>
+      </div>
+      <div>
+        <h3>Any two files</h3>
+        <p>Select both in the Explorer, then use <b>Compare Selected</b>. Good for a dev copy against prod’s.</p>
+      </div>
+      <div>
+        <h3>Pasted SQL</h3>
+        <p>Run <b>CTE Diff: New Comparison</b>. Paste the old query on the left and the new one on the right.</p>
+      </div>
+    </div>
+    <p class="qh-more"><a href="{{ 'usage/' | url }}">Read how to use it</a></p>
+  </section>
+
+  <!-- ------------------------------------------------------- how comparing works -->
+  <section class="qh-section qh-wrap qh-split">
+    <div>
+      <h2>Rows compare by column name, in one query</h2>
+      <p class="qh-sub">Each side’s CTE becomes <code>select * from</code> that CTE, keeping the CTEs before it. Every row turns into JSON with <code>object_construct_keep_null(*)</code>, so a renamed or dropped column shows up as a difference instead of an error.</p>
+      <p class="qh-sub"><code>except</code> runs both ways, with each side’s row count, in a single Snowflake query. It compares distinct rows: if only duplicates changed, the counts differ but no rows are listed.</p>
+      <p class="qh-more"><a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
+    </div>
+    <pre class="qh-code"><code>with __l as (select to_json(object_construct_keep_null(*)) as __row
+             from (<em>-- the left side's CTE</em>)),
+     __r as (select to_json(object_construct_keep_null(*)) as __row
+             from (<em>-- the right side's CTE</em>)),
+     __only_l as (select __row from __l <b>except</b> select __row from __r),
+     __only_r as (select __row from __r <b>except</b> select __row from __l)
+select <em>-- row counts, then the rows of __only_l and __only_r</em></code></pre>
+  </section>
+
+  <!-- --------------------------------------------------------------- requirements -->
+  <section class="qh-section qh-wrap">
+    <h2>Before you install</h2>
+    <dl class="qh-reqs">
+      <div><dt>dbt</dt><dd>dbt Fusion, or dbt-core 1.5 or later, with a working profile. Key-pair, SSO and password logins all work. A project <code>.env</code> is loaded first.</dd></div>
+      <div><dt>Warehouse</dt><dd>Previews work on any warehouse dbt supports. Comparisons use Snowflake functions.</dd></div>
+      <div><dt>Workspace</dt><dd>A trusted one: dbt runs the project’s macros.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ------------------------------------------------------------- closing CTA -->
+  <section class="qh-final qh-wrap">
+    <h2>Install cte-diff and open your next review</h2>
+    {{ install(center=true) }}
+  </section>
+
+</div>
+{% endblock %}

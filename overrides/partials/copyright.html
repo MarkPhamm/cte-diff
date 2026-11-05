@@ -1,0 +1,27 @@
+{#- Footer: brand and link columns, then the copyright line from mkdocs.yml -#}
+<div class="qd-foot">
+  <div class="qd-foot__brand">
+    <a class="qd-brand" href="{{ nav.homepage.url | url }}">{% include "partials/icon.html" %}{{ config.site_name }}</a>
+    <p>See what a dbt change did to the data, CTE by CTE.</p>
+  </div>
+  <nav class="qd-foot__col" aria-label="Docs">
+    <b>Docs</b>
+    <a href="{{ 'install/' | url }}">Install</a>
+    <a href="{{ 'usage/' | url }}">Use it</a>
+    <a href="{{ 'comparison/' | url }}">How the comparison works</a>
+    <a href="{{ 'settings/' | url }}">Settings</a>
+  </nav>
+  <nav class="qd-foot__col" aria-label="Project">
+    <b>Project</b>
+    <a href="{{ config.repo_url }}">GitHub</a>
+    <a href="{{ config.repo_url }}/releases">Release notes</a>
+    <a href="https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff">VS Code Marketplace</a>
+    <a href="https://open-vsx.org/extension/MarkPhamm/cte-diff">Open VSX</a>
+    <a href="https://qdbd.dev/">qdbd, by the same author</a>
+  </nav>
+</div>
+<div class="md-copyright">
+  {% if config.copyright %}
+    <div class="md-copyright__highlight">{{ config.copyright }}</div>
+  {% endif %}
+</div>

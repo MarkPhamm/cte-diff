@@ -4,3 +4,7 @@ out/
 .env
 .DS_Store
 .vscode-test/
+site/
+docs/javascripts/playground.js
+.venv/
+__pycache__/

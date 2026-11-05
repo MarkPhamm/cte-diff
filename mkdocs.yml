@@ -1,0 +1,63 @@
+site_name: cte-diff
+site_description: Preview any CTE's rows, and compare the same CTE on both sides of a diff, from VS Code. Runs through dbt show.
+site_url: https://markphamm.github.io/cte-diff/
+repo_url: https://github.com/MarkPhamm/cte-diff
+repo_name: MarkPhamm/cte-diff
+edit_uri: edit/main/docs/
+copyright: Made by <a href="https://github.com/MarkPhamm">Minh (Mark) Pham</a>. &copy; 2026, Apache-2.0.
+
+theme:
+  name: material
+  custom_dir: overrides
+  font: false  # Geist and Geist Mono come from docs/stylesheets/extra.css
+  palette:
+    scheme: default
+    primary: custom
+    accent: custom
+  favicon: assets/img/icon.png
+  logo: assets/img/icon.svg
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.footer
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+extra_css:
+  - stylesheets/extra.css
+  - stylesheets/home.css
+
+hooks:
+  - hooks/version.py
+
+extra_javascript:
+  - javascripts/home.js
+  - javascripts/playground.js
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+
+nav:
+  - Home: index.md
+  - Install: install.md
+  - Use it: usage.md
+  - How the comparison works: comparison.md
+  - Settings: settings.md
+  - Development: development.md
+  - Release notes: https://github.com/MarkPhamm/cte-diff/releases

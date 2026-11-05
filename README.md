@@ -1,5 +1,7 @@
 # CTE Diff for dbt and Snowflake
 
+Docs and a playground: **https://markphamm.github.io/cte-diff/**
+
 Reviewing a change to a dbt model? Open the two versions in a diff editor and click above any CTE:
 
 - **▶ Preview** shows that CTE's rows, on either side.
