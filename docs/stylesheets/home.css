@@ -189,12 +189,46 @@
 .qh-ways > div + div { padding-left: 24px; border-left: 1px solid var(--bp-rule); }
 .qh-ways p { color: var(--qd-muted); margin: 8px 0 0; }
 
-.qh-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; align-items: center; }
-.qh-code { margin: 0; padding: 20px 22px; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 12px;
-  overflow-x: auto; font: 13px/1.65 var(--bp-mono); color: var(--bp-ink); }
-.qh-code code { background: none; padding: 0; font-size: inherit; }
-.qh-code em { font-style: normal; color: var(--bp-ink-3); }
-.qh-code b { font-weight: 600; color: var(--bp-accent); }
+/* how a comparison works: three steps on the demo's rows. Without home.js (or with reduced motion) it shows its end:
+ * the rows both sides have struck through. */
+.qh-how__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin: 40px 0 0; padding: 0; list-style: none; }
+.qh-how__step { position: relative; padding: 22px 22px 24px; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong);
+  border-radius: 14px; box-shadow: var(--bp-e1); }
+.qh-how__step + .qh-how__step::before { content: "→"; position: absolute; left: -25px; top: 26px; color: var(--bp-ink-3); font: 18px var(--bp-sans); }
+.qh-how__n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bp-wash);
+  color: var(--bp-accent); font: 600 13px var(--bp-sans); }
+.qh-how h3 { margin-top: 12px; }
+.qh-how__step > p { margin: 6px 0 16px; color: var(--qd-muted); font-size: 14.5px; line-height: 1.55; }
+.qh-how__pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.qh-how__t { width: 100%; border-collapse: collapse; font: 12px/1.5 var(--bp-mono); }
+.qh-how__t caption { padding-bottom: 4px; text-align: left; font: 500 12px var(--bp-sans); color: var(--bp-ink-2); }
+.qh-how__t th { padding: 3px 6px; border-bottom: 1px solid var(--bp-rule-strong); text-align: right; font-size: 11px; font-weight: 500; color: var(--bp-ink-3); }
+.qh-how__t td { padding: 3px 6px; border-bottom: 1px solid var(--bp-rule); text-align: right; }
+span.qh-how__l, .qh-how__json li.qh-how__l b, tr.qh-how__l td:first-child { color: var(--cd-removed); font-weight: 700; }
+span.qh-how__r, .qh-how__json li.qh-how__r b, tr.qh-how__r td:first-child { color: var(--cd-added); font-weight: 700; }
+.qh-how__json { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: 11.5px/1.5 var(--bp-mono); }
+.qh-how__json li { display: flex; gap: 8px; padding: 3px 8px; border-radius: 6px; text-decoration: line-through transparent; }
+.qh-how__json code { padding: 0; background: none; font-size: inherit; white-space: nowrap; }
+.qh-how__json li.qh-how__l { background: var(--cd-removed-bg); }
+.qh-how__json li.qh-how__r { background: var(--cd-added-bg); }
+.qh .qh-how__json li.qh-how__same { background: var(--bp-ink-a03); color: var(--bp-ink-3); text-decoration-color: var(--bp-ink-3); }
+.qh-how__res td:first-child, .qh-how__res th:first-child { width: 2ch; text-align: center; }
+.qh-how__res .chg { font-weight: 600; }
+.qh-how__res .qh-how__l .chg { background: var(--cd-removed-mark); }
+.qh-how__res .qh-how__r .chg { background: var(--cd-added-mark); }
+.qh-how__group td { text-align: left !important; font-family: var(--bp-sans); color: var(--bp-ink-3); background: var(--bp-ink-a03); }
+.qh-how__note { max-width: 52em; margin: 24px 0 0; color: var(--qd-muted); font-size: 15px; }
+.qh-how__note a { font-weight: 500; }
+@media (prefers-reduced-motion: no-preference) {
+  .qh-how.qh-anim .qh-how__step, .qh-how.qh-anim tbody tr, .qh-how.qh-anim .qh-how__json li { opacity: 0; transform: translateY(8px);
+    transition: opacity .32s, transform .42s, background-color .4s, color .4s, text-decoration-color .4s;
+    transition-timing-function: var(--bp-ease-out); transition-delay: var(--d, 0s), var(--d, 0s), 2.2s, 2.2s, 2.2s; }
+  .qh-how.qh-anim.qh-in .qh-how__step, .qh-how.qh-anim.qh-in tbody tr, .qh-how.qh-anim.qh-in .qh-how__json li { opacity: 1; transform: none; }
+  /* rows both sides have: coloured as they arrive, struck through once all are in */
+  .qh .qh-how.qh-anim:not(.qh-in) .qh-how__json li.qh-how__same { color: inherit; text-decoration-color: transparent; }
+  .qh .qh-how.qh-anim:not(.qh-in) .qh-how__json li.qh-how__same.qh-how__l { background: var(--cd-removed-bg); }
+  .qh .qh-how.qh-anim:not(.qh-in) .qh-how__json li.qh-how__same.qh-how__r { background: var(--cd-added-bg); }
+}
 
 .qh-reqs { display: grid; gap: 0; margin: 32px 0 0; max-width: 46rem; border-top: 1px solid var(--bp-rule-strong); }
 .qh-reqs > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--bp-rule); }
@@ -288,7 +322,9 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
   .cd-win__body { grid-template-columns: 210px minmax(0, 1fr); }
 }
 @media (max-width: 960px) {
-  .qh-hero, .qh-split { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .qh-hero { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .qh-how__steps { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .qh-how__step + .qh-how__step::before { content: "↓"; left: 28px; top: -30px; }
   .qh-hero { padding-top: 32px; }
   .qh-section { padding-top: 88px; }
   .qh-fig { --qh-ext: 40px; padding: 20px; }

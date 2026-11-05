@@ -94,20 +94,31 @@
   </section>
 
   <!-- ------------------------------------------------------- how comparing works -->
-  <section class="qh-section qh-wrap qh-split">
-    <div>
-      <h2>Rows compare by column name, in one query</h2>
-      <p class="qh-sub">Each side’s CTE becomes <code>select * from</code> that CTE, keeping the CTEs before it. Every row turns into JSON with <code>object_construct_keep_null(*)</code>, so a renamed or dropped column shows up as a difference instead of an error.</p>
-      <p class="qh-sub"><code>except</code> runs both ways, with each side’s row count, in a single query, on Snowflake or DuckDB. It compares distinct rows: if only duplicates changed, the counts differ but no rows are listed.</p>
-      <p class="qh-more"><a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
-    </div>
-    <pre class="qh-code"><code>with __l as (select to_json(object_construct_keep_null(*)) as __row
-             from (<em>-- the left side's CTE</em>)),
-     __r as (select to_json(object_construct_keep_null(*)) as __row
-             from (<em>-- the right side's CTE</em>)),
-     __only_l as (select __row from __l <b>except</b> select __row from __r),
-     __only_r as (select __row from __r <b>except</b> select __row from __l)
-select <em>-- row counts, then the rows of __only_l and __only_r</em></code></pre>
+  {#- Three steps on the demo's own rows (order_payments in web/demo-rows.json). home.js plays them in order on scroll. -#}
+  <section class="qh-section qh-wrap qh-how">
+    <h2>How ⇄ Compare sides finds the rows that changed</h2>
+    <p class="qh-sub">It runs the CTE on both sides in one query, through <code>dbt show</code>, and keeps only the rows one side has. Here it is on <code>order_payments</code> from the demo.</p>
+    <ol class="qh-how__steps">
+      <li class="qh-how__step">
+        <span class="qh-how__n">1</span>
+        <h3>Run the CTE on both sides</h3>
+        <p>The old and the new <code>order_payments</code>, each with the CTEs it reads.</p>
+        <div class="qh-how__pair"><table class="qh-how__t"><caption><span class="qh-how__l">−</span> old</caption><thead><tr><th>order_id</th><th>total_amount</th></tr></thead><tbody><tr><td>11</td><td>18</td></tr><tr><td>14</td><td>32</td></tr><tr><td>52</td><td>45</td></tr><tr><td>87</td><td>18</td></tr></tbody></table><table class="qh-how__t"><caption><span class="qh-how__r">+</span> new</caption><thead><tr><th>order_id</th><th>total_amount</th></tr></thead><tbody><tr><td>11</td><td>18</td></tr><tr><td>14</td><td>24</td></tr><tr><td>52</td><td>30</td></tr><tr><td>87</td><td>9</td></tr></tbody></table></div>
+      </li>
+      <li class="qh-how__step">
+        <span class="qh-how__n">2</span>
+        <h3>Match rows by column name</h3>
+        <p>Each row becomes text keyed by column name. Column order doesn’t matter, and a renamed or dropped column shows up as a difference, not an error.</p>
+        <ul class="qh-how__json"><li class="qh-how__l qh-how__same"><b>−</b><code>{"order_id":11,"total_amount":18}</code></li><li class="qh-how__l"><b>−</b><code>{"order_id":14,"total_amount":32}</code></li><li class="qh-how__l"><b>−</b><code>{"order_id":52,"total_amount":45}</code></li><li class="qh-how__l"><b>−</b><code>{"order_id":87,"total_amount":18}</code></li><li class="qh-how__r qh-how__same"><b>+</b><code>{"order_id":11,"total_amount":18}</code></li><li class="qh-how__r"><b>+</b><code>{"order_id":14,"total_amount":24}</code></li><li class="qh-how__r"><b>+</b><code>{"order_id":52,"total_amount":30}</code></li><li class="qh-how__r"><b>+</b><code>{"order_id":87,"total_amount":9}</code></li></ul>
+      </li>
+      <li class="qh-how__step">
+        <span class="qh-how__n">3</span>
+        <h3>Keep what only one side has</h3>
+        <p>Rows on both sides drop out. What’s left is the change: each old row above its new one, matched on <code>order_id</code>.</p>
+        <table class="qh-how__t qh-how__res"><thead><tr><th></th><th>order_id</th><th>total_amount</th></tr></thead><tbody><tr class="qh-how__group"><td colspan="3">3 changed rows</td></tr><tr class="qh-how__l"><td>−</td><td>14</td><td class="chg">32</td></tr><tr class="qh-how__r"><td>+</td><td>14</td><td class="chg">24</td></tr><tr class="qh-how__l"><td>−</td><td>52</td><td class="chg">45</td></tr><tr class="qh-how__r"><td>+</td><td>52</td><td class="chg">30</td></tr><tr class="qh-how__l"><td>−</td><td>87</td><td class="chg">18</td></tr><tr class="qh-how__r"><td>+</td><td>87</td><td class="chg">9</td></tr></tbody></table>
+      </li>
+    </ol>
+    <p class="qh-how__note">Snowflake or DuckDB, one query, one <code>dbt show</code> run. It compares distinct rows: if only duplicates changed, the row counts differ but no rows are listed. <a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
   </section>
 
   <!-- --------------------------------------------------------------- requirements -->
