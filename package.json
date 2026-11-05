@@ -12,6 +12,7 @@
     "url": "https://github.com/MarkPhamm/cte-diff"
   },
   "bugs": "https://github.com/MarkPhamm/cte-diff/issues",
+  "homepage": "https://markphamm.github.io/cte-diff/",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -206,6 +207,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
+    "site:js": "node esbuild.mjs --site",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
     "test:integration": "node esbuild.mjs && node test/integration/run.mjs",
