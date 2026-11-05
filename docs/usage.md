@@ -10,7 +10,7 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 ## Open a comparison
 
 - **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
-- **Any two files:** run **CTE Diff: Compare Two Files…**, or click its button in the sidebar's title bar, and pick the old file, then the new one. Or select both in the Explorer and use **Compare Selected**.
+- **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
 Every SQL file also gets **▶ Preview** outside a diff. The last button previews the whole query. Outside a diff, the title bar's button is **▶ Preview a CTE…**.
@@ -26,6 +26,8 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 - **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
 
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
+
+Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
 
 You can try the marking, and the rows, in the [playground](playground.md). It runs the same parser and the same SQL.
 

@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import type { FilesTree } from "../../src/files.ts";
 import type { CteTree } from "../../src/tree.ts";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -20,7 +21,7 @@ export async function run(): Promise<void> {
   const [left, right] = ["old.sql", "new.sql"].map((f) => vscode.Uri.file(path.join(ws, "models", f)));
   const ext = vscode.extensions.getExtension("MarkPhamm.cte-diff")!;
   await vscode.commands.executeCommand("vscode.diff", left, right, "old ↔ new");
-  const { tree } = (await ext.activate()) as { tree: CteTree };
+  const { tree, files } = (await ext.activate()) as { tree: CteTree; files: FilesTree };
 
   const lenses = await until(async () => {
     const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", left);
@@ -77,4 +78,23 @@ export async function run(): Promise<void> {
   const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
   assert.ok(input instanceof vscode.TabInputTextDiff, "a diff is open");
   assert.deepEqual([input.original.toString(), input.modified.toString()], [left.toString(), right.toString()]);
+
+  // The sidebar's Compare Files shows the picks in its Old and New slots, and the SQL files by folder, marked old and new.
+  const rows = async () =>
+    (await files.getChildren()).map((n) => {
+      const item = files.getTreeItem(n);
+      return `${item.label}:${item.description ?? ""}`;
+    });
+  assert.deepEqual(await rows(), ["Old:old.sql", "New:new.sql", "Open the diff:", "models:"]);
+  const dir = (await files.getChildren()).find((n) => n.kind === "dir")!;
+  assert.deepEqual(
+    (await files.getChildren(dir)).map((n) => files.getTreeItem(n)).map((i) => [path.basename(i.resourceUri!.path), i.description, i.contextValue]),
+    [
+      ["new.sql", "new", "sqlFile"],
+      ["old.sql", "old", "sqlFile"],
+    ],
+  );
+  // ← on the New file moves it to Old and empties New.
+  await vscode.commands.executeCommand("cteDiff.files.setOld", { kind: "file", uri: right });
+  assert.deepEqual(await rows(), ["Old:new.sql", "New:pick a file…", "models:"]);
 }

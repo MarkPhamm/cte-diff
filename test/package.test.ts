@@ -26,8 +26,8 @@ test("every file package.json points at ships in the .vsix", () => {
 test("every command the code runs is contributed", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
   const contributed = pkg.contributes.commands.map((c: { command: string }) => c.command);
-  const src = ["lens.ts", "tree.ts", "extension.ts"].map((f) => fs.readFileSync(path.join(root, "src", f), "utf8")).join("\n");
-  const used = [...src.matchAll(/(?:command: |registerCommand\()"([\w.]+)"/g)].map((m) => m[1]);
+  const src = ["lens.ts", "tree.ts", "files.ts", "extension.ts"].map((f) => fs.readFileSync(path.join(root, "src", f), "utf8")).join("\n");
+  const used = [...src.matchAll(/(?:command: |registerCommand\()"([\w.]+)"/g)].map((m) => m[1]).filter((c) => !c.startsWith("vscode.")); // VS Code's own commands
   assert.ok(used.length > 0);
   for (const c of used) assert.ok(contributed.includes(c), c);
 });
