@@ -61,6 +61,12 @@
         "icon": "$(diff)"
       },
       {
+        "command": "cteDiff.compareFiles",
+        "title": "Compare Two Files…",
+        "category": "CTE Diff",
+        "icon": "$(files)"
+      },
+      {
         "command": "cteDiff.compareCte",
         "title": "Compare a CTE…",
         "category": "CTE Diff",
@@ -170,6 +176,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "cteDiff.compareFiles",
+          "when": "view == cteDiff.ctes",
+          "group": "navigation"
+        },
         {
           "command": "cteDiff.newComparison",
           "when": "view == cteDiff.ctes",

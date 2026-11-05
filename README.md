@@ -23,7 +23,7 @@ Hover a CTE for its buttons: **←** previews the left (old) side, **→** previ
 ## Use it
 
 - **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
-- **Any two files:** select both in the Explorer, then use **Compare Selected**.
+- **Any two files:** run **CTE Diff: Compare Two Files…**, or click its button in the sidebar's title bar, and pick the old file, then the new one. Or select both in the Explorer and use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)**. Paste the old query on the left and the new one on the right.
 
 Every SQL file also gets **▶ Preview** outside a diff. The last lens previews the whole query.

@@ -56,4 +56,17 @@ export async function run(): Promise<void> {
   await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ language: "sql", content: "with x as (select 1) select * from x" }));
   const single = await until(() => tree.getChildren().length === 2 && tree.getChildren(), "the sidebar to follow the editor");
   assert.deepEqual(single.map((n) => tree.getTreeItem(n).contextValue), ["single", "single"]);
+
+  // Compare Two Files… opens the two picked files in a diff, the first picked on the left.
+  const ask = vscode.window.showOpenDialog;
+  const picks = [left, right];
+  Object.assign(vscode.window, { showOpenDialog: async () => [picks.shift()!] });
+  try {
+    await vscode.commands.executeCommand("cteDiff.compareFiles");
+  } finally {
+    Object.assign(vscode.window, { showOpenDialog: ask });
+  }
+  const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+  assert.ok(input instanceof vscode.TabInputTextDiff, "a diff is open");
+  assert.deepEqual([input.original.toString(), input.modified.toString()], [left.toString(), right.toString()]);
 }

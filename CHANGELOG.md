@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- **Compare Two Files…** in the sidebar's title bar and the Command Palette: pick an old and a new SQL file, and they open side by side, ready to compare CTE by CTE.
+
 ## 0.4.0
 
 - A comparison lists a changed row as a pair, old above new, with the changed cells highlighted. Rows pair up by their id columns (`id`, `*_id`, `*_key`, `*_pk`, `*_sk`). Rows with no partner follow, under **Only on the left** and **Only on the right**.
