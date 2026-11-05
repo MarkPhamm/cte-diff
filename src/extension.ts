@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { cteQuery } from "./cte.ts";
 import { findDbt, projectDirOf, show } from "./dbt.ts";
 import { CteLens, diffOf } from "./lens.ts";
-import { showComparison, showError, showRows, showRunning } from "./panel.ts";
+import { results, showComparison, showError, showRows, showRunning } from "./panel.ts";
 import { compareQuery, readComparison, type Row } from "./query.ts";
 import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 
@@ -34,6 +34,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
       lens.refresh();
       update();
     }),
+    vscode.window.registerWebviewViewProvider("cteDiff.results", results),
     vscode.window.onDidChangeActiveTextEditor(update),
     vscode.workspace.onDidChangeTextDocument((e) => tree.shows(e.document.uri) && update()),
     vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),

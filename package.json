@@ -185,6 +185,13 @@
           "title": "CTE Diff",
           "icon": "media/activity.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "cteDiffResults",
+          "title": "CTE Diff",
+          "icon": "media/activity.svg"
+        }
       ]
     },
     "views": {
@@ -194,6 +201,13 @@
           "name": "CTEs",
           "icon": "media/activity.svg",
           "contextualTitle": "CTE Diff"
+        }
+      ],
+      "cteDiffResults": [
+        {
+          "type": "webview",
+          "id": "cteDiff.results",
+          "name": "Results"
         }
       ]
     },

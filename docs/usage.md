@@ -9,7 +9,7 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 
 ## Open a comparison
 
-- **A git change:** open the model from Source Control. The buttons appear on both sides of the diff.
+- **A git change:** open the model from Source Control. The buttons appear on both sides of the diff. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the sidebar's buttons work either way.
 - **Any two files:** select both in the Explorer, then use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
@@ -31,7 +31,7 @@ You can try the marking on the [home page's playground](index.md#playground). It
 
 ## The results
 
-Results open in a panel beside the editor.
+Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal.
 
 - A preview shows the rows, up to [`cteDiff.limit`](settings.md).
 - A comparison shows each side's row count, how many rows are only on the left or only on the right, then those rows, marked **− left** and **+ right**. When the two sides have different columns, it says which.
