@@ -9,7 +9,8 @@
     "erasableSyntaxOnly": true,
     "noEmit": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
-  "include": ["src", "test", "web"]
+  "include": ["src", "test", "web", "scripts"]
 }

@@ -38,6 +38,7 @@ hooks:
 extra_javascript:
   - javascripts/home.js
   - javascripts/playground.js
+  - javascripts/demo.js
 
 markdown_extensions:
   - admonition
