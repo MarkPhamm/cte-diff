@@ -81,7 +81,21 @@
     splitWords(h);
     onView(h, function () { h.classList.add("qh-in"); });
   });
-  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-section > .qh-more, .qh-prose > p, .qh-split > div > p, .qh-split > .qh-code, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
+  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-section > .qh-more, .qh-prose > p, .qh-how__note, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
+
+  /* How a comparison works: the steps rise in turn; each one's rows arrive, then the rows both sides have strike out. */
+  var how = root.querySelector(".qh-how");
+  if (how) {
+    how.querySelectorAll(".qh-how__step").forEach(function (step, s) {
+      step.style.setProperty("--d", s * 0.2 + "s");
+      step.querySelectorAll("tbody tr, .qh-how__json li").forEach(function (el, i) {
+        el.style.setProperty("--d", [0.35, 0.9, 2.6][s] + i * 0.08 + "s");
+      });
+    });
+    how.classList.add("qh-anim");
+    void how.offsetWidth;
+    onView(how.querySelector(".qh-how__steps"), function () { how.classList.add("qh-in"); });
+  }
   root.querySelectorAll(".qh-ways, .qh-reqs").forEach(function (g) { reveal([].slice.call(g.children), 0.08); });
   var code = root.querySelector(".qh-final .qh-install code");
   if (code) {
