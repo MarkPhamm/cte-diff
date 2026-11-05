@@ -57,15 +57,23 @@ export async function run(): Promise<void> {
   const single = await until(() => tree.getChildren().length === 2 && tree.getChildren(), "the sidebar to follow the editor");
   assert.deepEqual(single.map((n) => tree.getTreeItem(n).contextValue), ["single", "single"]);
 
-  // Compare Two Files… opens the two picked files in a diff, the first picked on the left.
-  const ask = vscode.window.showOpenDialog;
+  // Compare Two Files… lists the workspace's SQL files and opens the two picked in a diff, the first picked on the left.
+  const ask = vscode.window.showQuickPick;
   const picks = [left, right];
-  Object.assign(vscode.window, { showOpenDialog: async () => [picks.shift()!] });
+  const offered: string[][] = [];
+  Object.assign(vscode.window, {
+    showQuickPick: async (items: { description: string; label: string; uri: vscode.Uri }[]) => {
+      offered.push(items.map((i) => `${i.description}/${i.label}`));
+      const want = picks.shift()!.toString();
+      return items.find((i) => i.uri.toString() === want);
+    },
+  });
   try {
     await vscode.commands.executeCommand("cteDiff.compareFiles");
   } finally {
-    Object.assign(vscode.window, { showOpenDialog: ask });
+    Object.assign(vscode.window, { showQuickPick: ask });
   }
+  assert.deepEqual(offered, [["models/new.sql", "models/old.sql"], ["models/new.sql"]]);
   const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
   assert.ok(input instanceof vscode.TabInputTextDiff, "a diff is open");
   assert.deepEqual([input.original.toString(), input.modified.toString()], [left.toString(), right.toString()]);
