@@ -1,63 +1,80 @@
-// Draws media/icon.png (128x128): two result grids side by side, one row changed. Run: node scripts/icon.mjs
+// Draws every cte-diff icon from one geometry: a CTE's parentheses, as ( ... ), around three code lines (one kept,
+// one removed, one added). Writes the SVGs, then renders the PNGs with headless Chrome (set CHROME to its path if it
+// isn't in the usual place). Run: node scripts/icon.mjs
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
-import * as zlib from "node:zlib";
+import * as os from "node:os";
+import * as path from "node:path";
 
-const S = 128;
-const px = Buffer.alloc(S * S * 4); // RGBA, transparent
+// The site's palette (docs/stylesheets/extra.css): ink parentheses, so the removed red and added teal carry the colour.
+const PAPER = "#f7f9f8";
+const INK = "#19211e";
+const RED = "#d23415";
+const TEAL = "#028574";
 
-function rect(x0, y0, w, h, [r, g, b], radius = 0) {
-  for (let y = y0; y < y0 + h; y++) {
-    for (let x = x0; x < x0 + w; x++) {
-      const dx = Math.max(x0 + radius - x - 0.5, x + 0.5 - (x0 + w - radius), 0);
-      const dy = Math.max(y0 + radius - y - 0.5, y + 0.5 - (y0 + h - radius), 0);
-      const a = Math.min(1, Math.max(0, radius + 0.5 - Math.hypot(dx, dy))); // anti-aliased corner
-      if (a <= 0) continue;
-      const i = (y * S + x) * 4;
-      const under = px[i + 3] / 255;
-      const out = a + under * (1 - a);
-      px[i] = (r * a + px[i] * under * (1 - a)) / out;
-      px[i + 1] = (g * a + px[i + 1] * under * (1 - a)) / out;
-      px[i + 2] = (b * a + px[i + 2] * under * (1 - a)) / out;
-      px[i + 3] = out * 255;
-    }
-  }
+// On a 24-unit grid, like qdbd's icon. `small` is the cut for 16-32px: thicker parentheses, taller lines, wider gaps.
+const GEOMETRY = {
+  full: { parens: "M6.6 3Q2.4 12 6.6 21M17.4 3Q21.6 12 17.4 21", stroke: 2.4, x: 8.2, h: 2.8, gap: 1.6, rx: 1.1, widths: [7.6, 5.2, 6.6] },
+  small: { parens: "M6.4 2.4Q1.6 12 6.4 21.6M17.6 2.4Q22.4 12 17.6 21.6", stroke: 2.8, x: 8.3, h: 3.4, gap: 1.8, rx: 1.3, widths: [7.4, 4.8, 6.2] },
+};
+
+/** The mark's elements. `colors`: [parentheses, kept line, removed line, added line], plus the kept line's opacity. */
+function mark(g, [paren, kept, removed, added], keptOpacity = 0.22) {
+  const top = 12 - (3 * g.h + 2 * g.gap) / 2;
+  const fills = [kept, removed, added];
+  const lines = g.widths.map((w, i) => {
+    const opacity = i === 0 ? ` fill-opacity="${keptOpacity}"` : "";
+    return `<rect x="${g.x}" y="${+(top + i * (g.h + g.gap)).toFixed(2)}" width="${w}" height="${g.h}" rx="${g.rx}" fill="${fills[i]}"${opacity}/>`;
+  });
+  return `<path d="${g.parens}" fill="none" stroke="${paren}" stroke-width="${g.stroke}" stroke-linecap="round"/>${lines.join("")}`;
 }
 
-const bg = [24, 33, 52];
-const pane = [39, 52, 79];
-const row = [96, 118, 160];
-const red = [232, 92, 92];
-const green = [64, 196, 140];
-rect(0, 0, S, S, bg, 24);
-for (const [x, changed] of [[14, red], [68, green]]) {
-  rect(x, 18, 46, 92, pane, 8);
-  rect(x + 6, 26, 34, 8, [150, 170, 210], 3); // header
-  for (let k = 0; k < 5; k++) rect(x + 6, 42 + k * 13, 34, 7, k === 2 ? changed : row, 3);
+const svg = (body, size = 24) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">${body}</svg>\n`;
+// A paper tile, for the Marketplace and the favicon: the mark at 78%, a hairline edge so it holds on white.
+const tile = (body) =>
+  `<rect width="24" height="24" rx="5.4" fill="${PAPER}"/><rect x=".2" y=".2" width="23.6" height="23.6" rx="5.2" fill="none" stroke="${INK}" stroke-opacity=".16" stroke-width=".4"/>` +
+  `<g transform="translate(2.64 2.64) scale(.78)">${body}</g>`;
+
+const colour = [INK, INK, RED, TEAL];
+const files = {
+  "media/logo/cte-diff.svg": svg(mark(GEOMETRY.full, colour), 256),
+  "media/logo/cte-diff-small.svg": svg(mark(GEOMETRY.small, colour), 32),
+  "media/logo/cte-diff-mono.svg": svg(mark(GEOMETRY.full, Array(4).fill(INK), 0.4), 256),
+  "media/icon.svg": svg(tile(mark(GEOMETRY.full, colour)), 256),
+  // The Activity Bar draws its icon in one colour from the SVG's shapes, so it gets currentColor and the small cut.
+  "media/activity.svg": svg(mark(GEOMETRY.small, Array(4).fill("currentColor"), 0.45)),
+  "docs/assets/img/icon.svg": svg(mark(GEOMETRY.small, colour), 32),
+  "docs/assets/img/favicon.svg": svg(tile(mark(GEOMETRY.small, colour)), 64),
+  "overrides/partials/icon.html": svg(mark(GEOMETRY.small, colour)).replace("<svg ", '<svg aria-hidden="true" '),
+};
+for (const [file, text] of Object.entries(files)) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text);
 }
 
-const crc = (buf) => {
-  let c = ~0;
-  for (const b of buf) {
-    c ^= b;
-    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
-  }
-  return ~c >>> 0;
-};
-const chunk = (type, data) => {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type), data]);
-  const sum = Buffer.alloc(4);
-  sum.writeUInt32BE(crc(body));
-  return Buffer.concat([len, body, sum]);
-};
-const ihdr = Buffer.alloc(13);
-ihdr.writeUInt32BE(S, 0);
-ihdr.writeUInt32BE(S, 4);
-ihdr.set([8, 6, 0, 0, 0], 8); // 8-bit RGBA
-const raw = Buffer.concat(Array.from({ length: S }, (_, y) => Buffer.concat([Buffer.from([0]), px.subarray(y * S * 4, (y + 1) * S * 4)])));
-fs.mkdirSync("media", { recursive: true });
-fs.writeFileSync(
-  "media/icon.png",
-  Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]),
-);
+const chrome =
+  process.env.CHROME ??
+  ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"].find((p) => fs.existsSync(p));
+if (!chrome) throw new Error("Chrome not found: set CHROME to render the PNGs");
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cte-diff-icon-"));
+for (const [svgFile, png, size] of [
+  ["media/icon.svg", "media/icon.png", 256],
+  ["docs/assets/img/favicon.svg", "docs/assets/img/icon.png", 64],
+]) {
+  const page = path.join(tmp, "page.html");
+  const src = `data:image/svg+xml;base64,${fs.readFileSync(svgFile).toString("base64")}`;
+  fs.writeFileSync(page, `<html><body style="margin:0"><img src="${src}" width="${size}" height="${size}" style="display:block"></body></html>`);
+  execFileSync(chrome, [
+    "--headless",
+    "--disable-gpu",
+    "--hide-scrollbars",
+    "--force-device-scale-factor=1",
+    "--default-background-color=00000000",
+    `--window-size=${size},${size}`,
+    `--screenshot=${path.resolve(png)}`,
+    `file://${page}`,
+  ], { stdio: "ignore" });
+}
+fs.rmSync(tmp, { recursive: true });
+console.log(Object.keys(files).concat("media/icon.png", "docs/assets/img/icon.png").join("\n"));
