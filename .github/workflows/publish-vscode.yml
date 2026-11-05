@@ -19,5 +19,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # --oidc needs vsce 4.x; the pinned devDependency is older.
-      - run: npx -y @vscode/vsce@4.1.0 publish --oidc --no-dependencies
+      # The pinned vsce (4.x has --oidc). `npx -y @vscode/vsce@<version>` would still run the local one.
+      - run: npx vsce publish --oidc --no-dependencies
