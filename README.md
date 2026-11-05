@@ -22,7 +22,7 @@ Hover a CTE for its buttons: **←** previews the left (old) side, **→** previ
 
 ## Use it
 
-- **A git change:** open the model from Source Control. Lenses appear on both sides of the diff.
+- **A git change:** open the model from Source Control. Lenses appear on both sides of the diff. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the sidebar's buttons work either way.
 - **Any two files:** select both in the Explorer, then use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)**. Paste the old query on the left and the new one on the right.
 
