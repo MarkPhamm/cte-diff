@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, dbtError, parseShow, readComparison } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, parseShow, readComparison } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
@@ -79,4 +79,13 @@ test("readComparison splits counts from rows, whatever the column case", () => {
     { side: "left", row: { ID: 1 } },
     { side: "right", row: { ID: 2 } },
   ]);
+});
+
+test("cutFrom spots a comparison cut by the limit", () => {
+  const counts = { left: 500, right: 500, only_left: 150, only_right: 150 };
+  const rows = (k: number) => Array.from({ length: k }, () => ({ side: "left" as const, row: {} }));
+  assert.equal(cutFrom({ counts, rows: rows(99) }, 100), 300, "limit 100 = the counts row + 99 differing rows");
+  assert.equal(cutFrom({ counts: { ...counts, only_left: 1, only_right: 1 }, rows: rows(2) }, 100), undefined);
+  assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, a full result is taken as cut");
+  assert.equal(cutFrom({ rows: rows(3) }, 100), undefined);
 });

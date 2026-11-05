@@ -45,6 +45,14 @@ export interface Comparison {
   rows: { side: "left" | "right"; row: Row }[];
 }
 
+/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so it cuts the
+ * differing rows at limit - 1. Undefined when every differing row is there. */
+export function cutFrom(c: Comparison, limit: number): number | undefined {
+  const total = c.counts ? c.counts.only_left + c.counts.only_right : undefined;
+  if (total !== undefined) return c.rows.length < total ? total : undefined;
+  return c.rows.length >= limit - 1 ? c.rows.length : undefined; // the counts row itself was cut: the total is unknown
+}
+
 /** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. */
 export function readComparison(rows: Row[]): Comparison {
   const get = (r: Row, k: string) => r[k] ?? r[k.toUpperCase()];
