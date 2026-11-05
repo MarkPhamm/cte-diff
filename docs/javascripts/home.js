@@ -81,7 +81,7 @@
     splitWords(h);
     onView(h, function () { h.classList.add("qh-in"); });
   });
-  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-gap__text > .qh-sub, .qh-section > .qh-more, .qh-how__note, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
+  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-gap__text > p, .qh-section > .qh-more, .qh-how__note, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
 
   /* The SQL diff against the data: the rows rise with what the diff shows, then what the data did fills in, then the
    * CTE with no changed line but changed rows lights up. */
