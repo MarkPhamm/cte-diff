@@ -180,8 +180,46 @@
 
 /* -------------------------------------------------------------------- sections */
 .qh-section { padding-top: 120px; }
-.qh-prose p, .qh-sub { color: var(--qd-muted); font-size: 18px; max-width: 40em; margin: 16px 0 0; }
+.qh-sub { color: var(--qd-muted); font-size: 18px; max-width: 40em; margin: 16px 0 0; }
 .qh-more { margin: 22px 0 0; font-weight: 500; }
+
+/* the SQL diff against the data: the text on the left, the demo's CTEs as a ledger on the right. Without home.js (or
+ * with reduced motion) it shows its end: every count in, order_payments lit. */
+.qh-gap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 32px 56px; align-items: center; }
+.qh-gap h2 > span { display: block; }
+.qh-gap .qh-sub { font-size: 17px; }
+.qh-gap__fig { margin: 0; padding: 8px 24px 18px; }
+.qh-gap__t { width: 100%; border-collapse: collapse; font: 13.5px/1.45 var(--bp-sans); }
+.qh-gap__t caption { caption-side: bottom; padding-top: 14px; text-align: left; font-size: 13px; color: var(--bp-ink-3); }
+.qh-gap__t thead th { padding: 14px 10px 8px; border-bottom: 1px solid var(--bp-rule-strong); text-align: left;
+  font-size: 12px; font-weight: 500; color: var(--bp-ink-3); }
+.qh-gap__t tbody th, .qh-gap__t td { padding: 13px 10px; border-bottom: 1px solid var(--bp-rule); text-align: left; vertical-align: top; }
+.qh-gap__t tbody tr:last-child > * { border-bottom: 0; }
+.qh-gap__t tbody th { font: 500 12.5px/1.6 var(--bp-mono); color: var(--bp-ink); white-space: nowrap; }
+.qh-gap__t td:last-child { font-weight: 600; color: var(--bp-ink); }
+.qh-gap__t .qh-gap__same { font-weight: 400; color: var(--bp-ink-3); }
+.qh-gap__t b { font-weight: 700; }
+.qh .qh-gap__add { display: inline-block; padding: 1px 8px; border-radius: 4px; background: var(--cd-added-bg); color: var(--bp-ink);
+  font-size: 12px; white-space: nowrap; }
+.qh-gap__add b { color: var(--cd-added); margin-right: 4px; }
+.qh-gap__chg b, .qh-gap__note b { color: var(--cd-changed); margin-right: 4px; }
+.qh-gap__v { display: block; }
+.qh-gap__note { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 400; color: var(--cd-changed); }
+/* the CTE no line of the diff touches, whose data moved anyway */
+.qh-gap__hit > * { background: color-mix(in srgb, var(--cd-changed) 7%, var(--bp-sheet)); }
+.qh-gap__hit > th { box-shadow: inset 2px 0 var(--cd-changed); }
+@media (prefers-reduced-motion: no-preference) {
+  .qh-gap.qh-anim tbody tr { transition: opacity .32s, transform .42s; transition-timing-function: var(--bp-ease-out);
+    transition-delay: var(--d, 0s); }
+  .qh-gap.qh-anim .qh-gap__v { transition: opacity .3s linear var(--d2, 0s); }
+  .qh-gap.qh-anim .qh-gap__hit > * { transition: background-color .45s linear var(--d3, 0s), box-shadow .45s linear var(--d3, 0s); }
+  .qh-gap.qh-anim .qh-gap__note { transition: opacity .3s, transform .36s; transition-timing-function: var(--bp-ease-pop);
+    transition-delay: var(--d3, 0s); }
+  .qh-gap.qh-anim:not(.qh-in) tbody tr { opacity: 0; transform: translateY(8px); }
+  .qh-gap.qh-anim:not(.qh-in) .qh-gap__v { opacity: 0; }
+  .qh-gap.qh-anim:not(.qh-in) .qh-gap__hit > * { background-color: transparent; box-shadow: none; }
+  .qh-gap.qh-anim:not(.qh-in) .qh-gap__note { opacity: 0; transform: translateY(4px) scale(.96); }
+}
 
 .qh-ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 36px;
   border-top: 1px solid var(--bp-rule-strong); border-bottom: 1px solid var(--bp-rule-strong); }
@@ -306,7 +344,7 @@ q-w { display: inline-block; }
   .qh-hero__text > :nth-child(2) { animation-delay: .3s; }
   .qh-hero__text > :nth-child(3) { animation-delay: .35s; }
   .qh-hero h1 q-w, .qh-play h1 q-w { animation: qh-word .42s calc(var(--i) * 30ms) var(--bp-ease-out) both; }
-  .qh-section > h2.qh-words q-w, .qh-final > h2.qh-words q-w { opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .42s;
+  .qh-section h2.qh-words q-w, .qh-final > h2.qh-words q-w { opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .42s;
     transition-timing-function: var(--bp-ease-out); transition-delay: calc(var(--i) * 30ms); }
   .qh .qh-words.qh-in q-w { opacity: 1; transform: none; }
   .qh-rv { opacity: 0; transform: translateY(8px); transition: opacity .32s, transform .42s; transition-timing-function: var(--bp-ease-out);
@@ -328,6 +366,7 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
   .qh-hero { padding-top: 32px; }
   .qh-section { padding-top: 88px; }
   .qh-fig { --qh-ext: 40px; padding: 20px; }
+  .qh-gap { grid-template-columns: minmax(0, 1fr); }
   .qh-ways { grid-template-columns: minmax(0, 1fr); }
   .qh-ways > div, .qh-ways > div + div { padding: 18px 0; border-left: 0; }
   .qh-ways > div + div { border-top: 1px solid var(--bp-rule); }
@@ -349,7 +388,19 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
 }
 @media (max-width: 600px) {
   .qh-wrap { --qh-pad: 16px; }
-  .qh-lead, .qh-sub, .qh-prose p { font-size: 16px; }
+  .qh-lead, .qh-sub, .qh-gap .qh-sub { font-size: 16px; }
+  /* the ledger: one block per CTE, each answer on its own line after its label */
+  .qh-gap__fig { padding: 4px 16px 16px; }
+  .qh-gap__t thead { display: none; }
+  .qh-gap__t tbody tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--bp-rule); }
+  .qh-gap__t tbody tr.qh-gap__hit { margin: 0 -16px; padding: 12px 16px; background: color-mix(in srgb, var(--cd-changed) 7%, var(--bp-sheet));
+    box-shadow: inset 2px 0 var(--cd-changed); }
+  .qh-gap__t tbody tr:last-child { border-bottom: 0; }
+  .qh-gap__t tbody th { display: block; padding: 0 0 4px; border: 0; }
+  .qh-gap__t td { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); column-gap: 8px; padding: 2px 0; border: 0; }
+  .qh-gap__t td > * { grid-column: 2; }
+  .qh-gap__t td::before { content: attr(data-label); grid-row: 1 / span 2; font: 400 12px/1.65 var(--bp-sans); color: var(--bp-ink-3); }
+  .qh-gap__t .qh-gap__hit > * { background: none; box-shadow: none; }
   .qh-reqs > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .qh-btn { width: 100%; justify-content: center; }
   .qh-install code { font-size: 12.5px; }
