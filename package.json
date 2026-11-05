@@ -1,0 +1,119 @@
+{
+  "name": "cte-diff",
+  "displayName": "CTE Diff for dbt and Snowflake",
+  "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your Snowflake profile just work.",
+  "version": "0.1.0",
+  "publisher": "MarkPhamm",
+  "author": "Minh (Mark) Pham",
+  "license": "Apache-2.0",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MarkPhamm/cte-diff"
+  },
+  "bugs": "https://github.com/MarkPhamm/cte-diff/issues",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Data Science",
+    "Other"
+  ],
+  "keywords": [
+    "dbt",
+    "snowflake",
+    "sql",
+    "cte",
+    "diff",
+    "data diff",
+    "code review",
+    "preview"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:sql",
+    "onLanguage:jinja-sql",
+    "onLanguage:snowflake-sql"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Runs dbt, which runs the project's macros."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "cteDiff.preview",
+        "title": "Preview CTE",
+        "category": "CTE Diff"
+      },
+      {
+        "command": "cteDiff.compare",
+        "title": "Compare CTE on Both Sides",
+        "category": "CTE Diff"
+      },
+      {
+        "command": "cteDiff.newComparison",
+        "title": "New Comparison (Paste Two Queries)",
+        "category": "CTE Diff",
+        "icon": "$(diff)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "cteDiff.preview",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.compare",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CTE Diff",
+      "properties": {
+        "cteDiff.dbtPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "Path to the `dbt` executable. Empty: the project's or workspace's `.venv`, then `~/.local/bin`, Homebrew, else `dbt` on `PATH`."
+        },
+        "cteDiff.projectDir": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The dbt project to run queries in, relative to the workspace folder. Empty: the project holding the file, else the one in the workspace (asked once when there are several)."
+        },
+        "cteDiff.target": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The dbt target (`--target`). Empty: the profile's default."
+        },
+        "cteDiff.limit": {
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "description": "The most rows to fetch for a preview, and the most differing rows for a comparison."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "0.28.2",
+    "ovsx": "1.3.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,108 @@
+import * as path from "node:path";
+import * as vscode from "vscode";
+import { cteQuery } from "./cte.ts";
+import { findDbt, projectDirOf, show } from "./dbt.ts";
+import { CteLens, diffOf } from "./lens.ts";
+import { showComparison, showError, showRows, showRunning } from "./panel.ts";
+import { compareQuery, readComparison, type Row } from "./query.ts";
+
+const SQL = ["sql", "jinja-sql", "snowflake-sql"].map((language) => ({ language }));
+let log: vscode.OutputChannel;
+let picked: string | undefined; // the project chosen for files outside any dbt project, e.g. pasted SQL
+let latest = 0;
+
+export function activate(context: vscode.ExtensionContext): void {
+  log = vscode.window.createOutputChannel("CTE Diff");
+  const lens = new CteLens();
+  context.subscriptions.push(
+    log,
+    vscode.languages.registerCodeLensProvider(SQL, lens),
+    vscode.window.tabGroups.onDidChangeTabs(() => lens.refresh()),
+    vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
+    vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
+    vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
+  );
+}
+
+async function guard(f: () => Promise<void>): Promise<void> {
+  try {
+    await f();
+  } catch (e) {
+    vscode.window.showErrorMessage(`CTE Diff: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+const label = (name?: string) => name ?? "the whole query";
+
+async function preview(uri: vscode.Uri, name?: string): Promise<void> {
+  const doc = await vscode.workspace.openTextDocument(uri);
+  const sql = cteQuery(doc.getText(), name);
+  const what = `${label(name)} (${path.basename(uri.path) || "untitled"})`;
+  const result = await run(uri, `Preview: ${label(name)}`, what, sql);
+  if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit);
+}
+
+async function compare(uri: vscode.Uri, name?: string): Promise<void> {
+  const diff = diffOf(uri);
+  if (!diff) throw new Error("Open the two versions in a diff editor first.");
+  const [left, right] = await Promise.all([diff.left, diff.right].map((u) => vscode.workspace.openTextDocument(u)));
+  const side = (doc: vscode.TextDocument, which: string) => {
+    try {
+      return cteQuery(doc.getText(), name);
+    } catch {
+      throw new Error(`The ${which} side has no CTE named ${name}.`);
+    }
+  };
+  const sql = compareQuery(side(left, "left"), side(right, "right"));
+  const title = `Compare: ${label(name)}`;
+  // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
+  const result = await run(diff.right, title, label(name), sql);
+  if (result) showComparison(title, label(name), readComparison(result.rows), result.limit);
+}
+
+async function newComparison(): Promise<void> {
+  const left = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the old SQL here\n" });
+  const right = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the new SQL here\n" });
+  await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, "CTE Diff: old ↔ new");
+}
+
+/** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled or overtaken by a newer run. */
+async function run(uri: vscode.Uri, title: string, what: string, sql: string): Promise<{ rows: Row[]; limit: number } | undefined> {
+  const config = vscode.workspace.getConfiguration("cteDiff", uri);
+  const projectDir = await projectFor(uri, config.get<string>("projectDir", ""));
+  const limit = config.get<number>("limit", 100);
+  const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
+  const dbt = findDbt(config.get<string>("dbtPath", ""), [projectDir, ...folders]);
+  const id = ++latest;
+  showRunning(title, what);
+  try {
+    const rows = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `CTE Diff: running dbt show for ${what}`, cancellable: true },
+      (_, token) => {
+        const abort = new AbortController();
+        token.onCancellationRequested(() => abort.abort());
+        return show(sql, { dbt, projectDir, limit, target: config.get<string>("target") || undefined, log: (l) => log.appendLine(l) }, abort.signal);
+      },
+    );
+    return id === latest ? { rows, limit } : undefined;
+  } catch (e) {
+    if (id !== latest) return undefined;
+    showError(title, e instanceof Error ? e.message : String(e));
+    return undefined;
+  }
+}
+
+/** The dbt project to run in: the setting, else the one holding the file, else one picked from the workspace. */
+async function projectFor(uri: vscode.Uri, setting: string): Promise<string> {
+  const folder = vscode.workspace.getWorkspaceFolder(uri) ?? vscode.workspace.workspaceFolders?.[0];
+  if (setting) return path.resolve(folder?.uri.fsPath ?? "", setting);
+  const own = uri.scheme === "untitled" ? undefined : projectDirOf(uri.fsPath);
+  if (own) return own;
+  if (picked) return picked;
+  const found = await vscode.workspace.findFiles("**/dbt_project.yml", "**/{dbt_packages,dbt_modules,node_modules,target}/**", 50);
+  const dirs = found.map((f) => path.dirname(f.fsPath)).sort((a, b) => a.length - b.length);
+  if (dirs.length === 0) throw new Error("No dbt_project.yml in this workspace. Open your dbt project, or set cteDiff.projectDir.");
+  picked = dirs.length === 1 ? dirs[0] : await vscode.window.showQuickPick(dirs, { title: "Which dbt project should run the SQL?" });
+  if (!picked) throw new Error("No dbt project picked.");
+  return picked;
+}
