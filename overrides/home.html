@@ -68,35 +68,9 @@
   <!-- --------------------------------------------------------------- playground -->
   <section class="qh-section qh-wrap" id="playground">
     <h2>Try it on two queries</h2>
-    <p class="qh-sub">Edit either side. The extension’s own parser, running in your browser, marks each CTE and writes the SQL the extension would send through <code>dbt show</code>, for Snowflake or DuckDB. Nothing reaches a warehouse here: rows need dbt and your profile.</p>
-    <div class="qh-fig">
-      <div class="qp" id="qp">
-        <div class="qp-panes">
-          <label class="qp-pane"><span>Old (left)</span><textarea id="qp-left" spellcheck="false" autocapitalize="off" autocomplete="off" rows="16"></textarea></label>
-          <label class="qp-pane"><span>New (right)</span><textarea id="qp-right" spellcheck="false" autocapitalize="off" autocomplete="off" rows="16"></textarea></label>
-        </div>
-        <div class="qp-result">
-          <div class="qp-side">
-            <div class="qp-side__head"><b>CTEs</b> <span class="qp-summary" aria-live="polite"></span></div>
-            <ul class="qp-ctes" aria-label="CTEs of both sides"></ul>
-            <button class="qp-reset" type="button">Reset the example</button>
-          </div>
-          <div class="qp-sql">
-            <div class="qp-actions" role="group" aria-label="What to run">
-              <button type="button" data-action="left">← Preview old</button>
-              <button type="button" data-action="right">→ Preview new</button>
-              <button type="button" data-action="compare">⇄ Compare sides</button>
-              <span class="qp-adapter" role="group" aria-label="Warehouse the SQL is for">
-                <button type="button" data-adapter="snowflake">Snowflake</button>
-                <button type="button" data-adapter="duckdb">DuckDB</button>
-              </span>
-            </div>
-            <pre><code id="qp-sql"></code></pre>
-          </div>
-        </div>
-      </div>
-      <noscript><p>The playground needs JavaScript.</p></noscript>
-    </div>
+    <p class="qh-sub">Edit either side. The extension’s own parser marks each CTE, and its own SQL runs on DuckDB, in your browser, over three made-up tables: <code>stg_orders</code>, <code>stg_payments</code> and <code>stg_customers</code>. Change the <code>where</code> and the rows change with it.</p>
+    {#- web/playground.ts fills it in; the rows come from duckdb-wasm, loaded once the playground is near the screen. -#}
+    <div class="cd-win qp" id="qp"><noscript><p class="cd-noscript">The playground needs JavaScript.</p></noscript></div>
   </section>
 
   <!-- ---------------------------------------------------------- ways to open one -->

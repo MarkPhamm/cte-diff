@@ -81,7 +81,7 @@
     splitWords(h);
     onView(h, function () { h.classList.add("qh-in"); });
   });
-  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-section > .qh-more, .qh-prose > p, .qh-split > div > p, .qh-split > .qh-code, .qh-section > .qh-fig, .qh-final > :not(h2)")));
+  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-section > .qh-more, .qh-prose > p, .qh-split > div > p, .qh-split > .qh-code, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
   root.querySelectorAll(".qh-ways, .qh-reqs").forEach(function (g) { reveal([].slice.call(g.children), 0.08); });
   var code = root.querySelector(".qh-final .qh-install code");
   if (code) {

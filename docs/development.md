@@ -11,7 +11,7 @@ Release: bump `version` in `package.json`, add a `CHANGELOG.md` entry, commit, t
 
 ## This site
 
-The site is MkDocs Material, with the landing page in `overrides/home.html`. Its live demo (`web/demo.ts`) and playground (`web/playground.ts`) bundle the extension's own parser and results view (`src/cte.ts`, `src/query.ts`, `src/results.ts`). The demo's rows are `web/demo-rows.json`, from running the extension's SQL on DuckDB over made-up tables.
+The site is MkDocs Material, with the landing page in `overrides/home.html`. Its live demo (`web/demo.ts`) and playground (`web/playground.ts`) bundle the extension's own parser and results view (`src/cte.ts`, `src/query.ts`, `src/results.ts`). Both run the extension's SQL over the made-up tables in `web/sample.ts`: the demo from `web/demo-rows.json`, generated on DuckDB; the playground live, on DuckDB in the browser (duckdb-wasm).
 
 ```sh
 npm run site:js                        # builds docs/javascripts/playground.js and demo.js
