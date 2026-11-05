@@ -77,11 +77,26 @@
 
   var h1 = root.querySelector(".qh-hero h1, .qh-play h1");
   if (h1) splitWords(h1);
-  root.querySelectorAll(".qh-section > h2, .qh-final > h2").forEach(function (h) {
+  root.querySelectorAll(".qh-section > h2, .qh-gap__text > h2, .qh-final > h2").forEach(function (h) {
     splitWords(h);
     onView(h, function () { h.classList.add("qh-in"); });
   });
-  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-section > .qh-more, .qh-prose > p, .qh-how__note, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
+  reveal([].slice.call(root.querySelectorAll(".qh-section > .qh-sub, .qh-gap__text > .qh-sub, .qh-section > .qh-more, .qh-how__note, .qh-section > .qh-fig, .qh-section > .qp, .qh-final > :not(h2)")));
+
+  /* The SQL diff against the data: the rows rise with what the diff shows, then what the data did fills in, then the
+   * CTE with no changed line but changed rows lights up. */
+  var gap = root.querySelector(".qh-gap");
+  if (gap) {
+    var rows = gap.querySelectorAll("tbody tr");
+    rows.forEach(function (tr, i) {
+      tr.style.setProperty("--d", 0.15 + i * 0.08 + "s");
+      tr.style.setProperty("--d2", 0.7 + i * 0.14 + "s");
+    });
+    gap.style.setProperty("--d3", 0.85 + rows.length * 0.14 + "s");
+    gap.classList.add("qh-anim");
+    void gap.offsetWidth;
+    onView(gap.querySelector(".qh-gap__t"), function () { gap.classList.add("qh-in"); });
+  }
 
   /* How a comparison works: the steps rise in turn; each one's rows arrive, then the rows both sides have strike out. */
   var how = root.querySelector(".qh-how");

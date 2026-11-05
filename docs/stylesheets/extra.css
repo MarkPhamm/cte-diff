@@ -223,3 +223,12 @@
 @media screen and (max-width: 44.984em) {
   .md-typeset pre > code { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 2.6em; }
 }
+
+/* moving between pages: the content cross-fades under a header that stays put, instead of a blank reload. A
+ * cross-document view transition, so no script re-runs (navigation.instant stays off for the playground's sake).
+ * Browsers without it, and reduced motion, load pages as before. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  .md-header { view-transition-name: qd-header; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: var(--bp-ease-out); }
+}
