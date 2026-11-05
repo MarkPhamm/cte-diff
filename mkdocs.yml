@@ -19,7 +19,7 @@ theme:
   icon:
     repo: fontawesome/brands/github
   features:
-    - navigation.instant
+    # No navigation.instant: it swaps pages without re-running extra_javascript, which left the playground empty.
     - navigation.tracking
     - navigation.footer
     - navigation.top

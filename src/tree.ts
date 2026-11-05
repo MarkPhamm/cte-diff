@@ -17,12 +17,17 @@ export interface CteNode {
   uri?: vscode.Uri;
 }
 
-const LOOK: Record<Status, { icon: string; color?: string; note: string }> = {
-  changed: { icon: "diff-modified", color: "gitDecoration.modifiedResourceForeground", note: "changed" },
-  added: { icon: "diff-added", color: "gitDecoration.addedResourceForeground", note: "new" },
-  removed: { icon: "diff-removed", color: "gitDecoration.deletedResourceForeground", note: "removed" },
-  affected: { icon: "arrow-down", color: "gitDecoration.modifiedResourceForeground", note: "reads a changed CTE" },
-  same: { icon: "circle-small", note: "" },
+const LOOK: Record<Status, { icon: string; color?: string; note: string; tip: string }> = {
+  changed: { icon: "diff-modified", color: "gitDecoration.modifiedResourceForeground", note: "changed", tip: "Its text changed. ⇄ compares its rows." },
+  added: { icon: "diff-added", color: "gitDecoration.addedResourceForeground", note: "new", tip: "Only on the right (new) side. → previews it." },
+  removed: { icon: "diff-removed", color: "gitDecoration.deletedResourceForeground", note: "removed", tip: "Only on the left (old) side. ← previews it." },
+  affected: {
+    icon: "arrow-down",
+    color: "gitDecoration.modifiedResourceForeground",
+    note: "reads a changed CTE",
+    tip: "Same text, but it reads a CTE that changed, so its rows can differ. ⇄ compares them.",
+  },
+  same: { icon: "circle-small", note: "", tip: "Same text on both sides, reading nothing that changed." },
 };
 
 export class CteTree implements vscode.TreeDataProvider<CteNode> {
@@ -83,6 +88,7 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       const look = LOOK[node.status];
       item.iconPath = new vscode.ThemeIcon(look.icon, look.color ? new vscode.ThemeColor(look.color) : undefined);
       item.description = look.note;
+      item.tooltip = look.tip;
     } else {
       item.iconPath = new vscode.ThemeIcon(node.name ? "symbol-namespace" : "symbol-file");
     }

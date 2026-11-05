@@ -5,6 +5,10 @@ export type Row = Record<string, unknown>;
 /** Jinja that dbt renders to `duckdb` or `snowflake` SQL, by the profile's adapter. */
 const byAdapter = (duckdb: string, snowflake: string) => `{% if target.type == 'duckdb' %}${duckdb}{% else %}${snowflake}{% endif %}`;
 
+/** `sql` as dbt renders it for one adapter: each byAdapter block becomes that adapter's branch. Other Jinja stays. */
+export const forAdapter = (sql: string, type: string) =>
+  sql.replace(/{% if target\.type == '(\w+)' %}(.*?){% else %}(.*?){% endif %}/gs, (_, t, a, b) => (t === type ? a : b));
+
 /** A row of `__t` as JSON text with its keys sorted. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column
  * order, so its keys are sorted by hand. */
 const rowJson = byAdapter(
@@ -51,6 +55,39 @@ export function cutFrom(c: Comparison, limit: number): number | undefined {
   const total = c.counts ? c.counts.only_left + c.counts.only_right : undefined;
   if (total !== undefined) return c.rows.length < total ? total : undefined;
   return c.rows.length >= limit - 1 ? c.rows.length : undefined; // the counts row itself was cut: the total is unknown
+}
+
+/** A column name that reads as a row's identifier: `id`, `order_id`, `ORDER_KEY`, `customer_sk`. */
+const ID = /(^|_)(id|key|pk|sk)$/i;
+
+export interface Paired {
+  /** The id columns that pair rows: on both sides, unique on each. Empty: nothing pairs. */
+  key: string[];
+  /** One row's left and right versions: every key column agrees, another column differs. */
+  pairs: [Row, Row][];
+  /** Rows with no partner on the other side. */
+  left: Row[];
+  right: Row[];
+}
+
+/** Pairs each differing left row with the right row that has the same id, so a changed row reads as one change
+ * instead of a removal and an addition. shortcut: guesses the id from column names; add a key setting if that misleads. */
+export function pairRows(c: Comparison): Paired {
+  const left = c.rows.filter((r) => r.side === "left").map((r) => r.row);
+  const right = c.rows.filter((r) => r.side === "right").map((r) => r.row);
+  const unique = (rows: Row[], k: string) => rows.every((r) => k in r) && new Set(rows.map((r) => JSON.stringify(r[k]))).size === rows.length;
+  const key = [...new Set(left.flatMap((r) => Object.keys(r)))].filter((k) => ID.test(k) && unique(left, k) && unique(right, k));
+  const id = (r: Row) => JSON.stringify(key.map((k) => r[k]));
+  const byId = new Map(key.length ? right.map((r) => [id(r), r]) : []);
+  const pairs: [Row, Row][] = [];
+  const rest: Row[] = [];
+  for (const l of left) {
+    const r = byId.get(id(l));
+    if (r) pairs.push([l, r]);
+    else rest.push(l);
+  }
+  const paired = new Set(pairs.map((p) => p[1]));
+  return { key, pairs, left: rest, right: right.filter((r) => !paired.has(r)) };
 }
 
 /** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. */

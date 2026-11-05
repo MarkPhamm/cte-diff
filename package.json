@@ -61,6 +61,30 @@
         "icon": "$(diff)"
       },
       {
+        "command": "cteDiff.compareCte",
+        "title": "Compare a CTE…",
+        "category": "CTE Diff",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "cteDiff.previewCte",
+        "title": "Preview a CTE…",
+        "category": "CTE Diff",
+        "icon": "$(play)"
+      },
+      {
+        "command": "cteDiff.rerun",
+        "title": "Run Again",
+        "category": "CTE Diff",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cteDiff.showLog",
+        "title": "Show Log",
+        "category": "CTE Diff",
+        "icon": "$(output)"
+      },
+      {
         "command": "cteDiff.tree.previewLeft",
         "title": "Preview Left (Old)",
         "category": "CTE Diff",
@@ -93,6 +117,18 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "cteDiff.compareCte",
+          "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/"
+        },
+        {
+          "command": "cteDiff.previewCte",
+          "when": "!isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/"
+        },
+        {
+          "command": "cteDiff.rerun",
+          "when": "cteDiff.ran"
+        },
+        {
           "command": "cteDiff.preview",
           "when": "false"
         },
@@ -121,11 +157,33 @@
           "when": "false"
         }
       ],
+      "editor/title": [
+        {
+          "command": "cteDiff.compareCte",
+          "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/",
+          "group": "navigation"
+        },
+        {
+          "command": "cteDiff.previewCte",
+          "when": "!isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
           "command": "cteDiff.newComparison",
           "when": "view == cteDiff.ctes",
           "group": "navigation"
+        },
+        {
+          "command": "cteDiff.rerun",
+          "when": "view == cteDiff.results && cteDiff.ran",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cteDiff.showLog",
+          "when": "view == cteDiff.results",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
