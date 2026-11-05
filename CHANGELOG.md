@@ -5,6 +5,7 @@
 - **Compare** works on DuckDB (dbt-duckdb), as well as Snowflake. Rows still match by column name, so reordered columns don't show as differences.
 - Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal, instead of an editor tab.
 - A comparison cut short by `cteDiff.limit` now says so, with how many rows differ in all ("the first 99 of 300").
+- A new icon: the same mark, in white on a solid dark tile, so it stays sharp on light and dark pages.
 - `examples/duckdb`: a small dbt project on a local DuckDB file, to try the extension without a warehouse.
 
 ## 0.2.0
