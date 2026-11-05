@@ -47,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
+    vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(compareFiles)),
     vscode.commands.registerCommand("cteDiff.compareCte", () => guard(pickCte)),
     vscode.commands.registerCommand("cteDiff.previewCte", () => guard(pickCte)),
     vscode.commands.registerCommand("cteDiff.rerun", () => guard(async () => again?.())),
@@ -127,6 +128,17 @@ async function newComparison(): Promise<void> {
   const left = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the old SQL here\n" });
   const right = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the new SQL here\n" });
   await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, "CTE Diff: old ↔ new");
+}
+
+/** Asks for an old and a new SQL file, then opens them in a diff, old on the left. */
+async function compareFiles(): Promise<void> {
+  const ask = async (side: string, at?: vscode.Uri) =>
+    (await vscode.window.showOpenDialog({ title: `Pick the ${side} SQL file`, openLabel: `Use as ${side}`, defaultUri: at, filters: { SQL: ["sql"] } }))?.[0];
+  const active = vscode.window.activeTextEditor?.document.uri;
+  const left = await ask("old", active?.scheme === "file" ? active : undefined);
+  const right = left && (await ask("new", left));
+  if (!left || !right) return;
+  await vscode.commands.executeCommand("vscode.diff", left, right, `${path.basename(left.path)} ↔ ${path.basename(right.path)}`);
 }
 
 /** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled or overtaken by a newer run. */

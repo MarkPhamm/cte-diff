@@ -10,7 +10,7 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 ## Open a comparison
 
 - **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
-- **Any two files:** select both in the Explorer, then use **Compare Selected**.
+- **Any two files:** run **CTE Diff: Compare Two Files…**, or click its button in the sidebar's title bar, and pick the old file, then the new one. Or select both in the Explorer and use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
 Every SQL file also gets **▶ Preview** outside a diff. The last button previews the whole query. Outside a diff, the title bar's button is **▶ Preview a CTE…**.
