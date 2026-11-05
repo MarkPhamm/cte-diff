@@ -6,5 +6,6 @@ out/
 .vscode-test/
 site/
 docs/javascripts/playground.js
+docs/javascripts/demo.js
 .venv/
 __pycache__/

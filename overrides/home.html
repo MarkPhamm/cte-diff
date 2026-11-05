@@ -22,10 +22,6 @@
   </div>
 {% endmacro %}
 
-{% macro lens(active=false) -%}
-  <div class="cd-lens"><span>▶ Preview</span> | <span{% if active %} class="cd-lens__hit"{% endif %}>⇄ Compare sides</span></div>
-{%- endmacro %}
-
 {% block container %}
 <div class="qh">
 
@@ -44,68 +40,22 @@
       {{ install() }}
     </div>
 
-    {#- The extension, drawn: sidebar, the diff with its CodeLens, and the results of comparing order_payments.
-        Same example as the playground (web/sample.ts); the rows are made up. -#}
-    <figure class="cd-win qh-hero__shot" aria-label="The extension on a change to jaffle_shop's orders model: the sidebar marks payments changed, customers new, refunds removed and order_payments as reading a changed CTE. Comparing order_payments lists three orders whose totals differ between the two sides.">
-      <div class="cd-win__bar" aria-hidden="true"><i></i><i></i><i></i><span>orders.sql (HEAD) ↔ orders.sql</span></div>
-      <div class="cd-win__body" aria-hidden="true">
-        <aside class="cd-side">
-          <div class="cd-side__head"><b>CTE Diff</b> orders.sql</div>
-          <ul class="cd-side__list">
-            <li style="--i:0"><span class="cd-mark"></span>orders</li>
-            <li class="cd-changed" style="--i:1"><span class="cd-mark">~</span>payments <em>changed</em></li>
-            <li class="cd-added" style="--i:2"><span class="cd-mark">+</span>customers <em>new</em></li>
-            <li class="cd-affected cd-sel" style="--i:3"><span class="cd-mark">↓</span>order_payments <em>reads a changed CTE</em><span class="cd-side__btns">← → ⇄</span></li>
-            <li class="cd-changed" style="--i:4"><span class="cd-mark">~</span>final <em>changed</em></li>
-            <li class="cd-removed" style="--i:5"><span class="cd-mark">−</span>refunds <em>removed</em></li>
-            <li class="cd-affected" style="--i:6"><span class="cd-mark">↓</span>(whole query) <em>reads a changed CTE</em></li>
-          </ul>
-        </aside>
-
-        <div class="cd-diff">
-          <div class="cd-row cd-row--head"><span class="cd-count cd-count--rm">8 removals</span><span class="cd-count cd-count--add">7 additions</span></div>
-          <div class="cd-row cd-row--lens">{{ lens() }}{{ lens() }}</div>
-          <div class="cd-row"><span><i>5</i>payments <b>as</b> (</span><span><i>5</i>payments <b>as</b> (</span></div>
-          <div class="cd-row"><span><i>6</i>    <b>select</b> * <b>from</b> <u>{{ "{{" }} ref('stg_payments') {{ "}}" }}</u></span><span><i>6</i>    <b>select</b> * <b>from</b> <u>{{ "{{" }} ref('stg_payments') {{ "}}" }}</u></span></div>
-          <div class="cd-row"><span class="cd-fill"></span><span class="cd-add" style="--i:0"><i>7</i>    <mark><b>where</b> status = <s>'success'</s></mark></span></div>
-          <div class="cd-row"><span><i>7</i>),</span><span><i>8</i>),</span></div>
-          <div class="cd-row"><span><i>8</i></span><span><i>9</i></span></div>
-          <div class="cd-row cd-row--lens">{{ lens() }}{{ lens() }}</div>
-          <div class="cd-row"><span class="cd-del" style="--i:1"><i>9</i><mark>refunds <b>as</b> (</mark></span><span class="cd-add" style="--i:1"><i>10</i><mark>customers <b>as</b> (</mark></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:2"><i>10</i>    <mark><b>select</b> order_id, sum(amount) <b>as</b> refunded</mark></span><span class="cd-add" style="--i:2"><i>11</i>    <mark><b>select</b> customer_id, first_name</mark></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:3"><i>11</i>    <mark><b>from</b> payments</mark></span><span class="cd-add" style="--i:3"><i>12</i>    <mark><b>from</b> <u>{{ "{{" }} ref('stg_customers') {{ "}}" }}</u></mark></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:4"><i>12</i>    <mark><b>where</b> amount &lt; 0</mark></span><span class="cd-add" style="--i:4"><i>13</i><mark>),</mark></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:5"><i>13</i>    <mark><b>group by</b> order_id</mark></span><span class="cd-add" style="--i:5"><i>14</i></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:6"><i>14</i><mark>),</mark></span><span class="cd-fill"></span></div>
-          <div class="cd-row"><span class="cd-del" style="--i:7"><i>15</i></span><span class="cd-fill"></span></div>
-          <div class="cd-row cd-row--lens">{{ lens(true) }}{{ lens(true) }}</div>
-          <div class="cd-row"><span><i>16</i>order_payments <b>as</b> (</span><span><i>15</i>order_payments <b>as</b> (</span></div>
-          <div class="cd-row"><span><i>17</i>    <b>select</b> order_id, sum(amount) <b>as</b> total_amount</span><span><i>16</i>    <b>select</b> order_id, sum(amount) <b>as</b> total_amount</span></div>
-          <div class="cd-row"><span><i>18</i>    <b>from</b> payments</span><span><i>17</i>    <b>from</b> payments</span></div>
-          <div class="cd-row"><span><i>19</i>    <b>group by</b> order_id</span><span><i>18</i>    <b>group by</b> order_id</span></div>
-          <div class="cd-row"><span><i>20</i>),</span><span><i>19</i>),</span></div>
-        </div>
-
-        <section class="cd-res">
-          <div class="cd-res__tab">Compare: order_payments</div>
-          <p class="cd-stats"><span>Left 99 rows</span><span>Right 99 rows</span><span class="cd-stat-l">Only left 3</span><span class="cd-stat-r">Only right 3</span></p>
-          <p><span class="cd-l">✗</span> The sides differ: 3 changed rows.</p>
-          <table>
-            <thead><tr><th></th><th>ORDER_ID</th><th>TOTAL_AMOUNT</th></tr></thead>
-            <tbody>
-              <tr class="cd-group"><td colspan="3">3 changed rows, matched on ORDER_ID</td></tr>
-              <tr style="--i:0"><td class="cd-l">−</td><td>14</td><td class="cd-chg-l">32.00</td></tr>
-              <tr style="--i:1"><td class="cd-r">+</td><td>14</td><td class="cd-chg-r">24.00</td></tr>
-              <tr style="--i:2"><td class="cd-l">−</td><td>52</td><td class="cd-chg-l">45.00</td></tr>
-              <tr style="--i:3"><td class="cd-r">+</td><td>52</td><td class="cd-chg-r">30.00</td></tr>
-              <tr style="--i:4"><td class="cd-l">−</td><td>87</td><td class="cd-chg-l">18.00</td></tr>
-              <tr style="--i:5"><td class="cd-r">+</td><td>87</td><td class="cd-chg-r">9.00</td></tr>
-            </tbody>
-          </table>
-        </section>
+    {#- The live demo (web/demo.ts): the extension's sidebar, the diff with its buttons, and the results panel below.
+        Same example as the playground (web/sample.ts); the rows come from running the extension's SQL on DuckDB
+        over made-up tables (scripts/demo-rows.ts). -#}
+    <figure class="cd-win qh-hero__shot" id="cd-demo" aria-label="A live demo of the extension on a change to jaffle_shop's orders model. Click Preview or Compare sides above a CTE, or the buttons in the sidebar, to see the rows in the panel below.">
+      <div class="cd-win__bar"><i></i><i></i><i></i><span>orders.sql (HEAD) ↔ orders.sql</span><b class="cd-state">Playing</b></div>
+      <div class="cd-win__body"><noscript><p class="cd-noscript">The live demo needs JavaScript.</p></noscript></div>
+      <div class="cd-overlay" aria-hidden="true">
+        <svg class="cd-cursor" width="22" height="22" viewBox="0 0 24 24"><path d="M4 2l15 11-7 1.2 4 7.3-2.8 1.5-4-7.4L4 20z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
       </div>
-      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character.</figcaption>
+      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character. <span class="cd-hint">Move your mouse over it to take control.</span></figcaption>
     </figure>
+    <ol class="cd-chapters">
+      <li><b>Preview a CTE</b><span>▶ Preview above <code>payments</code></span><i></i></li>
+      <li><b>Compare both sides</b><span>⇄ on <code>order_payments</code>: 3 rows changed</span><i></i></li>
+      <li><b>From the sidebar</b><span>⇄ on <code>final</code>: a column added, one dropped</span><i></i></li>
+    </ol>
   </section>
 
   <!-- -------------------------------------------------------------- the problem -->

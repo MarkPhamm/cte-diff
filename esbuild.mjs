@@ -15,8 +15,8 @@ const common = {
   logLevel: "info",
 };
 const builds = site
-  ? // The docs site's playground: the parser, bundled for the browser.
-    [{ entryPoints: ["web/playground.ts"], outfile: "docs/javascripts/playground.js", bundle: true, platform: "browser", format: "iife", target: "es2020", minify: true, logLevel: "info" }]
+  ? // The docs site's playground and live demo: the parser and the results view, bundled for the browser.
+    ["playground", "demo"].map((name) => ({ entryPoints: [`web/${name}.ts`], outfile: `docs/javascripts/${name}.js`, bundle: true, platform: "browser", format: "iife", target: "es2020", minify: true, logLevel: "info" }))
   : [{ ...common, entryPoints: ["src/extension.ts"], outfile: "out/extension.js" }];
 if (!production && !site) builds.push({ ...common, entryPoints: ["test/integration/suite.ts"], outfile: "out/test/suite.js" });
 
