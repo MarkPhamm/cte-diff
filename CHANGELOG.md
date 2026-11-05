@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- **Compare Two Files…** picks from a searchable list of the workspace's SQL files, the open file first, instead of the system's file dialog.
+
 ## 0.5.0
 
 - **Compare Two Files…** in the sidebar's title bar and the Command Palette: pick an old and a new SQL file, and they open side by side, ready to compare CTE by CTE.

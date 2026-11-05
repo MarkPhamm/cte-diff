@@ -130,15 +130,20 @@ async function newComparison(): Promise<void> {
   await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, "CTE Diff: old ↔ new");
 }
 
-/** Asks for an old and a new SQL file, then opens them in a diff, old on the left. */
+/** Asks for an old and a new SQL file of the workspace, active file listed first, then opens them in a diff, old on the left. */
 async function compareFiles(): Promise<void> {
-  const ask = async (side: string, at?: vscode.Uri) =>
-    (await vscode.window.showOpenDialog({ title: `Pick the ${side} SQL file`, openLabel: `Use as ${side}`, defaultUri: at, filters: { SQL: ["sql"] } }))?.[0];
-  const active = vscode.window.activeTextEditor?.document.uri;
-  const left = await ask("old", active?.scheme === "file" ? active : undefined);
-  const right = left && (await ask("new", left));
+  const files = await vscode.workspace.findFiles("**/*.sql", "**/{node_modules,target,dbt_packages,.venv,venv}/**");
+  if (!files.length) throw new Error("No SQL files in this workspace.");
+  const active = vscode.window.activeTextEditor?.document.uri.toString();
+  const items = files
+    .map((uri) => ({ label: path.basename(uri.path), description: path.dirname(vscode.workspace.asRelativePath(uri)), uri }))
+    .sort((a, b) => +(b.uri.toString() === active) - +(a.uri.toString() === active) || `${a.description}/${a.label}`.localeCompare(`${b.description}/${b.label}`));
+  const ask = (side: string, from: typeof items) =>
+    vscode.window.showQuickPick(from, { title: `Compare Two Files: pick the ${side} one`, placeHolder: "Type to search the workspace's SQL files", matchOnDescription: true });
+  const left = await ask("old", items);
+  const right = left && (await ask("new", items.filter((i) => i !== left)));
   if (!left || !right) return;
-  await vscode.commands.executeCommand("vscode.diff", left, right, `${path.basename(left.path)} ↔ ${path.basename(right.path)}`);
+  await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, `${left.label} ↔ ${right.label}`);
 }
 
 /** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled or overtaken by a newer run. */
