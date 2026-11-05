@@ -5,92 +5,24 @@
  * are web/demo-rows.json: the extension's SQL run on DuckDB over made-up tables (scripts/demo-rows.ts).
  * A scripted cursor plays three chapters; moving the mouse over the window hands control to the visitor. Phones,
  * touch screens and reduced motion get no cursor: the window opens on a comparison, ready to click. */
-import { compareCtes, parse, type Status } from "../src/cte.ts";
+import { compareCtes } from "../src/cte.ts";
 import { readComparison, type Row } from "../src/query.ts";
-import { comparisonHtml, RESULTS_CSS, rowsHtml, runningHtml } from "../src/results.ts";
+import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
 import demoRows from "./demo-rows.json" with { type: "json" };
 import { after, before } from "./sample.ts";
+import { button, diffRows, highlight, lensLines, resultsPanel, sidebarList, summary, type Act, type Side } from "./ui.ts";
 
-type Side = "left" | "right";
-type Act = "preview" | "compare";
 const ROWS = demoRows as Record<Side | "compare", Record<string, Row[]>>;
-
-// The sidebar's marks and words for each status (src/tree.ts).
-const MARK: Record<Status, string> = { changed: "~", added: "+", removed: "−", affected: "↓", same: "" };
-const NOTE: Record<Status, string> = { changed: "changed", added: "new", removed: "removed", affected: "reads a changed CTE", same: "" };
-
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Keywords bold, Jinja muted, strings tinted: enough colour to read the diff. */
-function highlight(line: string): string {
-  let out = "";
-  let last = 0;
-  for (const m of line.matchAll(/(\{\{.*?\}\})|('(?:[^']|'')*')|\b(with|as|select|from|where|group|by|left|join|using)\b/gi)) {
-    out += esc(line.slice(last, m.index));
-    out += m[1] ? `<u>${esc(m[1])}</u>` : m[2] ? `<s>${esc(m[2])}</s>` : `<b>${m[3]}</b>`;
-    last = m.index + m[0].length;
-  }
-  return out + esc(line.slice(last));
-}
-
-/** Side-by-side rows of a line diff (longest common subsequence): a removed and an added line share a row. */
-function diffRows(a: string[], b: string[]): { l?: number; r?: number; changed?: boolean }[] {
-  const dp = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
-  for (let i = a.length - 1; i >= 0; i--)
-    for (let j = b.length - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-  const rows: { l?: number; r?: number; changed?: boolean }[] = [];
-  let dels: number[] = [];
-  let adds: number[] = [];
-  const flush = () => {
-    for (let k = 0; k < Math.max(dels.length, adds.length); k++) rows.push({ l: dels[k], r: adds[k], changed: true });
-    dels = [];
-    adds = [];
-  };
-  for (let i = 0, j = 0; i < a.length || j < b.length; ) {
-    if (i < a.length && j < b.length && a[i] === b[j]) {
-      flush();
-      rows.push({ l: i++, r: j++ });
-    } else if (j >= b.length || (i < a.length && dp[i + 1][j] >= dp[i][j + 1])) dels.push(i++);
-    else adds.push(j++);
-  }
-  flush();
-  return rows;
-}
-
-/** Line index → the CTE whose name starts there ("" for the final select), where the extension puts its CodeLens. */
-function lensLines(sql: string): Map<number, string> {
-  const { withStart, ctes } = parse(sql);
-  const lineOf = (offset: number) => sql.slice(0, offset).split("\n").length - 1;
-  const out = new Map(ctes.map((c) => [lineOf(c.start), c.name] as const));
-  const last = ctes.at(-1);
-  const finalAt = last ? sql.slice(last.bodyEnd).search(/\S/) : -1;
-  out.set(lineOf(last && finalAt >= 0 ? last.bodyEnd + finalAt : Math.max(withStart, 0)), "");
-  return out;
-}
 
 const root = document.getElementById("cd-demo");
 if (root) {
   const statuses = compareCtes(before, after);
   const statusOf = new Map(statuses.map((s) => [s.name ?? "", s.status]));
   const both = (name: string) => !["added", "removed"].includes(statusOf.get(name)!);
-  const button = (act: Act, side: Side, name: string, text: string, label: string) =>
-    `<button type="button" data-act="${act}" data-side="${side}" data-name="${esc(name)}" title="${esc(label)}">${text}</button>`;
 
   // The sidebar: every CTE of both sides, marked, with ← → ⇄ on hover.
-  const count = (s: Status) => statuses.filter((x) => x.status === s).length;
-  const summary = (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${NOTE[s]}`).join(" · ");
-  const items = statuses.map(({ name, status }, i) => {
-    const key = name ?? "";
-    const label = name ?? "(whole query)";
-    const btns = [
-      status !== "added" && button("preview", "left", key, "←", `Preview ${label}, left (old)`),
-      status !== "removed" && button("preview", "right", key, "→", `Preview ${label}, right (new)`),
-      both(key) && button("compare", "right", key, "⇄", `Compare ${label} on both sides`),
-    ];
-    return `<li class="cd-${status}" data-name="${esc(key)}" style="--i:${i}"><span class="cd-mark">${MARK[status]}</span><span class="cd-name">${esc(label)}</span><em>${NOTE[status]}</em><span class="cd-side__btns">${btns.filter(Boolean).join("")}</span></li>`;
-  });
-  const sidebar = `<aside class="cd-side"><div class="cd-side__head"><b>CTE Diff</b> orders.sql</div><p class="cd-side__msg">${summary}</p><ul class="cd-side__list">${items.join("")}</ul></aside>`;
+  const sidebar = `<aside class="cd-side"><div class="cd-side__head"><b>CTE Diff</b> orders.sql</div><p class="cd-side__msg">${summary(statuses)}</p><ul class="cd-side__list">${sidebarList(statuses)}</ul></aside>`;
 
   // The diff, with the CodeLens row above each CTE and the final select.
   const L = before.replace(/\n$/, "").split("\n");
@@ -121,18 +53,8 @@ if (root) {
 
   const pane = root.querySelector<HTMLElement>(".cd-diff")!;
   const tabTitle = root.querySelector<HTMLElement>(".cd-panel__title")!;
-  const shadow = root.querySelector<HTMLElement>(".cd-panel__body")!.attachShadow({ mode: "open" });
+  const show = resultsPanel(root.querySelector<HTMLElement>(".cd-panel__body")!);
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Rows rise in one after another, like the rest of the page.
-  const motion = `@media (prefers-reduced-motion: no-preference) {
-  h2, .stats, .verdict, .warn, .scroll { animation: rise .3s cubic-bezier(.2,.8,.2,1) both; }
-  .stats { animation-delay: .05s } .verdict, .warn { animation-delay: .1s } .scroll { animation-delay: .14s }
-  tbody tr { animation: rise .3s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.18s + var(--i, 0) * 40ms); }
-  @keyframes rise { from { opacity: 0; transform: translateY(4px); } } }`;
-  const show = (html: string) => {
-    shadow.innerHTML = `<style>${RESULTS_CSS}${motion}</style>${html}`;
-    shadow.querySelectorAll<HTMLElement>("tbody tr").forEach((tr, i) => tr.style.setProperty("--i", String(i)));
-  };
   show(`<p class="muted">Click <b>▶ Preview</b> above a CTE to see its rows here. <b>⇄ Compare sides</b> runs the CTE on both sides and lists the rows that differ.</p>`);
 
   const select = (name: string) =>
