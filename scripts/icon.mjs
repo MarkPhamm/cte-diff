@@ -7,6 +7,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 // The site's palette (docs/stylesheets/extra.css): ink parentheses, so the removed red and added teal carry the colour.
+const PAPER = "#f7f9f8";
 const INK = "#19211e";
 const RED = "#d23415";
 const TEAL = "#028574";
@@ -30,21 +31,21 @@ function mark(g, [paren, kept, removed, added], keptOpacity = 0.22) {
 
 const svg = (body, size = 24) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">${body}</svg>\n`;
-// A solid ink tile, for the Marketplace, the publisher logo and the favicon: one flat colour, no edge, like qdbd's
-// icon, so it holds on light and dark pages. The mark sits at 78%, in white with brightened red and teal.
-const tile = (body) => `<rect width="24" height="24" rx="5.4" fill="${INK}"/><g transform="translate(2.64 2.64) scale(.78)">${body}</g>`;
+// A paper tile, for the Marketplace and the favicon: the mark at 78%, a hairline edge so it holds on white.
+const tile = (body) =>
+  `<rect width="24" height="24" rx="5.4" fill="${PAPER}"/><rect x=".2" y=".2" width="23.6" height="23.6" rx="5.2" fill="none" stroke="${INK}" stroke-opacity=".16" stroke-width=".4"/>` +
+  `<g transform="translate(2.64 2.64) scale(.78)">${body}</g>`;
 
 const colour = [INK, INK, RED, TEAL];
-const onInk = ["#ffffff", "#ffffff", "#ff7a5c", "#3fd1b4"];
 const files = {
   "media/logo/cte-diff.svg": svg(mark(GEOMETRY.full, colour), 256),
   "media/logo/cte-diff-small.svg": svg(mark(GEOMETRY.small, colour), 32),
   "media/logo/cte-diff-mono.svg": svg(mark(GEOMETRY.full, Array(4).fill(INK), 0.4), 256),
-  "media/icon.svg": svg(tile(mark(GEOMETRY.full, onInk, 0.4)), 256),
+  "media/icon.svg": svg(tile(mark(GEOMETRY.full, colour)), 256),
   // The Activity Bar draws its icon in one colour from the SVG's shapes, so it gets currentColor and the small cut.
   "media/activity.svg": svg(mark(GEOMETRY.small, Array(4).fill("currentColor"), 0.45)),
   "docs/assets/img/icon.svg": svg(mark(GEOMETRY.small, colour), 32),
-  "docs/assets/img/favicon.svg": svg(tile(mark(GEOMETRY.small, onInk, 0.4)), 64),
+  "docs/assets/img/favicon.svg": svg(tile(mark(GEOMETRY.small, colour)), 64),
   "overrides/partials/icon.html": svg(mark(GEOMETRY.small, colour)).replace("<svg ", '<svg aria-hidden="true" '),
 };
 for (const [file, text] of Object.entries(files)) {
@@ -59,7 +60,6 @@ if (!chrome) throw new Error("Chrome not found: set CHROME to render the PNGs");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cte-diff-icon-"));
 for (const [svgFile, png, size] of [
   ["media/icon.svg", "media/icon.png", 256],
-  ["media/icon.svg", "media/logo/publisher-128.png", 128],
   ["docs/assets/img/favicon.svg", "docs/assets/img/icon.png", 64],
 ]) {
   const page = path.join(tmp, "page.html");
@@ -77,4 +77,4 @@ for (const [svgFile, png, size] of [
   ], { stdio: "ignore" });
 }
 fs.rmSync(tmp, { recursive: true });
-console.log(Object.keys(files).concat("media/icon.png", "media/logo/publisher-128.png", "docs/assets/img/icon.png").join("\n"));
+console.log(Object.keys(files).concat("media/icon.png", "docs/assets/img/icon.png").join("\n"));
