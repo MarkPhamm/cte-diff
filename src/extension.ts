@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { cteQuery } from "./cte.ts";
 import { findDbt, projectDirOf, show } from "./dbt.ts";
+import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
 import { results, showComparison, showError, showRows, showRunning } from "./panel.ts";
 import { compareQuery, readComparison, type Row } from "./query.ts";
@@ -13,12 +14,15 @@ let latest = 0;
 let again: (() => Promise<void>) | undefined; // the last preview or compare, for Run Again
 let tree: CteTree;
 
-/** Returns the sidebar, for the integration test. */
-export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
+/** Returns the sidebar's views, for the integration test. */
+export function activate(context: vscode.ExtensionContext): { tree: CteTree; files: FilesTree } {
   log = vscode.window.createOutputChannel("CTE Diff");
   const lens = new CteLens();
   tree = new CteTree();
   tree.view = vscode.window.createTreeView("cteDiff.ctes", { treeDataProvider: tree });
+  const files = new FilesTree();
+  files.follow(vscode.window.activeTextEditor?.document);
+  const watcher = vscode.workspace.createFileSystemWatcher("**/*.sql", false, true, false);
   let pending: ReturnType<typeof setTimeout> | undefined;
   const update = () => {
     clearTimeout(pending);
@@ -37,7 +41,14 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
       update();
     }),
     vscode.window.registerWebviewViewProvider("cteDiff.results", results),
-    vscode.window.onDidChangeActiveTextEditor(update),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      update();
+      files.follow(editor?.document);
+    }),
+    vscode.window.registerTreeDataProvider("cteDiff.files", files),
+    watcher,
+    watcher.onDidCreate(() => files.reload()),
+    watcher.onDidDelete(() => files.reload()),
     vscode.workspace.onDidChangeTextDocument((e) => tree.shows(e.document.uri) && update()),
     vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),
     vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guard(() => preview(n.uri!, n.name))),
@@ -47,14 +58,18 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree } {
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
-    vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(compareFiles)),
+    vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(() => files.compare())),
+    vscode.commands.registerCommand("cteDiff.files.pick", (side: Side) => guard(async () => void (await files.pick(side)))),
+    vscode.commands.registerCommand("cteDiff.files.setOld", (n: FileNode & { kind: "file" }) => files.set("old", n.uri)),
+    vscode.commands.registerCommand("cteDiff.files.setNew", (n: FileNode & { kind: "file" }) => files.set("new", n.uri)),
+    vscode.commands.registerCommand("cteDiff.files.open", () => guard(() => files.open())),
     vscode.commands.registerCommand("cteDiff.compareCte", () => guard(pickCte)),
     vscode.commands.registerCommand("cteDiff.previewCte", () => guard(pickCte)),
     vscode.commands.registerCommand("cteDiff.rerun", () => guard(async () => again?.())),
     vscode.commands.registerCommand("cteDiff.showLog", () => log.show(true)),
     { dispose: () => clearTimeout(pending) },
   );
-  return { tree };
+  return { tree, files };
 }
 
 async function guard(f: () => Promise<void>): Promise<void> {
@@ -128,22 +143,6 @@ async function newComparison(): Promise<void> {
   const left = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the old SQL here\n" });
   const right = await vscode.workspace.openTextDocument({ language: "sql", content: "-- Paste the new SQL here\n" });
   await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, "CTE Diff: old ↔ new");
-}
-
-/** Asks for an old and a new SQL file of the workspace, active file listed first, then opens them in a diff, old on the left. */
-async function compareFiles(): Promise<void> {
-  const files = await vscode.workspace.findFiles("**/*.sql", "**/{node_modules,target,dbt_packages,.venv,venv}/**");
-  if (!files.length) throw new Error("No SQL files in this workspace.");
-  const active = vscode.window.activeTextEditor?.document.uri.toString();
-  const items = files
-    .map((uri) => ({ label: path.basename(uri.path), description: path.dirname(vscode.workspace.asRelativePath(uri)), uri }))
-    .sort((a, b) => +(b.uri.toString() === active) - +(a.uri.toString() === active) || `${a.description}/${a.label}`.localeCompare(`${b.description}/${b.label}`));
-  const ask = (side: string, from: typeof items) =>
-    vscode.window.showQuickPick(from, { title: `Compare Two Files: pick the ${side} one`, placeHolder: "Type to search the workspace's SQL files", matchOnDescription: true });
-  const left = await ask("old", items);
-  const right = left && (await ask("new", items.filter((i) => i !== left)));
-  if (!left || !right) return;
-  await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, `${left.label} ↔ ${right.label}`);
 }
 
 /** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled or overtaken by a newer run. */

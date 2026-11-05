@@ -67,6 +67,29 @@
         "icon": "$(files)"
       },
       {
+        "command": "cteDiff.files.pick",
+        "title": "Pick a File",
+        "category": "CTE Diff"
+      },
+      {
+        "command": "cteDiff.files.setOld",
+        "title": "Use as Old",
+        "category": "CTE Diff",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "cteDiff.files.setNew",
+        "title": "Use as New",
+        "category": "CTE Diff",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "cteDiff.files.open",
+        "title": "Open the Diff",
+        "category": "CTE Diff",
+        "icon": "$(git-compare)"
+      },
+      {
         "command": "cteDiff.compareCte",
         "title": "Compare a CTE…",
         "category": "CTE Diff",
@@ -161,6 +184,22 @@
         {
           "command": "cteDiff.tree.reveal",
           "when": "false"
+        },
+        {
+          "command": "cteDiff.files.pick",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.files.setOld",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.files.setNew",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.files.open",
+          "when": "false"
         }
       ],
       "editor/title": [
@@ -217,6 +256,16 @@
           "command": "cteDiff.tree.preview",
           "when": "view == cteDiff.ctes && viewItem == single",
           "group": "inline@1"
+        },
+        {
+          "command": "cteDiff.files.setOld",
+          "when": "view == cteDiff.files && viewItem == sqlFile",
+          "group": "inline@1"
+        },
+        {
+          "command": "cteDiff.files.setNew",
+          "when": "view == cteDiff.files && viewItem == sqlFile",
+          "group": "inline@2"
         }
       ]
     },
@@ -268,6 +317,12 @@
         {
           "id": "cteDiff.ctes",
           "name": "CTEs",
+          "icon": "media/activity.svg",
+          "contextualTitle": "CTE Diff"
+        },
+        {
+          "id": "cteDiff.files",
+          "name": "Compare Files",
           "icon": "media/activity.svg",
           "contextualTitle": "CTE Diff"
         }

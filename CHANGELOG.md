@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- **Compare Files** in the sidebar, below the CTEs: an **Old** and a **New** slot and the workspace's SQL files by folder. Hover a file and click **←** or **→** to put it in a slot, then **Open the diff**. **Old** starts as the SQL file you open.
+
 ## 0.5.1
 
 - **Compare Two Files…** picks from a searchable list of the workspace's SQL files, the open file first, instead of the system's file dialog.
