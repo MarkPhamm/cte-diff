@@ -1,0 +1,5 @@
+example.duckdb
+example.duckdb.wal
+target/
+logs/
+.user.yml

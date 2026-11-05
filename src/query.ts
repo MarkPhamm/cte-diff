@@ -1,24 +1,33 @@
-/* The Snowflake SQL a comparison runs, and reading `dbt show --output json` back. No `vscode` import. */
+/* The SQL a comparison runs (Snowflake or DuckDB), and reading `dbt show --output json` back. No `vscode` import. */
 
 export type Row = Record<string, unknown>;
 
-/** Rows only on one side, plus row counts: one query, so one dbt run. Each row becomes the JSON of an OBJECT, whose keys
- * Snowflake keeps sorted, so columns match by name, not position, and a column missing on one side shows as a
- * difference instead of an error.
+/** Jinja that dbt renders to `duckdb` or `snowflake` SQL, by the profile's adapter. */
+const byAdapter = (duckdb: string, snowflake: string) => `{% if target.type == 'duckdb' %}${duckdb}{% else %}${snowflake}{% endif %}`;
+
+/** A row of `__t` as JSON text with its keys sorted. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column
+ * order, so its keys are sorted by hand. */
+const rowJson = byAdapter(
+  `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
+  "to_json(object_construct_keep_null(*))",
+);
+
+/** Rows only on one side, plus row counts: one query, so one dbt run. Each row becomes JSON with sorted keys, so
+ * columns match by name, not position, and a column missing on one side shows as a difference instead of an error.
  * shortcut: EXCEPT is a set operation, so duplicate rows count once; key-based matching would catch duplicates. */
 export function compareQuery(left: string, right: string): string {
-  return `with __l as (select to_json(object_construct_keep_null(*)) as __row from (
+  return `with __l as (select ${rowJson} as __row from (
 ${left}
-)),
-__r as (select to_json(object_construct_keep_null(*)) as __row from (
+) __t),
+__r as (select ${rowJson} as __row from (
 ${right}
-)),
+) __t),
 __only_l as (select __row from __l except select __row from __r),
 __only_r as (select __row from __r except select __row from __l)
 select * from (
-  select 0 as __k, 'counts' as __side, to_json(object_construct(
+  select 0 as __k, 'counts' as __side, to_json(${byAdapter("json_object", "object_construct")}(
     'left', (select count(*) from __l), 'right', (select count(*) from __r),
-    'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r))) as __row
+    'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r)))::varchar as __row
   union all select 1, 'left', __row from __only_l
   union all select 1, 'right', __row from __only_r
 ) order by __k, __row, __side`;

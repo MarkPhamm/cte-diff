@@ -4,9 +4,26 @@ import { compareQuery, dbtError, parseShow, readComparison } from "../src/query.
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
-  assert.match(q, /select \* from a -- trailing comment\n\)\)/, "a trailing comment can't swallow the closing parens");
+  assert.match(q, /select \* from a -- trailing comment\n\) __t\)/, "a trailing comment can't swallow the closing parens");
   assert.match(q, /__only_l as \(select __row from __l except select __row from __r\)/);
   assert.match(q, /__only_r as \(select __row from __r except select __row from __l\)/);
+});
+
+/** What dbt renders: `{% if target.type == 'duckdb' %}a{% else %}b{% endif %}` picks a or b. */
+const render = (sql: string, type: string) =>
+  sql.replace(/{% if target\.type == '(\w+)' %}(.*?){% else %}(.*?){% endif %}/gs, (_, t, a, b) => (t === type ? a : b));
+
+test("compareQuery picks each adapter's SQL", () => {
+  const q = compareQuery("select 1 x", "select 2 x");
+  const snowflake = render(q, "snowflake");
+  const duckdb = render(q, "duckdb");
+  assert.doesNotMatch(snowflake + duckdb, /{%/);
+  assert.match(snowflake, /to_json\(object_construct_keep_null\(\*\)\)/);
+  assert.match(snowflake, /to_json\(object_construct\(/);
+  assert.doesNotMatch(snowflake, /json_each|json_object/);
+  assert.match(duckdb, /json_each\(to_json\(__t\)\)/);
+  assert.match(duckdb, /to_json\(json_object\(/);
+  assert.doesNotMatch(duckdb, /object_construct/);
 });
 
 test("parseShow reads dbt Fusion's output, logs around it", () => {

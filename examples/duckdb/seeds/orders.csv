@@ -1,0 +1,8 @@
+order_id,customer_id,ordered_at,status,amount
+101,1,2024-01-03,completed,120.00
+102,1,2024-01-20,refunded,40.00
+103,2,2024-02-01,completed,300.00
+104,3,2024-02-14,completed,75.50
+105,3,2024-03-02,cancelled,60.00
+106,4,2024-03-09,completed,210.00
+107,2,2024-03-15,completed,90.00

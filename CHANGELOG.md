@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Compare** works on DuckDB (dbt-duckdb), as well as Snowflake. Rows still match by column name, so reordered columns don't show as differences.
+- `examples/duckdb`: a small dbt project on a local DuckDB file, to try the extension without a warehouse.
+
 ## 0.2.0
 
 - New: the **CTE Diff** sidebar (its icon is in the Activity Bar). It lists the CTEs of the SQL you're on. On a diff, every CTE of both sides is marked **changed**, **new**, **removed**, or **reads a changed CTE** (same text, but its data can still change), with a summary at the top.
