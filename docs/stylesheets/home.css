@@ -184,11 +184,14 @@
 .qh-more { margin: 22px 0 0; font-weight: 500; }
 
 /* the SQL diff against the data: the heading across the page, then the text beside a ledger of three of the demo's
- * CTEs, tops aligned. Only order_payments is bold: no changed line, yet changed rows. Without home.js (or with reduced
+ * CTEs, top and bottom aligned. Only order_payments is bold: no changed line, yet changed rows. Without home.js (or with reduced
  * motion) it shows its end: every count in, order_payments lit. */
 .qh-gap h2 { max-width: none; }
 .qh-gap h2 > span { display: block; }
-.qh-gap__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px 56px; align-items: start; margin-top: 32px; }
+.qh-gap__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px 56px; margin-top: 32px; }
+/* side by side, the text runs the ledger's full height: the text level with its top, the link level with its caption */
+.qh-gap__text { display: flex; flex-direction: column; }
+.qh-gap__text > .qh-more { margin-top: auto; padding: 22px 0 18px; }
 .qh-gap__text > .qh-sub:first-child { margin-top: 0; }
 .qh-gap__fig { margin: 0; padding: 4px 24px 18px; }
 .qh-gap__t { width: 100%; table-layout: fixed; border-collapse: collapse; font: 14px/1.45 var(--bp-sans); }
@@ -361,9 +364,10 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
 @keyframes qh-blink { 50% { opacity: 0; } }
 
 /* ------------------------------------------------------------------ responsive */
-/* the ledger needs about 560px beside the text; below that the text goes on top */
-@media (max-width: 1100px) {
+/* side by side only at the page's full width: narrower, the ledger's code cell overflows, so the text goes on top */
+@media (max-width: 1179px) {
   .qh-gap__body { grid-template-columns: minmax(0, 1fr); }
+  .qh-gap__text > .qh-more { padding-bottom: 0; }
 }
 @media (max-width: 1080px) {
   .cd-win__body { grid-template-columns: 210px minmax(0, 1fr); }
