@@ -1,17 +1,30 @@
-/* The results panel beside the editor: static HTML (no scripts), redrawn for each state. */
+/* The Results view in the bottom panel, beside the Terminal: static HTML (no scripts), redrawn for each state. */
 import * as vscode from "vscode";
-import type { Comparison, Row } from "./query.ts";
+import { cutFrom, type Comparison, type Row } from "./query.ts";
 
-let panel: vscode.WebviewPanel | undefined;
+let view: vscode.WebviewView | undefined;
+let last = { title: "", html: "" };
+
+/** Fills the view when VS Code first shows it, with the latest result if there is one. */
+export const results: vscode.WebviewViewProvider = {
+  resolveWebviewView(v) {
+    view = v;
+    v.onDidDispose(() => (view = undefined));
+    v.description = last.title;
+    v.webview.html = last.html || page('<p class="muted">Preview or compare a CTE to see its rows here.</p>');
+  },
+};
 
 function show(title: string, body: string): void {
-  if (!panel) {
-    panel = vscode.window.createWebviewPanel("cteDiff.results", title, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {});
-    panel.onDidDispose(() => (panel = undefined));
+  last = { title, html: page(body) };
+  if (!view) {
+    // The view isn't open yet: opening it calls resolveWebviewView, which draws `last`.
+    void vscode.commands.executeCommand("cteDiff.results.focus");
+    return;
   }
-  panel.title = title;
-  panel.webview.html = page(body);
-  panel.reveal(undefined, true);
+  view.description = title;
+  view.webview.html = last.html;
+  view.show(true);
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -66,7 +79,9 @@ export function showComparison(title: string, what: string, c: Comparison, limit
     body += `<p class="warn">The columns differ, so every row does. Only left: ${esc(onlyL.join(", ") || "none")}. Only right: ${esc(onlyR.join(", ") || "none")}.</p>`;
   }
   if (c.rows.length) {
-    const shown = c.rows.length >= limit ? ` The first ${n(limit)} differing rows, sorted so a changed row's two versions tend to sit together.` : "";
+    const total = cutFrom(c, limit);
+    const of = total !== undefined && c.counts ? ` of ${n(total)}` : "";
+    const shown = total !== undefined ? ` The first ${n(c.rows.length)}${of} differing rows (raise <code>cteDiff.limit</code> for more), sorted so a changed row's two versions tend to sit together.` : "";
     body += `<p class="muted">Rows on one side only.${shown}</p>`;
     const rows = c.rows.map((r) => r.row);
     body += grid(rows, columns(rows), (i) => (c.rows[i].side === "left" ? '<td class="badge l">− left</td>' : '<td class="badge r">+ right</td>'));

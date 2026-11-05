@@ -22,7 +22,7 @@ Hover a CTE for its buttons: **←** previews the left (old) side, **→** previ
 
 ## Use it
 
-- **A git change:** open the model from Source Control. Lenses appear on both sides of the diff.
+- **A git change:** open the model from Source Control. Lenses appear on both sides of the diff. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the sidebar's buttons work either way.
 - **Any two files:** select both in the Explorer, then use **Compare Selected**.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)**. Paste the old query on the left and the new one on the right.
 
@@ -32,9 +32,9 @@ Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new r
 
 ## How the comparison works
 
-Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one Snowflake query.
+Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query, on Snowflake or DuckDB.
 
-Each row is turned into JSON with `object_construct_keep_null(*)`. Rows then compare by column *name*, not position. A renamed, added or dropped column shows up as a difference instead of an error. The result is `left EXCEPT right` and `right EXCEPT left`, plus the row count of each side.
+Each row is turned into JSON with its keys sorted (`object_construct_keep_null(*)` on Snowflake, `to_json` and `json_each` on DuckDB). Rows then compare by column *name*, not position. A renamed, added or dropped column shows up as a difference instead of an error. The result is `left EXCEPT right` and `right EXCEPT left`, plus the row count of each side.
 
 `EXCEPT` compares distinct rows. If the only change is duplicated rows, the counts differ but no rows are listed.
 
@@ -50,8 +50,12 @@ Each row is turned into JSON with `object_construct_keep_null(*)`. Rows then com
 ## Requirements
 
 - dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile.
-- Comparisons use Snowflake functions (`object_construct_keep_null`, `to_json`). Previews work on any warehouse dbt supports.
+- Comparisons run on Snowflake and DuckDB (dbt picks the SQL by the profile's adapter). Previews work on any warehouse dbt supports.
 - A trusted workspace: dbt runs the project's macros.
+
+## Try it on DuckDB
+
+`examples/duckdb` is a small dbt project on a local DuckDB file, with no warehouse or login. Its README walks through a preview and a comparison.
 
 ## Development
 

@@ -169,7 +169,7 @@
     <div>
       <h2>Rows compare by column name, in one query</h2>
       <p class="qh-sub">Each side’s CTE becomes <code>select * from</code> that CTE, keeping the CTEs before it. Every row turns into JSON with <code>object_construct_keep_null(*)</code>, so a renamed or dropped column shows up as a difference instead of an error.</p>
-      <p class="qh-sub"><code>except</code> runs both ways, with each side’s row count, in a single Snowflake query. It compares distinct rows: if only duplicates changed, the counts differ but no rows are listed.</p>
+      <p class="qh-sub"><code>except</code> runs both ways, with each side’s row count, in a single query, on Snowflake or DuckDB. It compares distinct rows: if only duplicates changed, the counts differ but no rows are listed.</p>
       <p class="qh-more"><a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
     </div>
     <pre class="qh-code"><code>with __l as (select to_json(object_construct_keep_null(*)) as __row
@@ -186,7 +186,7 @@ select <em>-- row counts, then the rows of __only_l and __only_r</em></code></pr
     <h2>Before you install</h2>
     <dl class="qh-reqs">
       <div><dt>dbt</dt><dd>dbt Fusion, or dbt-core 1.5 or later, with a working profile. Key-pair, SSO and password logins all work. A project <code>.env</code> is loaded first.</dd></div>
-      <div><dt>Warehouse</dt><dd>Previews work on any warehouse dbt supports. Comparisons use Snowflake functions.</dd></div>
+      <div><dt>Warehouse</dt><dd>Previews work on any warehouse dbt supports. Comparisons run on Snowflake and DuckDB.</dd></div>
       <div><dt>Workspace</dt><dd>A trusted one: dbt runs the project’s macros.</dd></div>
     </dl>
   </section>

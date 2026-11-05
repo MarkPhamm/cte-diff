@@ -14,7 +14,7 @@ ext install MarkPhamm.cte-diff
 ## Requirements
 
 - **dbt Fusion, or dbt-core 1.5 or later.** Both have `dbt show --inline`, which runs every query. dbt needs a working profile.
-- **Snowflake, for comparisons.** A comparison uses `object_construct_keep_null` and `to_json`. Previews work on any warehouse dbt supports.
+- **Snowflake or DuckDB, for comparisons.** A comparison uses each one's JSON functions. Previews work on any warehouse dbt supports.
 - **A trusted workspace.** dbt runs the project's macros, so the extension stays off in Restricted Mode.
 
 ## Finding dbt and the project
