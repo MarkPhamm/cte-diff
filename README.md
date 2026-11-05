@@ -5,7 +5,7 @@ Reviewing a change to a dbt model? Open the two versions in a diff editor and cl
 - **▶ Preview** shows that CTE's rows, on either side.
 - **⇄ Compare sides** runs the same CTE on both sides and shows the rows only one side returns, with row counts. You see what the change did to the data, CTE by CTE, without copying SQL into a worksheet.
 
-Queries run through `dbt show`, in your dbt project, so Jinja (`ref`, `source`, macros, `var`) renders as in a real run. dbt connects with your profile, so key-pair, SSO and password logins all work.
+Queries run through `dbt show`, in your dbt project, so Jinja (`ref`, `source`, macros, `var`) renders as in a real run. dbt connects with your profile, so key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first; variables already set in the environment take precedence.
 
 ## Use it
 
