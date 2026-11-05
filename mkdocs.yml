@@ -56,6 +56,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Playground: playground.md
   - Install: install.md
   - Use it: usage.md
   - How the comparison works: comparison.md

@@ -1,7 +1,7 @@
 {% extends "main.html" %}
 
-{#- Landing page (docs/index.md sets `template: home.html`). The hero is a static drawing of the extension on
-    web/sample.ts's example; the playground below runs the real parser (web/playground.ts). -#}
+{#- Landing page (docs/index.md sets `template: home.html`). The hero is a live demo of the extension on
+    web/sample.ts's example (web/demo.ts); the playground has its own page (overrides/playground.html). -#}
 
 {% block site_nav %}{% endblock %}
 
@@ -41,7 +41,7 @@
     </div>
 
     {#- The live demo (web/demo.ts): the extension's sidebar, the diff with its buttons, and the results panel below.
-        Same example as the playground (web/sample.ts); the rows come from running the extension's SQL on DuckDB
+        Same example as the playground page (web/sample.ts); the rows come from running the extension's SQL on DuckDB
         over made-up tables (scripts/demo-rows.ts). -#}
     <figure class="cd-win qh-hero__shot" id="cd-demo" aria-label="A live demo of the extension on a change to jaffle_shop's orders model. Click Preview or Compare sides above a CTE, or the buttons in the sidebar, to see the rows in the panel below.">
       <div class="cd-win__bar"><i></i><i></i><i></i><span>orders.sql (HEAD) ↔ orders.sql</span><b class="cd-state">Playing</b></div>
@@ -49,7 +49,7 @@
       <div class="cd-overlay" aria-hidden="true">
         <svg class="cd-cursor" width="22" height="22" viewBox="0 0 24 24"><path d="M4 2l15 11-7 1.2 4 7.3-2.8 1.5-4-7.4L4 20z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
       </div>
-      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character. <span class="cd-hint">Move your mouse over it to take control.</span></figcaption>
+      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character. <span class="cd-hint">Move your mouse over it to take control.</span> <a href="{{ 'playground/' | url }}">Edit the queries in the playground</a>.</figcaption>
     </figure>
     <ol class="cd-chapters">
       <li><b>Preview a CTE</b><span>▶ Preview above <code>payments</code></span><i></i></li>
@@ -63,14 +63,6 @@
     <h2>A diff shows what the SQL changed. It can’t show what the data did.</h2>
     <p>A one-line filter in an upstream CTE moves the numbers in every CTE that reads it. The diff shows one green line. To see the effect, you copy both versions into a worksheet, render the Jinja by hand, and write the <code>except</code> yourself, CTE by CTE.</p>
     <p>cte-diff does that from the diff editor. It marks the CTEs that read a changed one, runs the same CTE on both sides, and lists the rows only one side returns.</p>
-  </section>
-
-  <!-- --------------------------------------------------------------- playground -->
-  <section class="qh-section qh-wrap" id="playground">
-    <h2>Try it on two queries</h2>
-    <p class="qh-sub">Edit either side. The extension’s own parser marks each CTE, and its own SQL runs on DuckDB, in your browser, over three made-up tables: <code>stg_orders</code>, <code>stg_payments</code> and <code>stg_customers</code>. Change the <code>where</code> and the rows change with it.</p>
-    {#- web/playground.ts fills it in; the rows come from duckdb-wasm, loaded once the playground is near the screen. -#}
-    <div class="cd-win qp" id="qp"><noscript><p class="cd-noscript">The playground needs JavaScript.</p></noscript></div>
   </section>
 
   <!-- ---------------------------------------------------------- ways to open one -->

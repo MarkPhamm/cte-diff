@@ -1,0 +1,17 @@
+{% extends "main.html" %}
+
+{#- The playground page (docs/playground.md sets `template: playground.html`), full width like the landing page.
+    web/playground.ts fills #qp; the rows come from duckdb-wasm, which loads with the page. -#}
+
+{% block site_nav %}{% endblock %}
+
+{% block container %}
+<div class="qh">
+  <section class="qh-section qh-wrap qh-play" id="playground">
+    <h1>Try cte-diff on two queries</h1>
+    <p class="qh-sub">Edit either side. The extension’s own parser marks each CTE, and its own SQL runs on DuckDB, in your browser, over three made-up tables: <code>stg_orders</code>, <code>stg_payments</code> and <code>stg_customers</code>. Change the <code>where</code> and the rows change with it.</p>
+    <div class="cd-win qp" id="qp"><noscript><p class="cd-noscript">The playground needs JavaScript.</p></noscript></div>
+    <p class="qh-more"><a href="{{ 'install/' | url }}">Install the extension</a> to run it on your own dbt project.</p>
+  </section>
+</div>
+{% endblock %}

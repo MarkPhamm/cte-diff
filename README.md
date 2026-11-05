@@ -1,6 +1,6 @@
 # CTE Diff for dbt and Snowflake
 
-Docs and a playground: **https://markphamm.github.io/cte-diff/**
+Docs: **https://markphamm.github.io/cte-diff/**. Playground: **https://markphamm.github.io/cte-diff/playground/**
 
 Reviewing a change to a dbt model? Open the two versions in a diff editor and click above any CTE:
 

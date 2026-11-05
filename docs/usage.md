@@ -27,7 +27,7 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
 
-You can try the marking on the [home page's playground](index.md#playground). It runs the same parser.
+You can try the marking, and the rows, in the [playground](playground.md). It runs the same parser and the same SQL.
 
 ## The results
 
