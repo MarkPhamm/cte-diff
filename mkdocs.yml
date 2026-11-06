@@ -1,6 +1,6 @@
 site_name: cte-diff
 site_description: Preview any CTE's rows, and compare the same CTE on both sides of a diff, from VS Code. Runs through dbt show.
-site_url: https://markphamm.github.io/cte-diff/
+site_url: https://ctediff.dev/
 repo_url: https://github.com/MarkPhamm/cte-diff
 repo_name: MarkPhamm/cte-diff
 edit_uri: edit/main/docs/

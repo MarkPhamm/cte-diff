@@ -12,7 +12,7 @@
     "url": "https://github.com/MarkPhamm/cte-diff"
   },
   "bugs": "https://github.com/MarkPhamm/cte-diff/issues",
-  "homepage": "https://markphamm.github.io/cte-diff/",
+  "homepage": "https://ctediff.dev/",
   "engines": {
     "vscode": "^1.85.0"
   },

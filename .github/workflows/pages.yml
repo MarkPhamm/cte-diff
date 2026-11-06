@@ -1,5 +1,5 @@
 # Builds the docs site (MkDocs Material, with the playground bundled from web/) on every pull request,
-# and deploys it to GitHub Pages from main: https://markphamm.github.io/cte-diff/
+# and deploys it to GitHub Pages from main: https://ctediff.dev/
 name: Pages
 on:
   pull_request:

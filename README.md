@@ -18,8 +18,8 @@
 </p>
 
 <p align="center">
-  <a href="https://markphamm.github.io/cte-diff/">Docs</a> ·
-  <a href="https://markphamm.github.io/cte-diff/playground/">Playground</a> ·
+  <a href="https://ctediff.dev/">Docs</a> ·
+  <a href="https://ctediff.dev/playground/">Playground</a> ·
   <a href="https://github.com/MarkPhamm/cte-diff/blob/main/CHANGELOG.md">Changelog</a> ·
   <a href="https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff">VS Code Marketplace</a> ·
   <a href="https://open-vsx.org/extension/MarkPhamm/cte-diff">Open VSX</a>
@@ -29,7 +29,7 @@
   <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="880" alt="A dbt model's change opened from Source Control: the CTE Diff sidebar marks each CTE, then comparing order_payments lists three changed rows">
 </p>
 <p align="center">
-  <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://markphamm.github.io/cte-diff/playground/">Try it in your browser →</a></em>
+  <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://ctediff.dev/playground/">Try it in your browser →</a></em>
 </p>
 
 <p align="center">
@@ -94,7 +94,7 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query through `dbt show --inline`, in your dbt project. So Jinja (`ref`, `source`, macros, `var`) renders as in a real run, and dbt connects with your profile: key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first.
 
-Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://markphamm.github.io/cte-diff/comparison/)
+Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://ctediff.dev/comparison/)
 
 ## Requirements
 
@@ -123,11 +123,11 @@ Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and 
 
 **Which dbt does it run?** `cteDiff.dbtPath` when it's set. Otherwise the project's `.venv`, then `~/.local/bin`, Homebrew, and `PATH`.
 
-[More questions, and the known limits →](https://markphamm.github.io/cte-diff/faq/)
+[More questions, and the known limits →](https://ctediff.dev/faq/)
 
 ## Contributing
 
-Bugs and ideas go in [GitHub issues](https://github.com/MarkPhamm/cte-diff/issues). To build and test the extension, see [Development](https://markphamm.github.io/cte-diff/development/).
+Bugs and ideas go in [GitHub issues](https://github.com/MarkPhamm/cte-diff/issues). To build and test the extension, see [Development](https://ctediff.dev/development/).
 
 ## License
 
