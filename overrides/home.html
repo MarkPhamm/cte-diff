@@ -58,6 +58,17 @@
     </ol>
   </section>
 
+  <!-- -------------------------------------------------------------- demo video
+       Rendered by videos/cte-diff-demo from the capture (scripts/capture.ts). home.js plays it only while at
+       least 40% is on screen; with reduced motion it waits for the play button. -->
+  <section class="qh-section qh-wrap qh-video" id="demo">
+    <h2>The same change, in 38 seconds</h2>
+    <p class="qh-sub">The diff, then each CTE’s rows. Silent.</p>
+    <div class="qh-video__frame">
+      <video src="{{ 'assets/video/cte-diff-demo.mp4' | url }}" poster="{{ 'assets/img/demo-poster.jpg' | url }}" width="1920" height="1080" muted loop playsinline controls preload="metadata" aria-label="A 38-second demo of CTE Diff on a change to orders.sql: the sidebar marks each CTE, Preview shows payments, and Compare shows the rows of order_payments and final"></video>
+    </div>
+  </section>
+
   <!-- -------------------------------------------------------------- the problem -->
   {#- Three CTEs of the demo's model: what the SQL diff shows for each, next to what its data did. The counts are the
       comparisons' in web/demo-rows.json (compare.<cte>[0]); rerun scripts/demo-rows.ts and they can move. home.js

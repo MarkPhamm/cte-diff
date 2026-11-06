@@ -1,0 +1,49 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
+    .w { display: inline-block; }
+    #end-lock { position: absolute; left: 0; right: 0; top: 250px; display: flex; align-items: center; justify-content: center; gap: 28px; }
+    #end-mark { width: 168px; height: 168px; display: block; overflow: hidden; }
+    #end-word { font: 600 108px/1 "Geist", sans-serif; letter-spacing: -0.03em; color: #19211e; }
+    #end-cta { position: absolute; left: 0; right: 0; top: 520px; text-align: center; }
+    #end-cmd { display: inline-flex; align-items: center; gap: 18px; padding: 16px 28px; background: #fff;
+      border: 1px solid #d8dad9; border-radius: 12px; font: 400 40px/1 "Geist Mono", monospace; color: #19211e; }
+    #end-key { display: inline-block; padding: 8px 14px; border: 1px solid #d8dad9; border-radius: 8px; background: #f7f9f8;
+      font: 500 32px/1 "Geist", sans-serif; }
+    #end-links { position: absolute; left: 0; right: 0; top: 680px; text-align: center; font: 500 34px/1.2 "Geist", sans-serif;
+      color: #5f6563; letter-spacing: -0.01em; }
+  </style>
+  <div id="root" data-composition-id="end" data-width="1920" data-height="1080">
+    <div id="end-lock" class="clip" data-start="0" data-duration="6" data-track-index="1">
+      <svg id="end-mark" viewBox="0 0 24 24" aria-label="cte-diff">
+        <path id="end-paren-l" d="M6.6 3Q2.4 12 6.6 21" fill="none" stroke="#19211e" stroke-width="2.4" stroke-linecap="round" pathLength="1"/>
+        <path id="end-paren-r" d="M17.4 3Q21.6 12 17.4 21" fill="none" stroke="#19211e" stroke-width="2.4" stroke-linecap="round" pathLength="1"/>
+        <rect id="end-bar-g" x="8.2" y="6.2" width="7.6" height="2.8" rx="1.1" fill="#19211e" fill-opacity="0.22"/>
+        <rect id="end-bar-r" x="8.2" y="10.6" width="5.2" height="2.8" rx="1.1" fill="#d23415"/>
+        <rect id="end-bar-t" x="8.2" y="15" width="6.6" height="2.8" rx="1.1" fill="#028574"/>
+      </svg>
+      <div id="end-word">cte-diff</div>
+    </div>
+    <div id="end-cta" class="clip" data-start="0" data-duration="6" data-track-index="2">
+      <div id="end-cmd"><span id="end-key">⌘P</span> ext install MarkPhamm.cte-diff</div>
+    </div>
+    <div id="end-links" class="clip" data-start="0" data-duration="6" data-track-index="3"><span class="w">ctediff.dev</span> <span class="w">·</span> <span class="w">VS Code Marketplace</span> <span class="w">·</span> <span class="w">Open VSX</span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const IN = { opacity: 0, filter: "blur(6px)" };
+      const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
+      tl.fromTo("#end-paren-l, #end-paren-r", { strokeDasharray: "1 1", strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.32, ease: "power2.inOut" }, 0.1);
+      tl.fromTo("#end-bar-g", { x: -48, opacity: 0 }, { x: 0, opacity: 1, duration: 0.32, ease: "expo.out" }, 0.45);
+      tl.fromTo("#end-bar-r", { x: -48, opacity: 0 }, { x: 0, opacity: 1, duration: 0.32, ease: "expo.out" }, 0.6);
+      tl.fromTo("#end-bar-t", { x: -48, opacity: 0 }, { x: 0, opacity: 1, duration: 0.32, ease: "expo.out" }, 0.75);
+      tl.fromTo("#end-word", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.45, ease: "power3.out" }, 0.95);
+      tl.fromTo("#end-cmd", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 1.6);
+      tl.fromTo("#end-links .w", IN, { ...ON }, 2.0);
+      window.__timelines["end"] = tl;
+    })();
+  </script>
+</template>
