@@ -54,7 +54,9 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       }));
       this.shown = [diff.left.toString(), diff.right.toString()];
       const count = (s: Status) => statuses.filter((x) => x.status === s).length;
-      const parts = (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${LOOK[s].note}`);
+      // The notes are written for one CTE: "2 read a changed CTE".
+      const note = (s: Status) => (count(s) > 1 ? LOOK[s].note.replace("reads", "read") : LOOK[s].note);
+      const parts = (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${note(s)}`);
       this.describe(path.basename(diff.right.path), parts.length ? parts.join(" · ") : "No CTE changed.");
     } else if (SQL_LANGUAGES.includes(doc.languageId)) {
       this.nodes = [...parse(doc.getText()).ctes.map((c) => ({ name: c.name, uri: doc.uri })), { uri: doc.uri }];
