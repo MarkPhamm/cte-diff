@@ -50,3 +50,4 @@ EOF
 ffmpeg -y -loglevel error -i "$work/poster.png" -q:v 3 "$poster"
 echo "web mp4 $bytes bytes"
 echo "poster $poster"
+"$(dirname "$0")/gifs.sh" "$out"

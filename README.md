@@ -59,7 +59,7 @@ No warehouse at hand? [`examples/duckdb`](https://github.com/MarkPhamm/cte-diff/
 
 ### Marks every CTE of both sides
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/sidebar.png" width="100%" alt="The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-marks.gif" width="100%" alt="The CTE Diff sidebar opens on the diff and marks each CTE: changed, new, removed, or reads a changed CTE">
 
 - **changed**: its text changed.
 - **new** or **removed**: it's only on one side.
@@ -69,19 +69,19 @@ Hover a CTE for **←** (preview the old side), **→** (preview the new side) a
 
 ### Previews any CTE
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/preview.png" alt="The rows of the payments CTE in the CTE Diff panel, below the diff">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-preview.gif" width="100%" alt="Preview above payments runs that CTE and lists its 9 rows in the panel">
 
 **▶ Preview** above a CTE shows its rows, on either side of a diff or in any SQL file. The last button previews the whole query.
 
 ### Compares a CTE on both sides
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare.png" alt="order_payments compared: 8 rows on each side, 3 changed rows listed as old and new pairs with the changed totals highlighted">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-compare.gif" width="100%" alt="Compare sides on order_payments, whose SQL did not change: 3 changed totals, each old row above its new one">
 
 **⇄ Compare sides** runs the CTE on both sides and lists the rows only one side returns, with each side's row count. A changed row shows as a pair, old above new, with the changed cells highlighted. Rows pair up on their id columns: `id`, or a name ending in `_id`, `_key`, `_pk` or `_sk`.
 
 Columns match by name, not position. An added, dropped or renamed column shows as a difference, not an error:
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-final.png" alt="final compared: the columns differ, refunded only on the left and first_name only on the right">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-final.gif" width="100%" alt="Compare on final from the sidebar: refunded only on the left, first_name only on the right">
 
 ### Compares any two files, or two pasted queries
 

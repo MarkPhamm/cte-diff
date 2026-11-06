@@ -7,7 +7,7 @@ Reviewing a change to a dbt model? Open the two versions in a diff editor and cl
 
 You see what the change did to the data, CTE by CTE, without copying SQL into a worksheet.
 
-![A dbt model's change in a diff editor, with the buttons above each CTE and the CTE Diff sidebar marking each one](assets/img/diff.png)
+![Opening the changed orders model from Source Control: the two versions side by side, with Preview and Compare sides above each CTE](assets/img/demo-diff.gif){ width="100%" }
 
 ## Open a comparison
 
@@ -27,7 +27,7 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 - **new** or **removed**: it's only on one side.
 - **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
 
-![The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE](assets/img/sidebar.png){ width="100%" }
+![The CTE Diff sidebar opens on the diff and marks each CTE: changed, new, removed, or reads a changed CTE](assets/img/demo-marks.gif){ width="100%" }
 
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
 
@@ -48,14 +48,14 @@ Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal.
 
 A preview of `payments`, the CTE that changed:
 
-![The rows of the payments CTE in the CTE Diff panel, below the diff](assets/img/preview.png)
+![Preview above payments runs that CTE and lists its 9 rows in the panel](assets/img/demo-preview.gif){ width="100%" }
 
 A comparison of `order_payments`, whose SQL didn't change but which reads `payments`:
 
-![order_payments compared: 8 rows on each side, 3 changed rows listed as old and new pairs with the changed totals highlighted](assets/img/compare.png)
+![Compare sides on order_payments, whose SQL did not change: 3 changed totals, each old row above its new one](assets/img/demo-compare.gif){ width="100%" }
 
 A comparison of `final`, which gained a column and lost one:
 
-![final compared: the columns differ, refunded only on the left and first_name only on the right](assets/img/compare-final.png)
+![Compare on final from the sidebar: refunded only on the left, first_name only on the right](assets/img/demo-final.gif){ width="100%" }
 
 The view's title bar has **Run Again**, which reruns the last preview or comparison after you edit the SQL, and **Show Log**. Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new run cancels the one still going.

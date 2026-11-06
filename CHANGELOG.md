@@ -4,6 +4,7 @@
 
 - Docs, the Marketplace page and the README now use ctediff.dev.
 - On the docs home page, the install command is as wide as the buttons. Screenshots in the README and the docs fill the column.
+- The README and the docs play each step of the demo: opening the diff, the sidebar's marks, a preview, a comparison, and columns that differ.
 - The docs home page plays a 38-second silent demo of a real change, and the README links to it.
 
 ## 0.6.1

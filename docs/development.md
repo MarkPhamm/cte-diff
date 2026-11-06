@@ -22,6 +22,8 @@ npm run capture   # writes docs/assets/img/*.png, and out/capture/review.mp4 wit
 
 It needs ffmpeg, the duckdb CLI and a dbt with dbt-duckdb: set `CTE_DIFF_DBT`, or set up `examples/duckdb`'s venv (see its README). Rerun it after any change to what the sidebar, the CodeLens or the results look like.
 
+The short GIFs in the README and on Use it are scenes of the demo film. `videos/cte-diff-demo/gifs.sh` cuts them from the web copy; `ship.sh` runs it after the film. Compare Files is not in the film, so that shot stays a still.
+
 ## This site
 
 The site is MkDocs Material, with the landing page in `overrides/home.html` and the playground page in `overrides/playground.html`. The landing page's live demo (`web/demo.ts`) and the playground (`web/playground.ts`) bundle the extension's own parser and results view (`src/cte.ts`, `src/query.ts`, `src/results.ts`). Both run the extension's SQL over the made-up tables in `web/sample.ts`: the demo from `web/demo-rows.json`, generated on DuckDB; the playground live, on DuckDB in the browser (duckdb-wasm).
