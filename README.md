@@ -32,6 +32,10 @@
   <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://markphamm.github.io/cte-diff/playground/">Try it in your browser →</a></em>
 </p>
 
+<p align="center">
+  <a href="https://ctediff.dev/#demo"><img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-poster.jpg" width="880" alt="Watch the 38-second demo"></a>
+</p>
+
 ## Why
 
 A diff shows what the SQL changed. It can't show what the data did.

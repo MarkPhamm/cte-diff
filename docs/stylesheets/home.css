@@ -180,6 +180,11 @@
 
 /* -------------------------------------------------------------------- sections */
 .qh-section { padding-top: 120px; }
+.qh-video { text-align: center; }
+.qh-video h2, .qh-video .qh-sub { margin-left: auto; margin-right: auto; }
+.qh-video__frame { margin-top: 40px; border-radius: 12px; overflow: hidden; border: 1px solid var(--bp-rule-strong);
+  box-shadow: var(--bp-e2); background: var(--bp-paper); }
+.qh-video__frame video { display: block; width: 100%; height: auto; }
 .qh-sub { color: var(--qd-muted); font-size: 18px; max-width: 40em; margin: 16px 0 0; }
 .qh-more { margin: 22px 0 0; font-weight: 500; }
 
