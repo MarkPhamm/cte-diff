@@ -7,6 +7,8 @@ Reviewing a change to a dbt model? Open the two versions in a diff editor and cl
 
 You see what the change did to the data, CTE by CTE, without copying SQL into a worksheet.
 
+![A dbt model's change in a diff editor, with the buttons above each CTE and the CTE Diff sidebar marking each one](assets/img/diff.png)
+
 ## Open a comparison
 
 - **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
@@ -25,9 +27,13 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 - **new** or **removed**: it's only on one side.
 - **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
 
+![The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE](assets/img/sidebar.png){ width="350" }
+
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
 
 Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
+
+![Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="350" }
 
 You can try the marking, and the rows, in the [playground](playground.md). It runs the same parser and the same SQL.
 
@@ -39,5 +45,17 @@ Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal.
 - A comparison shows each side's row count and how many rows are only on the left or only on the right. Then it lists those rows, marked **−** (left, old) and **+** (right, new).
 - A row that changed is listed as a pair: its old version above its new one, with the cells that changed highlighted. Rows pair up by their id columns: those named `id`, or ending in `_id`, `_key`, `_pk` or `_sk`, when each id is unique on both sides. Rows with no partner are listed after the pairs.
 - When the two sides have different columns, it says which.
+
+A preview of `payments`, the CTE that changed:
+
+![The rows of the payments CTE in the CTE Diff panel, below the diff](assets/img/preview.png)
+
+A comparison of `order_payments`, whose SQL didn't change but which reads `payments`:
+
+![order_payments compared: 8 rows on each side, 3 changed rows listed as old and new pairs with the changed totals highlighted](assets/img/compare.png)
+
+A comparison of `final`, which gained a column and lost one:
+
+![final compared: the columns differ, refunded only on the left and first_name only on the right](assets/img/compare-final.png)
 
 The view's title bar has **Run Again**, which reruns the last preview or comparison after you edit the SQL, and **Show Log**. Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new run cancels the one still going.

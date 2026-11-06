@@ -143,7 +143,10 @@ async function launch(): Promise<{ page: Page; close: () => Promise<void> }> {
   const browser = await chromium.connectOverCDP(url);
   const page = await until(() => browser.contexts().flatMap((c) => c.pages()).find((p) => p.url().includes("workbench")), "the workbench");
   await page.locator(".part.activitybar").waitFor({ timeout: 60000 });
-  await page.setViewportSize(VIEW); // Electron has no Browser.setWindowBounds: emulate the size instead
+  // Electron has no Browser.setWindowBounds: emulate the size instead, at 2x (page.setViewportSize would make it 1x).
+  // The override lasts as long as this session, which stays open until close().
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setDeviceMetricsOverride", { ...VIEW, deviceScaleFactor: 2, mobile: false });
   await page.evaluate(INJECT);
   await sleep(3000); // git scans the repo; the extension activates
   return {
@@ -302,7 +305,10 @@ async function still(page: Page, rec: Recorder | undefined, name: string, clip?:
   const cursor = (v: string) => page.evaluate(`document.querySelector(".qv-cursor").style.visibility = "${v}"`);
   await cursor("hidden");
   const raw = path.join(OUT, `${name}.png`);
-  await page.screenshot({ path: raw, clip });
+  const cdp = await page.context().newCDPSession(page); // page.screenshot would capture at 1x
+  const { data } = await cdp.send("Page.captureScreenshot", { format: "png", ...(clip && { clip: { ...clip, scale: 1 } }) });
+  fs.writeFileSync(raw, Buffer.from(data, "base64"));
+  await cdp.detach();
   await cursor("visible");
   if (rec) rec.paused = false;
   fs.mkdirSync(IMG, { recursive: true });
@@ -314,10 +320,30 @@ const activity = (page: Page, name: string) => page.locator(`.part.activitybar a
 const pane = (page: Page, title: string) => page.locator(".pane", { has: page.locator(".pane-header", { hasText: title }) });
 const box = async (el: Locator) => (await el.boundingBox())!;
 
-/** The editor and the panel below it: a run's buttons and its results. */
-async function workArea(page: Page) {
-  const [e, p] = [await box(page.locator(".part.editor")), await box(page.locator(".part.panel"))];
-  return { x: e.x, y: e.y, width: e.width, height: p.y + p.height - e.y };
+/** Across the editor, from `top` (the lens clicked, or the panel) down to the end of the results' table, or to the
+ * last whole row the panel shows. */
+async function results(page: Page, top: Locator, pad = 8) {
+  const [e, p, t] = [await box(page.locator(".part.editor")), await box(page.locator(".part.panel")), await box(top)];
+  // The table is in the results webview, an iframe in an iframe: ask each frame.
+  const [frame, scroll] = await until(async () => {
+    for (const f of page.frames()) {
+      const b = await f.locator(".scroll").first().boundingBox({ timeout: 300 }).catch(() => null);
+      if (b) return [f, b] as const;
+    }
+  }, "the results' table");
+  // The table scrolls inside its frame: past the frame's end, cut below the last whole row.
+  const table = await box(frame.locator("table").first());
+  const visible = Math.min(scroll.y + scroll.height, p.y + p.height);
+  let bottom = table.y + table.height + 14;
+  if (table.y + table.height > visible) {
+    bottom = t.y;
+    for (const row of await frame.locator("tr").all()) {
+      const b = await row.boundingBox();
+      if (b && b.y + b.height <= visible) bottom = Math.max(bottom, b.y + b.height + 1);
+    }
+  }
+  const y = t.y - pad;
+  return { x: e.x, y, width: e.width, height: bottom - y };
 }
 
 /** The activity bar and the sidebar, from the sidebar's top down to `last`. */
@@ -370,21 +396,23 @@ async function flow(page: Page): Promise<void> {
   // Preview payments: its new where clause drops rows.
   await scrollTo(page, hand, "payments as (");
   await sleep(400);
-  await hand.click(await lens(page, "payments as (", "▶ Preview"));
+  const preview = await lens(page, "payments as (", "▶ Preview");
+  await hand.click(preview);
   rec.mark("preview");
   await result(page, "payments (orders.sql)");
   rec.mark("preview-rows");
   await sleep(2500);
-  await still(page, rec, "preview", await workArea(page));
+  await still(page, rec, "preview", await results(page, preview));
   // Compare order_payments: its SQL didn't change, but it reads payments, so its rows did.
   await scrollTo(page, hand, "order_payments as (");
   await sleep(400);
-  await hand.click(await lens(page, "order_payments as (", "⇄ Compare sides"));
+  const compare = await lens(page, "order_payments as (", "⇄ Compare sides");
+  await hand.click(compare);
   rec.mark("compare");
   await result(page, "order_payments");
   rec.mark("compare-rows");
   await sleep(3000);
-  await still(page, rec, "compare", await workArea(page));
+  await still(page, rec, "compare", await results(page, compare));
   // Compare final from the sidebar: a column added, one dropped.
   const final = pane(page, "CTEs").locator(".monaco-list-row", { hasText: /^final/ }).first();
   await hand.over(final.locator(".label-name"));
@@ -395,7 +423,7 @@ async function flow(page: Page): Promise<void> {
   await result(page, "final");
   rec.mark("final-rows");
   await sleep(3000);
-  await still(page, rec, "compare-final", await workArea(page));
+  await still(page, rec, "compare-final", await results(page, page.locator(".part.panel"), 0));
   await rec.stop();
 
   // Compare Files: orders.sql as Old, orders_v2.sql (a rewrite in a new file) as New. File rows come after the slots.
@@ -415,10 +443,29 @@ async function flow(page: Page): Promise<void> {
   await still(page, undefined, "compare-files", await sidebarTo(page, files.locator(".monaco-list-row").last()));
 }
 
-fixture();
-const { page, close } = await launch();
-try {
-  await flow(page);
-} finally {
-  await close();
+/** The README's GIF, cut from the footage at its marks: the change opens with the sidebar's marks, then a CTE whose SQL
+ * didn't change is compared. 10 fps and 128 colours keep it near 1 MB (a palette per clip, as qdbd's demo.gif). */
+function gif(): void {
+  const m = JSON.parse(fs.readFileSync(path.join(OUT, "review.marks.json"), "utf8"));
+  const cuts = [
+    [m.diff - 0.4, m.sidebar + 2.4],
+    [m.compare - 1.8, m["compare-rows"] + 3],
+  ];
+  const trims = cuts.map(([a, b], i) => `[0:v]trim=${a.toFixed(2)}:${b.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`).join(";");
+  const palette = "fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle";
+  const filter = `${trims};${cuts.map((_, i) => `[c${i}]`).join("")}concat=n=${cuts.length},${palette}`;
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", path.join(OUT, "review.mp4"), "-filter_complex", filter, path.join(IMG, "demo.gif")]);
+  console.log(`wrote docs/assets/img/demo.gif (${Math.round(fs.statSync(path.join(IMG, "demo.gif")).size / 1024)} KB)`);
 }
+
+// `node scripts/capture.ts gif` only remakes the GIF from the last footage.
+if (process.argv[2] !== "gif") {
+  fixture();
+  const { page, close } = await launch();
+  try {
+    await flow(page);
+  } finally {
+    await close();
+  }
+}
+gif();
