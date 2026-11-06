@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- **⇄ Compare sides** no longer shows above a CTE that only one side has. It could only fail there.
+- The sidebar's summary reads "2 read a changed CTE", not "2 reads".
+
 ## 0.6.0
 
 - **Compare Files** in the sidebar, below the CTEs: an **Old** and a **New** slot and the workspace's SQL files by folder. Hover a file and click **←** or **→** to put it in a slot, then **Open the diff**. **Old** starts as the SQL file you open.

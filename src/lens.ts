@@ -1,6 +1,7 @@
-/* CodeLens above each CTE (and the final select): Preview, and Compare sides when the file is one side of an open diff. */
+/* CodeLens above each CTE (and the final select): Preview, and Compare sides when the file is one side of an open diff
+ * and the CTE is on both sides. */
 import * as vscode from "vscode";
-import { parse } from "./cte.ts";
+import { parse, sameName } from "./cte.ts";
 
 /** Which side of an open diff editor `uri` is on, and the other side's URI. */
 export function diffOf(uri: vscode.Uri): { left: vscode.Uri; right: vscode.Uri } | undefined {
@@ -27,14 +28,19 @@ export class CteLens implements vscode.CodeLensProvider {
   provideCodeLenses(doc: vscode.TextDocument): vscode.CodeLens[] {
     const sql = doc.getText();
     const { withStart, ctes } = parse(sql);
-    const inDiff = !!diffOf(doc.uri);
+    const diff = diffOf(doc.uri);
+    const otherUri = diff && (diff.left.toString() === doc.uri.toString() ? diff.right : diff.left).toString();
+    const other = vscode.workspace.textDocuments.find((d) => d.uri.toString() === otherUri);
+    // Compare needs the CTE on both sides. When the other side isn't loaded yet, offer it anyway.
+    const otherCtes = other && parse(other.getText()).ctes;
+    const onBoth = (name?: string) => !otherCtes || name === undefined || otherCtes.some((c) => sameName(c.name, name));
     const lenses: vscode.CodeLens[] = [];
     const add = (offset: number, name: string | undefined) => {
       const range = new vscode.Range(doc.positionAt(offset), doc.positionAt(offset));
       const args = [doc.uri, name];
       const title = name ? "▶ Preview" : "▶ Preview query";
       lenses.push(new vscode.CodeLens(range, { title, command: "cteDiff.preview", arguments: args }));
-      if (inDiff) lenses.push(new vscode.CodeLens(range, { title: "⇄ Compare sides", command: "cteDiff.compare", arguments: args }));
+      if (diff && onBoth(name)) lenses.push(new vscode.CodeLens(range, { title: "⇄ Compare sides", command: "cteDiff.compare", arguments: args }));
     };
     for (const c of ctes) add(c.start, c.name);
     // The whole query: on the line after the last CTE, or at the top when there are none.

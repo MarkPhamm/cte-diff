@@ -29,7 +29,8 @@ export async function run(): Promise<void> {
   }, "Compare sides lenses on the left side");
   assert.deepEqual(
     lenses.map((l) => `${l.range.start.line}:${l.command?.title}`),
-    ["0:▶ Preview", "0:⇄ Compare sides", "1:▶ Preview", "1:⇄ Compare sides", "2:▶ Preview", "2:⇄ Compare sides", "3:▶ Preview query", "3:⇄ Compare sides"],
+    // `gone` is only on the left: it can be previewed, not compared.
+    ["0:▶ Preview", "0:⇄ Compare sides", "1:▶ Preview", "1:⇄ Compare sides", "2:▶ Preview", "3:▶ Preview query", "3:⇄ Compare sides"],
   );
 
   const nodes = await until(() => tree.getChildren().length === 5 && tree.getChildren(), "the sidebar to list both sides");

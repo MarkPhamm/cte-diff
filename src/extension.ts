@@ -49,7 +49,11 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     watcher,
     watcher.onDidCreate(() => files.reload()),
     watcher.onDidDelete(() => files.reload()),
-    vscode.workspace.onDidChangeTextDocument((e) => tree.shows(e.document.uri) && update()),
+    vscode.workspace.onDidChangeTextDocument((e) => {
+      if (!tree.shows(e.document.uri)) return;
+      update();
+      lens.refresh(); // the other side's Compare lenses depend on this side's CTEs
+    }),
     vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),
     vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guard(() => preview(n.uri!, n.name))),
     vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guard(() => preview(n.left!, n.name))),

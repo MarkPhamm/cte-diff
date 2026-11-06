@@ -90,7 +90,8 @@ export function sidebarList(statuses: { name?: string; status: Status }[]): stri
 /** "2 changed · 1 new", as the sidebar's message says it. */
 export function summary(statuses: { status: Status }[]): string {
   const count = (s: Status) => statuses.filter((x) => x.status === s).length;
-  return (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${NOTE[s]}`).join(" · ") || "No CTE changed.";
+  const note = (s: Status) => (count(s) > 1 ? NOTE[s].replace("reads", "read") : NOTE[s]); // "2 read a changed CTE"
+  return (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${note(s)}`).join(" · ") || "No CTE changed.";
 }
 
 // Rows rise in one after another, like the rest of the page.
