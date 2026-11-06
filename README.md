@@ -1,46 +1,102 @@
-# CTE Diff for dbt and Snowflake
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/media/icon.png" width="96" height="96" alt="">
+</p>
 
-Docs: **https://markphamm.github.io/cte-diff/**. Playground: **https://markphamm.github.io/cte-diff/playground/**
+<h1 align="center">CTE Diff</h1>
 
-Reviewing a change to a dbt model? Open the two versions in a diff editor and click above any CTE:
+<p align="center">
+  <b>See what a dbt change did to the data, one CTE at a time.</b><br>
+  A VS Code extension that previews any CTE's rows, and compares a CTE across both sides of a diff, through <code>dbt show</code>.
+</p>
 
-- **▶ Preview** shows that CTE's rows, on either side.
-- **⇄ Compare sides** runs the same CTE on both sides and shows the rows only one side returns, with row counts. You see what the change did to the data, CTE by CTE, without copying SQL into a worksheet.
+<p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff"><img src="https://vsmarketplacebadges.dev/version-short/MarkPhamm.cte-diff.svg" alt="VS Code Marketplace version"></a>
+  <a href="https://open-vsx.org/extension/MarkPhamm/cte-diff"><img src="https://img.shields.io/open-vsx/v/MarkPhamm/cte-diff?label=Open%20VSX" alt="Open VSX version"></a>
+  <a href="https://open-vsx.org/extension/MarkPhamm/cte-diff"><img src="https://img.shields.io/open-vsx/dt/MarkPhamm/cte-diff?label=downloads" alt="Open VSX downloads"></a>
+  <a href="https://github.com/MarkPhamm/cte-diff/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/MarkPhamm/cte-diff/ci.yml?branch=main&label=CI" alt="CI status"></a>
+  <a href="https://github.com/MarkPhamm/cte-diff/blob/main/LICENSE"><img src="https://img.shields.io/github/license/MarkPhamm/cte-diff" alt="License: Apache-2.0"></a>
+</p>
 
-Queries run through `dbt show`, in your dbt project, so Jinja (`ref`, `source`, macros, `var`) renders as in a real run. dbt connects with your profile, so key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first; variables already set in the environment take precedence.
+<p align="center">
+  <a href="https://markphamm.github.io/cte-diff/">Docs</a> ·
+  <a href="https://markphamm.github.io/cte-diff/playground/">Playground</a> ·
+  <a href="https://github.com/MarkPhamm/cte-diff/blob/main/CHANGELOG.md">Changelog</a> ·
+  <a href="https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff">VS Code Marketplace</a> ·
+  <a href="https://open-vsx.org/extension/MarkPhamm/cte-diff">Open VSX</a>
+</p>
 
-## The sidebar
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="880" alt="A dbt model's change opened from Source Control: the CTE Diff sidebar marks each CTE, then comparing order_payments lists three changed rows">
+</p>
+<p align="center">
+  <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://markphamm.github.io/cte-diff/playground/">Try it in your browser →</a></em>
+</p>
 
-Click the **CTE Diff** icon in the Activity Bar. It lists the CTEs of the SQL you're on.
+## Why
 
-When that SQL is one side of a diff, it lists every CTE of both sides, marked:
+A diff shows what the SQL changed. It can't show what the data did.
+
+Add `where status = 'success'` to `payments` and the diff shows one green line. `order_payments` reads `payments`: its SQL didn't change, yet 3 of its 8 totals did. Checking that by hand means copying both versions into a worksheet, rendering the Jinja and writing the `except` yourself, CTE by CTE.
+
+CTE Diff marks every CTE that changed or reads one that did, and runs any CTE on both sides of the diff, in your dbt project.
+
+## Quick start
+
+1. Install **CTE Diff** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff), or from [Open VSX](https://open-vsx.org/extension/MarkPhamm/cte-diff) for Cursor, Windsurf and VSCodium.
+2. Open a dbt project. It needs dbt Fusion or dbt-core 1.5 or later, with a working profile.
+3. Open a changed model from **Source Control**, so its old and new versions open side by side.
+4. Open the **CTE Diff** sidebar. Hover a CTE marked **changed** or **reads a changed CTE**, and click **⇄** to compare its rows on both sides.
+
+Diff editors hide the **▶ Preview | ⇄ Compare sides** buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings. The sidebar and the editor's title bar work either way.
+
+No warehouse at hand? [`examples/duckdb`](https://github.com/MarkPhamm/cte-diff/tree/main/examples/duckdb) is a small dbt project on a local DuckDB file.
+
+## What it does
+
+### Marks every CTE of both sides
+
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/sidebar.png" width="350" alt="The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE">
+
 - **changed**: its text changed.
 - **new** or **removed**: it's only on one side.
-- **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
+- **reads a changed CTE**: the same text, but it reads one that changed, so its rows can still differ.
 
-Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Click a CTE to jump to it.
+Hover a CTE for **←** (preview the old side), **→** (preview the new side) and **⇄** (compare both). Click it to jump to it.
 
-Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
+### Previews any CTE
 
-## Use it
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/preview.png" alt="The rows of the payments CTE in the CTE Diff panel, below the diff">
 
-- **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide CodeLens unless `"diffEditor.codeLens": true` is in your settings; the title bar and the sidebar work either way.
-- **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
-- **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)**. Paste the old query on the left and the new one on the right.
+**▶ Preview** above a CTE shows its rows, on either side of a diff or in any SQL file. The last button previews the whole query.
 
-Every SQL file also gets **▶ Preview** outside a diff. The last lens previews the whole query.
+### Compares a CTE on both sides
 
-Results open in the **CTE Diff** tab of the bottom panel. A comparison lists a changed row as a pair, old above new, with the changed cells highlighted; rows pair up by their id columns (`id`, `*_id`, `*_key`). **Run Again** in the panel's title bar reruns the last query after you edit it.
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare.png" alt="order_payments compared: 8 rows on each side, 3 changed rows listed as old and new pairs with the changed totals highlighted">
 
-Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new run cancels the one still going.
+**⇄ Compare sides** runs the CTE on both sides and lists the rows only one side returns, with each side's row count. A changed row shows as a pair, old above new, with the changed cells highlighted. Rows pair up on their id columns: `id`, or a name ending in `_id`, `_key`, `_pk` or `_sk`.
 
-## How the comparison works
+Columns match by name, not position. An added, dropped or renamed column shows as a difference, not an error:
 
-Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query, on Snowflake or DuckDB.
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-final.png" alt="final compared: the columns differ, refunded only on the left and first_name only on the right">
 
-Each row is turned into JSON with its keys sorted (`object_construct_keep_null(*)` on Snowflake, `to_json` and `json_each` on DuckDB). Rows then compare by column *name*, not position. A renamed, added or dropped column shows up as a difference instead of an error. The result is `left EXCEPT right` and `right EXCEPT left`, plus the row count of each side.
+### Compares any two files, or two pasted queries
 
-`EXCEPT` compares distinct rows. If the only change is duplicated rows, the counts differ but no rows are listed.
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-files.png" width="350" alt="Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New">
+
+- **Compare Files**, below the CTEs: put two SQL files of the workspace in **Old** and **New**, then click **Open the diff**.
+- **CTE Diff: New Comparison (Paste Two Queries)**: paste an old and a new query side by side.
+
+## How it works
+
+Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query through `dbt show --inline`, in your dbt project. So Jinja (`ref`, `source`, macros, `var`) renders as in a real run, and dbt connects with your profile: key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first.
+
+Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://markphamm.github.io/cte-diff/comparison/)
+
+## Requirements
+
+- dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile.
+- Comparisons run on Snowflake and DuckDB; dbt picks the SQL for your adapter. Previews run on any warehouse dbt supports.
+- A trusted workspace: dbt runs the project's macros.
 
 ## Settings
 
@@ -51,23 +107,24 @@ Each row is turned into JSON with its keys sorted (`object_construct_keep_null(*
 | `cteDiff.target` | empty | The dbt target (`--target`). |
 | `cteDiff.limit` | `100` | The most rows a preview fetches, and the most differing rows a comparison lists. |
 
-## Requirements
+## FAQ
 
-- dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile.
-- Comparisons run on Snowflake and DuckDB (dbt picks the SQL by the profile's adapter). Previews work on any warehouse dbt supports.
-- A trusted workspace: dbt runs the project's macros.
+**I don't see ▶ Preview or ⇄ Compare sides in a diff.** VS Code hides CodeLens in diff editors. Add `"diffEditor.codeLens": true` to your settings, or use the sidebar or **⇄ Compare a CTE…** in the editor's title bar.
 
-## Try it on DuckDB
+**Does it send my data anywhere?** No. dbt runs on your machine with your profile, and the rows go from your warehouse to the panel. The extension collects no telemetry.
 
-`examples/duckdb` is a small dbt project on a local DuckDB file, with no warehouse or login. Its README walks through a preview and a comparison.
+**What does a comparison cost?** One query per click, which scans what the CTE scans, on both sides. `cteDiff.limit` caps the rows returned, not the rows scanned.
 
-## Development
+**The counts differ, but no rows are listed.** `EXCEPT` compares distinct rows. When only duplicates differ, the counts show it and the rows don't.
 
-```sh
-npm install
-npm test            # unit tests (node --test)
-npm run typecheck
-npm run package     # builds cte-diff-<version>.vsix
-```
+**Which dbt does it run?** `cteDiff.dbtPath` when it's set. Otherwise the project's `.venv`, then `~/.local/bin`, Homebrew, and `PATH`.
 
-Release: bump `version` in `package.json`, add a `CHANGELOG.md` entry, commit, then run `scripts/release.sh`.
+[More questions, and the known limits →](https://markphamm.github.io/cte-diff/faq/)
+
+## Contributing
+
+Bugs and ideas go in [GitHub issues](https://github.com/MarkPhamm/cte-diff/issues). To build and test the extension, see [Development](https://markphamm.github.io/cte-diff/development/).
+
+## License
+
+Apache-2.0. Made by [Minh (Mark) Pham](https://github.com/MarkPhamm).

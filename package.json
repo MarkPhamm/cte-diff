@@ -16,19 +16,37 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "galleryBanner": {
+    "color": "#19211e",
+    "theme": "dark"
+  },
+  "qna": "https://github.com/MarkPhamm/cte-diff/issues",
   "categories": [
     "Data Science",
+    "Testing",
     "Other"
   ],
   "keywords": [
     "dbt",
     "snowflake",
+    "duckdb",
     "sql",
     "cte",
     "diff",
     "data diff",
+    "row diff",
+    "compare",
+    "preview",
     "code review",
-    "preview"
+    "pull request",
+    "jinja",
+    "dbt-core",
+    "dbt fusion",
+    "analytics engineering",
+    "data quality",
+    "data testing",
+    "regression testing",
+    "warehouse"
   ],
   "main": "./out/extension.js",
   "activationEvents": [

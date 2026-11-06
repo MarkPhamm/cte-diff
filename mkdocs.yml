@@ -5,6 +5,8 @@ repo_url: https://github.com/MarkPhamm/cte-diff
 repo_name: MarkPhamm/cte-diff
 edit_uri: edit/main/docs/
 copyright: Made by <a href="https://github.com/MarkPhamm">Minh (Mark) Pham</a>. &copy; 2026, Apache-2.0.
+exclude_docs: |
+  superpowers/
 
 theme:
   name: material
@@ -61,5 +63,6 @@ nav:
   - Use it: usage.md
   - How the comparison works: comparison.md
   - Settings: settings.md
+  - FAQ and limits: faq.md
   - Development: development.md
   - Release notes: https://github.com/MarkPhamm/cte-diff/releases

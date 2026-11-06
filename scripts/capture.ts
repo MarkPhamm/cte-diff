@@ -415,10 +415,29 @@ async function flow(page: Page): Promise<void> {
   await still(page, undefined, "compare-files", await sidebarTo(page, files.locator(".monaco-list-row").last()));
 }
 
-fixture();
-const { page, close } = await launch();
-try {
-  await flow(page);
-} finally {
-  await close();
+/** The README's GIF, cut from the footage at its marks: the change opens with the sidebar's marks, then a CTE whose SQL
+ * didn't change is compared. 10 fps and 128 colours keep it near 1 MB (a palette per clip, as qdbd's demo.gif). */
+function gif(): void {
+  const m = JSON.parse(fs.readFileSync(path.join(OUT, "review.marks.json"), "utf8"));
+  const cuts = [
+    [m.diff - 0.4, m.sidebar + 2.4],
+    [m.compare - 1.8, m["compare-rows"] + 3],
+  ];
+  const trims = cuts.map(([a, b], i) => `[0:v]trim=${a.toFixed(2)}:${b.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`).join(";");
+  const palette = "fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle";
+  const filter = `${trims};${cuts.map((_, i) => `[c${i}]`).join("")}concat=n=${cuts.length},${palette}`;
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", path.join(OUT, "review.mp4"), "-filter_complex", filter, path.join(IMG, "demo.gif")]);
+  console.log(`wrote docs/assets/img/demo.gif (${Math.round(fs.statSync(path.join(IMG, "demo.gif")).size / 1024)} KB)`);
 }
+
+// `node scripts/capture.ts gif` only remakes the GIF from the last footage.
+if (process.argv[2] !== "gif") {
+  fixture();
+  const { page, close } = await launch();
+  try {
+    await flow(page);
+  } finally {
+    await close();
+  }
+}
+gif();
