@@ -2,11 +2,12 @@
 
 ## Unreleased
 
+- Docs, the Marketplace page and the README now use ctediff.dev.
 - The docs home page plays a 38-second silent demo of a real change, and the README links to it.
 
 ## 0.6.1
 
-- The Marketplace and Open VSX pages show the extension at work: a demo, screenshots and a quick start. The docs have an [FAQ and limits](https://markphamm.github.io/cte-diff/faq/) page.
+- The Marketplace and Open VSX pages show the extension at work: a demo, screenshots and a quick start. The docs have an [FAQ and limits](https://ctediff.dev/faq/) page.
 - **⇄ Compare sides** no longer shows above a CTE that only one side has. It could only fail there.
 - The sidebar's summary reads "2 read a changed CTE", not "2 reads".
 
