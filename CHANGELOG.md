@@ -3,6 +3,7 @@
 ## 0.6.2
 
 - Docs, the Marketplace page and the README now use ctediff.dev.
+- On the docs home page, the install command is as wide as the buttons. Screenshots in the README and the docs fill the column.
 - The docs home page plays a 38-second silent demo of a real change, and the README links to it.
 
 ## 0.6.1

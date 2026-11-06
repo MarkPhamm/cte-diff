@@ -27,13 +27,13 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 - **new** or **removed**: it's only on one side.
 - **reads a changed CTE**: the text is the same, but it reads one that changed, so its rows can still differ.
 
-![The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE](assets/img/sidebar.png){ width="350" }
+![The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE](assets/img/sidebar.png){ width="100%" }
 
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
 
 Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
 
-![Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="350" }
+![Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="100%" }
 
 You can try the marking, and the rows, in the [playground](playground.md). It runs the same parser and the same SQL.
 

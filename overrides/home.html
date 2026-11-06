@@ -9,16 +9,18 @@
 {% set openvsx = "https://open-vsx.org/extension/MarkPhamm/cte-diff" %}
 
 {% macro install(center=false) %}
-  <div class="qh-cta{% if center %} qh-cta--center{% endif %}">
-    <a class="qh-btn qh-btn--primary" href="{{ marketplace }}">Install from VS Code Marketplace</a>
-    <a class="qh-btn" href="{{ openvsx }}">Open VSX, for Cursor</a>
-  </div>
-  <div class="qh-install{% if center %} qh-install--center{% endif %}">
-    <span class="qh-install__prompt">⌘P</span>
-    <code>ext install MarkPhamm.cte-diff</code>
-    <button class="qh-copy" type="button" data-copy="ext install MarkPhamm.cte-diff" title="Copy" aria-label="Copy the install command">
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
-    </button>
+  <div class="qh-installs{% if center %} qh-installs--center{% endif %}">
+    <div class="qh-cta{% if center %} qh-cta--center{% endif %}">
+      <a class="qh-btn qh-btn--primary" href="{{ marketplace }}">Install from VS Code Marketplace</a>
+      <a class="qh-btn" href="{{ openvsx }}">Open VSX, for Cursor</a>
+    </div>
+    <div class="qh-install">
+      <span class="qh-install__prompt">⌘P</span>
+      <code>ext install MarkPhamm.cte-diff</code>
+      <button class="qh-copy" type="button" data-copy="ext install MarkPhamm.cte-diff" title="Copy" aria-label="Copy the install command">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+      </button>
+    </div>
   </div>
 {% endmacro %}
 

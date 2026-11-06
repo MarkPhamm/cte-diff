@@ -35,9 +35,14 @@
 .qh-meta a { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
 .qh h1 { font-size: clamp(36px, 5vw, 58px); line-height: 1.03; font-weight: 600; letter-spacing: -.045em; text-wrap: balance; }
 .qh h1 span { color: var(--bp-ink-3); }
-.qh-lead { font-size: 18px; color: var(--qd-muted); margin: 0 0 24px; max-width: 34em; }
+/* the lead, the buttons and the command share this: the hero column, never wider than the lead's 34em */
+.qh-hero__text { max-width: calc(18px * 34); min-width: 0; }
+.qh-lead { font-size: 18px; color: var(--qd-muted); margin: 0 0 24px; }
+.qh-installs { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+.qh-installs--center { width: max-content; max-width: 100%; margin-inline: auto; grid-template-columns: max-content; }
 .qh-cta { display: flex; flex-wrap: wrap; gap: 12px; }
 .qh-cta--center { justify-content: center; }
+.qh-hero__text .qh-btn { flex: 1 1 auto; justify-content: center; }
 .qh-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 10px;
   border: 1px solid var(--bp-rule-strong); color: var(--bp-ink) !important; font-weight: 500; background: var(--bp-sheet);
   transition: background-color var(--bp-t-hover) linear, border-color var(--bp-t-hover) linear, transform var(--bp-t-press) var(--bp-ease-out); }
@@ -45,11 +50,11 @@
 .qh-btn:active { transform: scale(.97); }
 .qh-btn--primary { background: var(--bp-accent); border-color: var(--bp-accent); color: var(--bp-white) !important; }
 .qh-btn--primary:hover { background: var(--bp-accent-press); border-color: var(--bp-accent-press); }
-.qh-install { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 8px 8px 8px 14px; max-width: 420px;
-  background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 10px; }
-.qh-install code { background: none; padding: 0; flex: 1; font-size: 14px; color: var(--bp-ink); white-space: nowrap; }
+.qh-install { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 8px 8px 8px 14px; min-width: 0;
+  box-sizing: border-box; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 10px; }
+.qh-installs--center .qh-install { margin-top: 22px; }
+.qh-install code { background: none; padding: 0; flex: 1; min-width: 0; font-size: 14px; color: var(--bp-ink); white-space: nowrap; }
 .qh-install__prompt { color: var(--bp-ink-3); font: 12px var(--bp-mono); border: 1px solid var(--bp-rule-strong); border-radius: 4px; padding: 1px 5px; }
-.qh-install--center { margin: 22px auto 0; text-align: left; }
 .qh-copy { border: 0; background: none; color: var(--qd-label); cursor: pointer; padding: 8px; border-radius: 6px; display: inline-flex;
   transition: color var(--bp-t-hover) linear, background-color var(--bp-t-hover) linear; }
 .qh-copy:hover { color: var(--bp-ink); background: var(--bp-ink-a06); }
@@ -355,7 +360,6 @@ q-w { display: inline-block; }
   .qh-hero__head > :nth-child(2) { animation-delay: .05s; }
   .qh-hero__text > :nth-child(1) { animation-delay: .25s; }
   .qh-hero__text > :nth-child(2) { animation-delay: .3s; }
-  .qh-hero__text > :nth-child(3) { animation-delay: .35s; }
   .qh-hero h1 q-w, .qh-play h1 q-w { animation: qh-word .42s calc(var(--i) * 30ms) var(--bp-ease-out) both; }
   .qh-section h2.qh-words q-w, .qh-final > h2.qh-words q-w { opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .42s;
     transition-timing-function: var(--bp-ease-out); transition-delay: calc(var(--i) * 30ms); }
@@ -405,7 +409,9 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
 }
 @media (max-width: 600px) {
   .qh-wrap { --qh-pad: 16px; }
+  .qh-hero__text { max-width: calc(16px * 34); }
   .qh-lead, .qh-sub { font-size: 16px; }
+  .qh-installs, .qh-installs--center { width: 100%; grid-template-columns: minmax(0, 1fr); }
   /* the ledger: one block per CTE, each answer on its own line after its label */
   .qh-gap__fig { padding: 4px 16px 16px; }
   .qh-gap__t { display: flex; flex-direction: column; }

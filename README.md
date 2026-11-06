@@ -26,14 +26,14 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="880" alt="A dbt model's change opened from Source Control: the CTE Diff sidebar marks each CTE, then comparing order_payments lists three changed rows">
+  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="100%" alt="A dbt model's change opened from Source Control: the CTE Diff sidebar marks each CTE, then comparing order_payments lists three changed rows">
 </p>
 <p align="center">
   <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://ctediff.dev/playground/">Try it in your browser →</a></em>
 </p>
 
 <p align="center">
-  <a href="https://ctediff.dev/#demo"><img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-poster.jpg" width="880" alt="Watch the 38-second demo"></a>
+  <a href="https://ctediff.dev/#demo"><img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-poster.jpg" width="100%" alt="Watch the 38-second demo"></a>
 </p>
 
 ## Why
@@ -59,7 +59,7 @@ No warehouse at hand? [`examples/duckdb`](https://github.com/MarkPhamm/cte-diff/
 
 ### Marks every CTE of both sides
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/sidebar.png" width="350" alt="The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/sidebar.png" width="100%" alt="The CTE Diff sidebar: 2 changed, 1 new, 1 removed, 2 read a changed CTE">
 
 - **changed**: its text changed.
 - **new** or **removed**: it's only on one side.
@@ -85,7 +85,7 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 ### Compares any two files, or two pasted queries
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-files.png" width="350" alt="Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-files.png" width="100%" alt="Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New">
 
 - **Compare Files**, below the CTEs: put two SQL files of the workspace in **Old** and **New**, then click **Open the diff**.
 - **CTE Diff: New Comparison (Paste Two Queries)**: paste an old and a new query side by side.
