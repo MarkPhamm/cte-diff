@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.2
 
 - Docs, the Marketplace page and the README now use ctediff.dev.
 - The docs home page plays a 38-second silent demo of a real change, and the README links to it.
