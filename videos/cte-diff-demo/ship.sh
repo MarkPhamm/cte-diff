@@ -8,7 +8,7 @@ out="$root/docs/assets/video/cte-diff-demo.mp4"
 poster="$root/docs/assets/img/demo-poster.jpg"
 mkdir -p "$(dirname "$out")" "$(dirname "$poster")"
 
-ffmpeg -y -loglevel error -i renders/cte-diff-demo.mp4 -an -c:v libx264 -preset veryslow -crf 25 \
+ffmpeg -y -loglevel error -i renders/cte-diff-demo.mp4 -an -c:v libx264 -preset veryslow -crf 26 \
   -tune stillimage -pix_fmt yuv420p -profile:v high -movflags +faststart "$out"
 bytes=$(wc -c < "$out" | tr -d ' ')
 if [ "$bytes" -gt 6291456 ]; then
@@ -33,7 +33,7 @@ cat > "$work/poster.html" << EOF
 </style>
 <body>
   <img src="frame.png" alt="">
-  <div class="btn">Watch the <b>28-second</b> demo</div>
+  <div class="btn">Watch the <b>37-second</b> demo</div>
 </body>
 EOF
 
@@ -50,4 +50,4 @@ EOF
 ffmpeg -y -loglevel error -i "$work/poster.png" -q:v 3 "$poster"
 echo "web mp4 $bytes bytes"
 echo "poster $poster"
-"$(dirname "$0")/gifs.sh" "$out"
+./gifs.sh "$out"

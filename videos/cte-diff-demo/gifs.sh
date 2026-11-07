@@ -1,7 +1,7 @@
 #!/bin/sh
 # The README's and docs' GIFs. 10 fps, 800 px, 256 colours, no dithering, so UI text stays sharp.
 # demo.gif is cut from this film (the web mp4 ship.sh writes): Preview on HEAD, Preview on the working tree,
-# then Compare sides on the two files. The section loops (demo-diff, demo-marks, demo-preview, demo-compare,
+# then Compare sides on the two files. demo-branch is this film's Compare with Branch scene. The section loops (demo-diff, demo-marks, demo-preview, demo-compare,
 # demo-final) show features this film does not, so they come from the previous 38-second film, read from git.
 set -eu
 cd "$(dirname "$0")"
@@ -34,6 +34,7 @@ gif() {
 
 # Each span starts once its title has landed and ends before the camera leaves for the next scene.
 gif demo "$src" 6.3:9.2 10.0:13.95 18.0:22.6
+gif demo-branch "$src" 23.3:31.7
 gif demo-diff "$old" 2.4:5.85
 gif demo-marks "$old" 6.85:11.1
 gif demo-preview "$old" 12.3:16.6

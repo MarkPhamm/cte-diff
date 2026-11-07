@@ -2,12 +2,14 @@
 // It builds a scratch dbt-duckdb project from web/sample.ts (the site's example: jaffle_shop's orders model and its
 // made-up tables). orders.sql is committed as the old query, then rewritten, so a git diff has HEAD on the left and
 // the working tree on the right. orders_v1.sql stays the old query; orders_v2.sql is the new query.
-// Two clips: git.mp4 previews payments on the left, then the right; files.mp4 opens those two files and compares
-// payments. The README GIF is cut from the finished film, not here.
+// Three clips: git.mp4 previews payments on the left, then the right; files.mp4 opens those two files and compares
+// payments; branch.mp4 compares orders.sql with the qa branch, which keeps the old query, from the dev branch, and
+// compares order_payments. The README GIF is cut from the finished film, not here.
 // `node scripts/capture.ts stills` is the other shoot: dbt Power User, CTE Diff not installed. It writes
 // videos/cte-diff-demo/assets/stills, and stops if Execute CTE is on the left editor.
 // Needs ffmpeg, the duckdb CLI and a dbt with dbt-duckdb: CTE_DIFF_DBT, else examples/duckdb's venv (see its README).
 // Run: npm run capture   (the Compare Files still goes to docs/assets/img; footage and its marks to out/capture)
+//      node scripts/capture.ts branch   (after npm run package: replaces only the film's branch.mp4)
 import { execFileSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -127,6 +129,8 @@ function fixture(ws: string): void {
   git("init", "-q", "-b", "main");
   git("add", ".");
   git("commit", "-qm", "orders model");
+  git("branch", "qa"); // qa keeps the old orders.sql, for Compare with Branch
+  git("checkout", "-q", "-b", "dev");
   fs.writeFileSync(path.join(ws, "models", "orders.sql"), after);
   execFileSync(DBT, ["seed"], { cwd: ws, stdio: "inherit" });
 }
@@ -477,8 +481,51 @@ async function flow(page: Page): Promise<void> {
   await sleep(4500);
   await filesRec.stop();
 
+  // Off camera: close the results and the editors, and show orders.sql in the list. The clip starts there.
+  await page.keyboard.press("Meta+J");
+  await page.keyboard.press("Meta+K");
+  await page.keyboard.press("Meta+W");
+  await sleep(600);
+  if (!(await file("orders.sql").count())) await hand.click(models, 300);
+  const orders = file("orders.sql");
+  await orders.waitFor();
+  await hand.to(VIEW.width - 80, VIEW.height - 60, 300);
+  await sleep(400);
+
+  const branch = new Recorder(page, "branch");
+  await branch.start();
+  await sleep(1200);
+  branch.mark("row");
+  await hand.over(orders);
+  await sleep(300);
+  await hand.click(orders.locator('.action-label[aria-label^="Compare with Branch"]'), 300);
+  branch.mark("pick");
+  const qa = page.locator(".quick-input-widget .monaco-list-row", { hasText: /^\s*qa\s*$/ }).first();
+  await qa.waitFor();
+  console.log("branches", await page.locator(".quick-input-widget .monaco-list-row").allTextContents());
+  await sleep(700);
+  await hand.click(qa);
+  branch.mark("open");
+  await right(page).locator(".codelens-decoration").first().waitFor();
+  branch.mark("diff");
+  console.log("tab", await page.locator(".tab.active").first().textContent());
+  await sleep(1200);
+  await scrollTo(page, hand, "order_payments as (");
+  await sleep(400);
+  branch.mark("where");
+  const lens = await lensOn(page, "right", "order_payments as (", "⇄ Compare sides");
+  console.log("lens", await lens.boundingBox());
+  await hand.click(lens);
+  branch.mark("compare");
+  await result(page, "order_payments");
+  branch.mark("rows");
+  console.log("compare", await statsText(page));
+  await sleep(4500);
+  await branch.stop();
+
   fs.mkdirSync(FOOT, { recursive: true });
-  for (const name of ["git", "files"]) {
+  // `capture.ts branch` shoots all three but replaces only branch.mp4, so the cuts tuned to git.mp4 and files.mp4 hold.
+  for (const name of process.argv[2] === "branch" ? ["branch"] : ["git", "files", "branch"]) {
     fs.copyFileSync(path.join(OUT, `${name}.mp4`), path.join(FOOT, `${name}.mp4`));
     fs.copyFileSync(path.join(OUT, `${name}.marks.json`), path.join(FOOT, `${name}.marks.json`));
   }

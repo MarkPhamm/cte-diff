@@ -16,6 +16,8 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 - **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
+![Compare with Branch on orders.sql: pick qa, the diff opens as orders.sql (qa) ↔ orders.sql, and Compare sides on order_payments lists 3 changed totals](assets/img/demo-branch.gif){ width="100%" }
+
 Every SQL file also gets **▶ Preview** outside a diff. The last button previews the whole query. Outside a diff, the title bar's button is **▶ Preview a CTE…**.
 
 ## The sidebar

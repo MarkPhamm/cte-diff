@@ -14,7 +14,7 @@ Release: bump `version` in `package.json`, add a `CHANGELOG.md` entry, commit, t
 
 ## Screenshots and footage
 
-The README's Compare Files still, and the footage for the demo video, come from the packaged extension in a real VS Code. `npm run capture` packages the extension and builds a scratch dbt-duckdb project from `web/sample.ts`. `orders.sql` is committed as the old query, then rewritten, so a git diff has HEAD on the left and the working tree on the right. `orders_v1.sql` stays the old query. `orders_v2.sql` is the new query. The capture then previews `payments` on the left and the right (`git.mp4`), and compares `payments` across the two files (`files.mp4`).
+The README's Compare Files still, and the footage for the demo video, come from the packaged extension in a real VS Code. `npm run capture` packages the extension and builds a scratch dbt-duckdb project from `web/sample.ts`. `orders.sql` is committed as the old query, then rewritten, so a git diff has HEAD on the left and the working tree on the right. `orders_v1.sql` stays the old query. `orders_v2.sql` is the new query. The capture then previews `payments` on the left and the right (`git.mp4`), compares `payments` across the two files (`files.mp4`), and compares `orders.sql` with the `qa` branch, which keeps the old query, from `dev` (`branch.mp4`). `node scripts/capture.ts branch` replaces only `branch.mp4` in the film's footage.
 
 ```sh
 npm run capture                          # compare-files.png, and out/capture/git.mp4 and files.mp4

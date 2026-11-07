@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The demo shows Compare with Branch: orders.sql compared with the qa branch, and three order totals that changed. It is 37 seconds, and the docs have a GIF of it.
+
 ## 0.7.1
 
 - **Compare with Branch…** opens the SQL file in a diff with another branch's version on the left, such as `qa` while you work on `dev`, so you can compare its CTEs across branches. It is in the sidebar's title bar, beside each file in Compare Files, and in the Command Palette. The results heading names the branch: `orders.sql (qa) ↔ orders.sql`.

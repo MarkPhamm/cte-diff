@@ -1,0 +1,90 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
+    .ttl { position: absolute; left: 96px; top: 74px; z-index: 3; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
+      line-height: 1.1; white-space: nowrap; }
+    .w { display: inline-block; }
+    .acc { color: #027567; }
+    .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
+    .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
+      background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
+    .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
+  </style>
+  <div id="root" data-composition-id="branch" data-width="1920" data-height="1080">
+    <div class="stage" data-layout-allow-overflow>
+      <div id="branch-enter" class="enter">
+        <div id="branch-cam" class="cam">
+          <div class="vwin">
+            <video id="branch-a" class="clip" src="assets/footage/branch.mp4" data-start="0" data-duration="2.62" data-media-start="1" data-playback-rate="1.5" data-track-index="1" muted playsinline></video>
+            <video id="branch-d" class="clip" src="assets/footage/branch.mp4" data-start="2.62" data-duration="3.517" data-media-start="4.93" data-playback-rate="1.2" data-track-index="7" muted playsinline></video>
+            <video id="branch-b" class="clip" src="assets/footage/branch.mp4" data-start="6.137" data-duration="0.443" data-media-start="9.15" data-playback-rate="3" data-track-index="2" muted playsinline></video>
+            <video id="branch-c" class="clip" src="assets/footage/branch.mp4" data-start="6.58" data-duration="2.52" data-media-start="10.48" data-playback-rate="1" data-track-index="3" muted playsinline></video>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h1 id="branch-t" class="clip ttl" data-start="0.4" data-duration="1.9" data-track-index="4"><span class="w">Or</span> <span class="w">another</span> <span class="w acc">branch.</span></h1>
+    <h1 id="branch-u" class="clip ttl" data-start="2.7" data-duration="1.6" data-track-index="5"><span class="w acc">qa</span> <span class="w">on</span> <span class="w">the</span> <span class="w">left.</span></h1>
+    <h1 id="branch-r" class="clip ttl" data-start="4.4" data-duration="2.2" data-track-index="8"><span class="w">Your</span> <span class="w acc">new</span> <span class="w">logic</span> <span class="w">on</span> <span class="w">the</span> <span class="w">right.</span></h1>
+    <h1 id="branch-v" class="clip ttl" data-start="6.7" data-duration="2.2" data-track-index="6"><span class="w">Three</span> <span class="w">totals</span> <span class="w acc">changed.</span></h1>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const IN = { opacity: 0, filter: "blur(6px)" };
+      const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
+      const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
+      const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
+      /** A critically damped spring chases look-at keys [t, cx, cy, scale]; (cx, cy) is in the 1440×900 capture. */
+      const camera = (sel, keys, end) => {
+        const W = 7, H = 1 / 240, F = 1 / 30;
+        const look = (t) => {
+          let i = 0;
+          while (i < keys.length - 1 && keys[i + 1][0] <= t) i++;
+          const a = keys[i], b = keys[i + 1] || a;
+          const u = b[0] > a[0] ? Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))) : 0;
+          return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, Math.log(a[3]) + (Math.log(b[3]) - Math.log(a[3])) * u];
+        };
+        // The window fills the stage (1920×890) at every scale above 1.11; below that it is centred.
+        const place = ([cx, cy, ls]) => {
+          const s = Math.exp(ls), qx = 96 + 1.2 * cx, qy = 1.2 * cy - 42;
+          const x = s * 1728 <= 1920 ? 960 * (1 - s) : Math.min(-s * 96, Math.max(1920 - s * 1824, 960 - s * qx));
+          const y = Math.min(0, Math.max(890 - s * 1038, 445 - s * qy));
+          return { x, y, scale: s };
+        };
+        let p = look(keys[0][0]), v = [0, 0, 0], t = 0;
+        tl.set(sel, place(p), 0);
+        for (let f = 1; f * F <= end + 1e-6; f++) {
+          for (; t < f * F - 1e-9; t += H) {
+            const g = look(t);
+            for (let k = 0; k < 3; k++) { v[k] += (W * W * (g[k] - p[k]) - 2 * W * v[k]) * H; p[k] += v[k] * H; }
+          }
+          tl.to(sel, { ...place(p), duration: F, ease: "none" }, (f - 1) * F);
+        }
+      };
+      // Footage time to scene time, read off the clips above.
+      const clips = [...document.querySelectorAll("#branch-cam video")].map((el) =>
+        [+el.dataset.start, +el.dataset.mediaStart, +el.dataset.playbackRate, +el.dataset.duration]);
+      const local = (m) => {
+        for (const [s, ms, r, d] of clips) if (m <= ms + d * r + 1e-6) return s + Math.max(0, m - ms) / r;
+        return 9.1;
+      };
+      // Keys in footage seconds. PICK shows the file's ⑂ and the branch pick; TAB the diff's tab and both editors;
+      // RIGHT the right editor's new where line down to ⇄ Compare sides above order_payments; TABLE the comparison.
+      const WIDE = [720, 450, 1], PICK = [560, 170, 1.55], TAB = [580, 190, 1.65], RIGHT = [1160, 330, 1.9], TABLE = [600, 610, 1.9];
+      camera("#branch-cam", [
+        [1.0, ...WIDE], [1.4, ...WIDE], [2.2, ...PICK], [4.82, ...PICK], [5.3, ...TAB], [6.2, ...TAB],
+        [6.7, ...RIGHT], [10.48, ...RIGHT], [10.6, ...TABLE],
+      ].map(([m, ...k]) => [local(m), ...k]), 9.1);
+      tl.fromTo("#branch-enter", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, ease: "power2.out" }, 0);
+      say("#branch-t", 0.4, 2.15);
+      say("#branch-u", 2.7, 4.1);
+      say("#branch-r", 4.4, 6.4);
+      say("#branch-v", 6.7, 8.7);
+      tl.to("#branch-enter", { x: -360, opacity: 0, filter: "blur(14px)", duration: 0.2, ease: "power3.in" }, 8.85);
+      window.__timelines["branch"] = tl;
+    })();
+  </script>
+</template>
