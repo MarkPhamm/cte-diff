@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.1
+
+- **Compare with Branch…** opens the SQL file in a diff with another branch's version on the left, such as `qa` while you work on `dev`, so you can compare its CTEs across branches. It is in the sidebar's title bar, beside each file in Compare Files, and in the Command Palette. The results heading names the branch: `orders.sql (qa) ↔ orders.sql`.
 
 - The demo is 28 seconds. The camera glides after the cursor instead of jerking with it, each result holds on screen with its title long enough to read, and the scenes hand over with a pan, a blur and a whip instead of hard cuts.
 
