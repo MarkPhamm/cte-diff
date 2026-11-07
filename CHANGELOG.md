@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+
+- Settings explains that the buttons above a CTE in a diff need `"diffEditor.codeLens": true`. The sidebar and the title bar work without it.
+
 ## 0.6.2
 
 - Docs, the Marketplace page and the README now use ctediff.dev.

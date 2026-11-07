@@ -4,7 +4,7 @@
 
 ### I don't see ▶ Preview or ⇄ Compare sides in a diff
 
-VS Code hides CodeLens in diff editors unless `"diffEditor.codeLens": true` is in your settings. Without it, use the **CTE Diff** sidebar, or **⇄ Compare a CTE…** in the editor's title bar: both work in any diff.
+VS Code hides CodeLens in diff editors unless `"diffEditor.codeLens": true` is in your [settings](settings.md). Without it, use the **CTE Diff** sidebar, or **⇄ Compare a CTE…** in the editor's title bar: both work in any diff.
 
 ### Why is ⇄ missing above one CTE?
 
