@@ -64,7 +64,7 @@
        Rendered by videos/cte-diff-demo from the capture (scripts/capture.ts). home.js plays it only while at
        least 40% is on screen; with reduced motion it waits for the play button. -->
   <section class="qh-section qh-wrap qh-video" id="demo">
-    <h2>Preview both sides, then two files</h2>
+    <h2>Both sides of a diff, two files, another branch</h2>
     <p class="qh-sub">Silent. 37 seconds.</p>
     <div class="qh-video__frame">
       <video src="{{ 'assets/video/cte-diff-demo.mp4' | url }}" poster="{{ 'assets/img/demo-poster.jpg' | url }}" width="1920" height="1080" muted loop playsinline controls preload="metadata" aria-label="A 37-second silent demo. Execute CTE is only on the right of a git diff. CTE Diff previews payments on HEAD, 12 rows, and on the working tree, 9 rows, then compares payments across orders_v1.sql and orders_v2.sql. Three failed payments are only in the old file. Then it compares orders.sql with the qa branch: three order totals changed."></video>
@@ -80,7 +80,7 @@
     <div class="qh-gap__body">
       <div class="qh-gap__text">
         <p class="qh-sub">Checking it by hand means copying both versions into a worksheet, rendering the Jinja and writing the <code>except</code> yourself, CTE by CTE.</p>
-        <p class="qh-sub">cte-diff marks every CTE that reads a changed one, and runs any CTE on both sides: from a diff, the sidebar, or two SQL files.</p>
+        <p class="qh-sub">cte-diff marks every CTE that reads a changed one, and runs any CTE on both sides: from a diff, the sidebar, two SQL files, or another branch.</p>
         <p class="qh-more"><a href="{{ 'playground/' | url }}">Try the change in the playground</a></p>
       </div>
       <figure class="qh-fig qh-gap__fig">
@@ -100,22 +100,39 @@
 
   <!-- ---------------------------------------------------------- ways to open one -->
   <section class="qh-section qh-wrap">
-    <h2>Open a comparison from what you already have</h2>
-    <div class="qh-ways">
-      <div>
-        <h3>A git change</h3>
-        <p>Open the model from Source Control, then click <b>⇄ Compare a CTE…</b> in the editor’s title bar.</p>
-      </div>
-      <div>
-        <h3>Any two files</h3>
-        <p>In the sidebar’s <b>Compare Files</b>, put one file in <b>Old</b> and one in <b>New</b>, then <b>Open the diff</b>. Good for a dev copy against prod’s.</p>
-      </div>
-      <div>
-        <h3>Pasted SQL</h3>
-        <p>Run <b>CTE Diff: New Comparison</b>. Paste the old query on the left and the new one on the right.</p>
-      </div>
-    </div>
-    <p class="qh-more"><a href="{{ 'usage/' | url }}">Read how to use it</a></p>
+    <h2>Three ways to open a comparison</h2>
+    <p class="qh-sub">Each opens two versions of a model side by side. Then ▶ Preview runs a CTE on one side, and ⇄ Compare sides runs it on both.</p>
+    {#- Stills from the capture (scripts/capture.ts): git.mp4, files.mp4 and branch.mp4, cropped alike. -#}
+    <ol class="qh-ways">
+      <li class="qh-way">
+        <div class="qh-way__text">
+          <span class="qh-way__n">1</span>
+          <h3>Your uncommitted change</h3>
+          <p class="qh-way__sides"><span>HEAD</span><b aria-label="against">↔</b><span>working tree</span></p>
+          <p>Open the model from Source Control. Click <b>⇄ Compare a CTE…</b> in the editor’s title bar, or the buttons above any CTE.</p>
+        </div>
+        <img src="{{ 'assets/img/way-git.jpg' | url }}" width="1280" height="800" loading="lazy" alt="orders.sql (Working Tree): HEAD on the left, the new where line on the right, Preview and Compare sides above each CTE">
+      </li>
+      <li class="qh-way">
+        <div class="qh-way__text">
+          <span class="qh-way__n">2</span>
+          <h3>Two SQL files</h3>
+          <p class="qh-way__sides"><span>old file</span><b aria-label="against">↔</b><span>new file</span></p>
+          <p>In the sidebar’s <b>Compare Files</b>, put one file in <b>Old</b> and one in <b>New</b>, then click <b>Open the diff</b>. Good for a dev copy against prod’s.</p>
+        </div>
+        <img src="{{ 'assets/img/way-files.jpg' | url }}" width="1280" height="800" loading="lazy" alt="Compare Files in the sidebar: Old orders_v1.sql, New orders_v2.sql, and their diff open beside it">
+      </li>
+      <li class="qh-way">
+        <div class="qh-way__text">
+          <span class="qh-way__n">3</span>
+          <h3>Another branch</h3>
+          <p class="qh-way__sides"><span>qa</span><b aria-label="against">↔</b><span>working tree</span></p>
+          <p>Working on <code>dev</code>? Click <b>⑂</b> beside a file in <b>Compare Files</b>, or <b>Compare with Branch…</b> in the sidebar’s title bar, and pick <code>qa</code>. Its latest commit goes on the left.</p>
+        </div>
+        <img src="{{ 'assets/img/way-branch.jpg' | url }}" width="1280" height="800" loading="lazy" alt="orders.sql (qa) ↔ orders.sql: the qa branch's version on the left, the working tree on the right">
+      </li>
+    </ol>
+    <p class="qh-more">No file at all? Run <b>CTE Diff: New Comparison</b> and paste two queries. <a href="{{ 'usage/' | url }}">Read how to use it</a></p>
   </section>
 
   <!-- ------------------------------------------------------- how comparing works -->

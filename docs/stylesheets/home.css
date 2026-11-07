@@ -239,11 +239,20 @@
   .qh-gap.qh-anim:not(.qh-in) .qh-gap__note { opacity: 0; transform: translateY(4px) scale(.96); }
 }
 
-.qh-ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 36px;
-  border-top: 1px solid var(--bp-rule-strong); border-bottom: 1px solid var(--bp-rule-strong); }
-.qh-ways > div { padding: 22px 24px 24px 0; }
-.qh-ways > div + div { padding-left: 24px; border-left: 1px solid var(--bp-rule); }
-.qh-ways p { color: var(--qd-muted); margin: 8px 0 0; }
+/* three ways to open a comparison: one row each, the clicks beside a still of what opens */
+.qh-ways { display: grid; gap: 20px; margin: 36px 0 0; padding: 0; list-style: none; }
+.qh-way { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 9fr); gap: 36px; align-items: center; margin: 0;
+  padding: 14px 14px 14px 32px; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 14px; box-shadow: var(--bp-e1); }
+.qh-way img { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; border-radius: 8px; border: 1px solid var(--bp-rule);
+  background: var(--bp-white); }
+.qh-way__n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bp-wash);
+  color: var(--bp-accent); font: 600 13px var(--bp-sans); }
+.qh-way h3 { margin-top: 12px; font-size: 22px; }
+.qh-way__sides { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; font: 500 13px var(--bp-mono); }
+.qh-way__sides span { padding: 3px 9px; border-radius: 999px; background: var(--bp-wash); color: var(--bp-accent); }
+.qh-way__sides span:first-child { background: var(--bp-ink-a04); color: var(--bp-ink-2); }
+.qh-way__sides b { color: var(--bp-ink-3); font-weight: 400; }
+.qh-way__text > p:last-child { color: var(--qd-muted); margin: 14px 0 0; font-size: 16px; line-height: 1.6; }
 
 /* how a comparison works: three steps on the demo's rows. Without home.js (or with reduced motion) it shows its end:
  * the rows both sides have struck through. */
@@ -388,9 +397,8 @@ q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px;
   .qh-hero { padding-top: 32px; }
   .qh-section { padding-top: 88px; }
   .qh-fig { --qh-ext: 40px; padding: 20px; }
-  .qh-ways { grid-template-columns: minmax(0, 1fr); }
-  .qh-ways > div, .qh-ways > div + div { padding: 18px 0; border-left: 0; }
-  .qh-ways > div + div { border-top: 1px solid var(--bp-rule); }
+  .qh-way { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px 14px 14px; }
+  .qh-way__text { padding: 0 8px; }
 }
 /* phones: the sidebar and the results tell the story; the side-by-side code doesn't fit */
 @media (max-width: 720px) {

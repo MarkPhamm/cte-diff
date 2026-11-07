@@ -42,7 +42,9 @@ A git diff's left side is HEAD. Its right side is the working tree. dbt Power Us
 
 CTE Diff previews the same CTE on both. `payments` on HEAD returns 12 rows. On the working tree, after `where status = 'success'`, it returns 9.
 
-When the old logic and the new logic are two files, Compare Files opens them. Compare sides on `payments` lists the three failed payments, only in the old file. Queries run in your dbt project.
+When the old logic and the new logic are two files, Compare Files opens them. Compare sides on `payments` lists the three failed payments, only in the old file.
+
+On `dev` and want to check against `qa`? Compare with Branch opens `qa`'s version on the left and your working tree on the right. Compare sides on `order_payments` lists three totals that changed. Queries run in your dbt project.
 
 ## Quick start
 
@@ -90,6 +92,13 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 - **Compare Files**, below the CTEs: put two SQL files of the workspace in **Old** and **New**, then click **Open the diff**.
 - **CTE Diff: New Comparison (Paste Two Queries)**: paste an old and a new query side by side.
+
+### Compares a file with another branch
+
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-branch.gif" width="100%" alt="Compare with Branch on orders.sql: pick qa, the diff opens as orders.sql (qa) ↔ orders.sql, and Compare sides on order_payments lists 3 changed totals">
+
+- **⑂** beside a file in **Compare Files**, or **Compare with Branch…** in the sidebar's title bar: pick a local or remote branch. Its latest commit goes on the left, your working tree on the right.
+- Both sides run on your one dbt target, so the comparison shows what the SQL changed, not what another environment holds.
 
 ## How it works
 
