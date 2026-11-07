@@ -1,11 +1,8 @@
 # Changelog
 
-## Unreleased
-
-- The demo previews a CTE on both sides of a git diff, then compares that CTE across two files.
-
 ## 0.7.0
 
+- The demo previews a CTE on both sides of a git diff, then compares that CTE across two files.
 - The first time a SQL diff opens, CTE Diff offers to show the **▶ Preview | ⇄ Compare sides** buttons above each CTE, which diff editors hide by default. One click sets `"diffEditor.codeLens": true`.
 - **CTE Diff: Check Setup** runs `dbt debug` with CTE Diff's settings and shows the dbt it found, the project, the target, and dbt's own words when something is wrong. A failed run links to it.
 - A **Get started with CTE Diff** walkthrough on VS Code's Welcome page.
