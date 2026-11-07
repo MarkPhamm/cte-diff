@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- The demo is 28 seconds. The camera follows the cursor, and the 12-row and 9-row titles stay up for about a second.
+- The demo is 28 seconds. The camera glides after the cursor instead of jerking with it, each result holds on screen with its title long enough to read, and the scenes hand over with a pan, a blur and a whip instead of hard cuts.
 
 ## 0.7.0
 

@@ -6,8 +6,7 @@ The screen jumps between the stills, the git diff, and the file comparison. Foot
 
 | # | Scene | Film | Footage | What happens | Title |
 |---|---|---|---|---|---|
-| 1 | still-left | 0.0-2.0 | still | Left editor of a git diff. No Execute CTE above payments. | "No Execute CTE on the left." |
-| 2 | still-right | 2.0-4.0 | still | The same diff, right editor. Execute CTE is there. | "It only exists on the right." |
-| 3 | head | 4.0-14.0 | git 0.2-3.68 at 1x, 3.68-4.99 at 2.5x, a short hold, then 10.25-11.38 at 1x, 11.38-16.12 at 2.5x | The camera tracks the cursor onto the where line, to ▶ Preview on the left, then across to ▶ Preview on the right. 12 rows, then 9. | "12 rows on HEAD." / "9 rows in the working tree." |
-| 4 | files | 14.0-22.0 | files 1.45-7.17 at 1x, 7.17-9.13 at 2.5x, then a short hold | The cursor goes to Open the diff, then to ⇄ Compare sides. Three failed payments, only in the old file. | "Two files. Two logics." / "Three failed payments." / "Only in the old file." |
-| 5 | end | 22.0-28.0 | none | the mark and wordmark, the install command, the links | `⌘P ext install MarkPhamm.cte-diff` · ctediff.dev · VS Code Marketplace · Open VSX |
+| 1 | stills | 0.0-4.7 | still | Left editor of a git diff, no Execute CTE above payments. Pan to the right editor, where it is. Pull out to both. | "No Execute CTE on the left." / "It only exists on the right." |
+| 2 | head | 4.4-14.6 | git 0.2-3.68 at 1.5x, 3.68-5.0 at 3x, 5.0-7.3 at 1x, 10.25-11.38 at 1.5x, 11.38-16.12 at 3x, 16.12-18.93 at 1x | Blur in on the same diff with CTE Diff. The camera follows the cursor onto the where line and to ▶ Preview on the left, settles on 12 rows, holds both ▶ Preview buttons while the cursor crosses, settles on 9 rows. | "12 rows on HEAD." / "9 rows in the working tree." |
+| 3 | files | 14.4-23.1 | files 1.6-7.17 at 1.5x, 7.17-9.13 at 3x, 9.13-13.46 at 1x | Blur in on the whole window. Open the diff, both files, ⇄ Compare sides, three failed payments only in the old file. Whip left. | "Two files. Two logics." / "Three failed payments." / "Only in the old file." |
+| 4 | end | 23.1-28.0 | none | the mark and wordmark, the install command, the links | `⌘P ext install MarkPhamm.cte-diff` · ctediff.dev · VS Code Marketplace · Open VSX |

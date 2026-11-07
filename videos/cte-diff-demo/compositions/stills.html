@@ -1,0 +1,73 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
+    .ttl { position: absolute; left: 96px; top: 74px; z-index: 3; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
+      line-height: 1.1; white-space: nowrap; }
+    .w { display: inline-block; }
+    .acc { color: #027567; }
+    .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
+    .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
+      background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
+    .vwin img { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
+  </style>
+  <div id="root" data-composition-id="stills" data-width="1920" data-height="1080">
+    <div class="stage" data-layout-allow-overflow>
+      <div id="stills-cam" class="cam">
+        <div class="vwin">
+          <img id="stills-left" class="clip" src="assets/stills/power-user-left.png" alt="" data-start="0" data-duration="2.5" data-track-index="1">
+          <img id="stills-right" class="clip" src="assets/stills/power-user-right.png" alt="" data-start="2.5" data-duration="2.2" data-track-index="2">
+        </div>
+      </div>
+    </div>
+    <h1 id="stills-t" class="clip ttl" data-start="0.12" data-duration="2.4" data-track-index="3"><span class="w">No</span> <span class="w">Execute</span> <span class="w">CTE</span> <span class="w">on</span> <span class="w">the</span> <span class="w acc">left.</span></h1>
+    <h1 id="stills-u" class="clip ttl" data-start="2.7" data-duration="1.9" data-track-index="4"><span class="w">It</span> <span class="w">only</span> <span class="w">exists</span> <span class="w">on</span> <span class="w">the</span> <span class="w acc">right.</span></h1>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const IN = { opacity: 0, filter: "blur(6px)" };
+      const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
+      const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
+      const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
+      /** A critically damped spring chases look-at keys [t, cx, cy, scale]; (cx, cy) is in the 1440×900 capture. */
+      const camera = (sel, keys, end) => {
+        const W = 7, H = 1 / 240, F = 1 / 30;
+        const look = (t) => {
+          let i = 0;
+          while (i < keys.length - 1 && keys[i + 1][0] <= t) i++;
+          const a = keys[i], b = keys[i + 1] || a;
+          const u = b[0] > a[0] ? Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))) : 0;
+          return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, Math.log(a[3]) + (Math.log(b[3]) - Math.log(a[3])) * u];
+        };
+        // The window fills the stage (1920×890) at every scale above 1.11; below that it is centred.
+        const place = ([cx, cy, ls]) => {
+          const s = Math.exp(ls), qx = 96 + 1.2 * cx, qy = 1.2 * cy - 42;
+          const x = s * 1728 <= 1920 ? 960 * (1 - s) : Math.min(-s * 96, Math.max(1920 - s * 1824, 960 - s * qx));
+          const y = Math.min(0, Math.max(890 - s * 1038, 445 - s * qy));
+          return { x, y, scale: s };
+        };
+        let p = look(keys[0][0]), v = [0, 0, 0], t = 0;
+        tl.set(sel, place(p), 0);
+        for (let f = 1; f * F <= end + 1e-6; f++) {
+          for (; t < f * F - 1e-9; t += H) {
+            const g = look(t);
+            for (let k = 0; k < 3; k++) { v[k] += (W * W * (g[k] - p[k]) - 2 * W * v[k]) * H; p[k] += v[k] * H; }
+          }
+          tl.to(sel, { ...place(p), duration: F, ease: "none" }, (f - 1) * F);
+        }
+      };
+      camera("#stills-cam", [
+        [0, 360, 200, 2.05], [2.2, 360, 200, 2.05],
+        [2.25, 1000, 230, 2.05], [3.7, 1000, 230, 2.05],
+        [3.75, 720, 230, 1.2],
+      ], 4.7);
+      say("#stills-t", 0.12, 2.2);
+      say("#stills-u", 2.7, 4.2);
+      // Blur swap into the live footage: the layouts differ, so the two never overlap.
+      tl.to("#stills-cam", { opacity: 0, filter: "blur(8px)", duration: 0.15, ease: "power2.in" }, 4.4);
+      window.__timelines["stills"] = tl;
+    })();
+  </script>
+</template>

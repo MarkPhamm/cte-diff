@@ -15,23 +15,26 @@ LOOK:    the site's own sheet (docs/stylesheets/extra.css): ground paper #f7f9f8
 OBJECTS: two stills of dbt Power User with CTE Diff absent (assets/stills); the real extension in a real VS Code
          (`npm run capture`), git.mp4 and files.mp4; the cte-diff mark from the end card; the wordmark in Geist.
 MOTION:  words arrive with a 6 px blur -> 0 in 0.13 s, 0.067 s apart, no translate; titles still once landed; leave in
-         0.16 s. The two stills do not leave their titles; the cut does. The camera tracks the cursor: linear
-         between measured pointer samples, and it only leaves the pointer for the length of a result title.
-         The stills open already punched. Waits for dbt play at 2.5x. One exit: the window whips
-         left (0.2 s, power3.in) into the end card.
+         0.16 s. A title holds 0.5 s + 0.3 s a word. The camera is a critically damped spring (omega 7, about 0.7 s to
+         settle) chasing look-at keys: it follows the pointer, holds one framing while the UI works, and settles on
+         each result at 1.9x (UI text about 25 px). Cursor travel plays at 1.5x, dbt waits at 3x, results at 1x.
+         Seams: a pan from the left editor to the right; a blur swap (out 0.15 s, in 0.15 s) from the stills to the
+         footage; a pull-out to the whole window, then a 0.25 s blur swap into the file comparison; one exit, the
+         window whips left (0.2 s, power3.in) into the end card.
 SHOTS:
-  01 still-left  0.0-2.0   Left editor, no Execute CTE. "No Execute CTE on the left." (left accent). Punch 2.05x.
-  02 still-right 2.0-4.0   Right editor, Execute CTE present. "It only exists on the right." (right accent). Punch 2.05x.
-  03 head        4.0-14.0  The camera stays on the cursor. It rides the pointer up to the new where line,
-                           across to ▶ Preview on the left, and later across to ▶ Preview on the right.
-                           dbt at 2.5x. "12 rows on HEAD." is on for about a second, then the pointer moves
-                           and the camera goes with it. "9 rows in the working tree." (9 accent), same length.
-  04 files       14.0-22.0 The pointer travels to Open the diff, then across the file diff to ⇄ Compare sides.
-                           "Two files. Two logics." dbt at 2.5x. "Three failed payments." then
-                           "Only in the old file." The window whips left.
-  05 end         22.0-28.0 the mark performed, the wordmark, `⌘P ext install MarkPhamm.cte-diff`,
+  01 stills      0.0-4.7   Power User stills punched 2.05x on the left payments. "No Execute CTE on the left." (left
+                           accent). At 2.2 the camera pans to Execute CTE on the right editor. "It only exists on the
+                           right." (right accent). It pulls out to both editors (1.2x), then blurs out.
+  02 head        4.4-14.6  The same diff with CTE Diff blurs in. The camera rides the pointer up to the new where line,
+                           then to ▶ Preview on the left. It settles on the table: "12 rows on HEAD." (12 accent),
+                           1.8 s. It pulls back to both ▶ Preview buttons and holds while the pointer crosses and dbt
+                           runs. The same table, 9 rows: "9 rows in the working tree." (9 accent), 2 s. Pull-out.
+  03 files       14.4-23.1 The whole window blurs into the file view. Push in on Open the diff, back out to both
+                           files: "Two files. Two logics." Follow the pointer to ⇄ Compare sides, settle on the
+                           result: "Three failed payments." then "Only in the old file." The window whips left.
+  04 end         23.1-28.0 the mark performed, the wordmark, `⌘P ext install MarkPhamm.cte-diff`,
                            ctediff.dev · VS Code Marketplace · Open VSX. Hold through 28.
 BANNED:  the defaults in the skill's spec.md; a dark void; a title over a dimmed screenshot; three cards in a row;
          invented UI or rows; emoji or icon glyphs in our own titles; the logo docked in a corner.
-QA:      1.2, 3.2, 5.2, 7.3, 8.6, 10.2, 13.2, 15.5, 18.5, 21.2, 25.0: titles readable at 360 px wide,
+QA:      1.2, 3.5, 4.5, 8.6, 10.5, 13.0, 15.5, 17.0, 19.5, 21.5, 26.0: titles readable at 360 px wide,
          UI text >= 26 px in punch-ins, the 12 / 9 / 3 counts match the capture, every row shown is real output.
