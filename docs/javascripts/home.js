@@ -31,6 +31,31 @@
     }, { threshold: 0.4 }).observe(v);
   }
   video(root);
+  /* Tabs in the feature cards: click or arrow keys. Without this script every panel shows. */
+  root.querySelectorAll("[data-tabs]").forEach(function (box) {
+    var tabs = [].slice.call(box.querySelectorAll('[role="tab"]'));
+    var panels = [].slice.call(box.querySelectorAll('[role="tabpanel"]'));
+    function pick(k, focus) {
+      tabs.forEach(function (t, j) {
+        t.setAttribute("aria-selected", j === k ? "true" : "false");
+        t.tabIndex = j === k ? 0 : -1;
+        panels[j].hidden = j !== k;
+      });
+      if (focus) tabs[k].focus();
+    }
+    tabs.forEach(function (t, k) {
+      var id = box.closest("section").id + "-tab-" + k;
+      t.id = id;
+      panels[k].setAttribute("aria-labelledby", id);
+      t.addEventListener("click", function () { pick(k); });
+      t.addEventListener("keydown", function (e) {
+        var n = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (n) { e.preventDefault(); pick((k + n + tabs.length) % tabs.length, true); }
+      });
+    });
+    pick(0);
+  });
+
   if (reduce) return;
 
   /* fn(el) once el scrolls into view, or at once when it is already above the viewport. */
@@ -125,7 +150,7 @@
     void how.offsetWidth;
     onView(how.querySelector(".qh-how__steps"), function () { how.classList.add("qh-in"); });
   }
-  root.querySelectorAll(".qh-ways, .qh-reqs").forEach(function (g) { reveal([].slice.call(g.children), 0.08); });
+  root.querySelectorAll(".qh-feat__body, .qh-reqs").forEach(function (g) { reveal([].slice.call(g.children), 0.08); });
   var code = root.querySelector(".qh-final .qh-install code");
   if (code) {
     var text = code.textContent;

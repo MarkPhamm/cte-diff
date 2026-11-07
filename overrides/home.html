@@ -98,41 +98,168 @@
     </div>
   </section>
 
-  <!-- ---------------------------------------------------------- ways to open one -->
-  <section class="qh-section qh-wrap">
-    <h2>Three ways to open a comparison</h2>
-    <p class="qh-sub">Each opens two versions of a model side by side. Then ▶ Preview runs a CTE on one side, and ⇄ Compare sides runs it on both.</p>
-    {#- Stills from the capture (scripts/capture.ts): git.mp4, files.mp4 and branch.mp4, cropped alike. -#}
-    <ol class="qh-ways">
-      <li class="qh-way">
-        <div class="qh-way__text">
-          <span class="qh-way__n">1</span>
-          <h3>Your uncommitted change</h3>
-          <p class="qh-way__sides"><span>HEAD</span><b aria-label="against">↔</b><span>working tree</span></p>
-          <p>Open the model from Source Control. Click <b>⇄ Compare a CTE…</b> in the editor’s title bar, or the buttons above any CTE.</p>
+  <!-- ------------------------------------------------------------ three features
+       One section per way to open a comparison: a tabbed card of what you do, beside a blueprint stage of what opens
+       and the result it gives, the stage right, left, right. Stills from the capture (scripts/capture.ts: git.mp4,
+       files.mp4); rows from web/demo-rows.json and the capture's order_payments comparison. The branch's git graph is
+       a drawing. -->
+  {%- macro stage(title, img, alt) -%}
+      <i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i>
+      <div class="qh-bp__win">
+        <div class="qh-bp__bar"><span>{{ title }}</span><b>VS Code</b></div>
+        <img src="{{ img | url }}" width="1280" height="800" loading="lazy" alt="{{ alt }}">
+      </div>
+  {%- endmacro %}
+
+  <section class="qh-section qh-wrap qh-feat" id="working-tree">
+    <h2>Preview your <span class="qh-acc">working tree</span></h2>
+    <div class="qh-feat__body">
+      <div class="qh-tabs" data-tabs>
+        <div class="qh-tabs__bar" role="tablist" aria-label="Preview your working tree">
+          <button role="tab" aria-selected="true">The change</button><button role="tab">Clicks</button><button role="tab">Setting</button>
         </div>
-        <img src="{{ 'assets/img/way-git.jpg' | url }}" width="1280" height="800" loading="lazy" alt="orders.sql (Working Tree): HEAD on the left, the new where line on the right, Preview and Compare sides above each CTE">
-      </li>
-      <li class="qh-way">
-        <div class="qh-way__text">
-          <span class="qh-way__n">2</span>
-          <h3>Two SQL files</h3>
-          <p class="qh-way__sides"><span>old file</span><b aria-label="against">↔</b><span>new file</span></p>
-          <p>In the sidebar’s <b>Compare Files</b>, put one file in <b>Old</b> and one in <b>New</b>, then click <b>Open the diff</b>. Good for a dev copy against prod’s.</p>
+        <div class="qh-tabs__panel" role="tabpanel">
+<pre class="qh-src"><span class="qh-src__c">-- models/orders.sql, HEAD ↔ working tree</span>
+payments as (
+    select * from {{ "{{" }} ref('stg_payments') {{ "}}" }}
+<span class="qh-src__add">    where status = 'success'</span>
+),</pre>
         </div>
-        <img src="{{ 'assets/img/way-files.jpg' | url }}" width="1280" height="800" loading="lazy" alt="Compare Files in the sidebar: Old orders_v1.sql, New orders_v2.sql, and their diff open beside it">
-      </li>
-      <li class="qh-way">
-        <div class="qh-way__text">
-          <span class="qh-way__n">3</span>
-          <h3>Another branch</h3>
-          <p class="qh-way__sides"><span>qa</span><b aria-label="against">↔</b><span>working tree</span></p>
-          <p>Working on <code>dev</code>? Click <b>⑂</b> beside a file in <b>Compare Files</b>, or <b>Compare with Branch…</b> in the sidebar’s title bar, and pick <code>qa</code>. Its latest commit goes on the left.</p>
+        <div class="qh-tabs__panel" role="tabpanel">
+          <ol class="qh-steps">
+            <li>Click <b>orders.sql</b> in Source Control. HEAD opens on the left, your edits on the right.</li>
+            <li>Click <b>▶ Preview</b> above <code>payments</code> on the left: 12 rows.</li>
+            <li>Click it on the right: 9 rows. Or <b>⇄ Compare sides</b> for the rows only one side has.</li>
+          </ol>
         </div>
-        <img src="{{ 'assets/img/way-branch.jpg' | url }}" width="1280" height="800" loading="lazy" alt="orders.sql (qa) ↔ orders.sql: the qa branch's version on the left, the working tree on the right">
-      </li>
-    </ol>
-    <p class="qh-more">No file at all? Run <b>CTE Diff: New Comparison</b> and paste two queries. <a href="{{ 'usage/' | url }}">Read how to use it</a></p>
+        <div class="qh-tabs__panel" role="tabpanel">
+<pre class="qh-src"><span class="qh-src__c">// settings.json: VS Code hides lenses in diffs by default.</span>
+<span class="qh-src__c">// CTE Diff offers to set this the first time a SQL diff opens.</span>
+"diffEditor.codeLens": <span class="qh-src__k">true</span></pre>
+          <p class="qh-tabs__note">Without it, <b>⇄ Compare a CTE…</b> in the editor’s title bar and the sidebar work the same.</p>
+        </div>
+      </div>
+      <figure class="qh-bp">
+        {{ stage("orders.sql (Working Tree)", "assets/img/way-git.jpg", "The working tree's side of the git diff: the new where line in payments, with Preview and Compare sides above each CTE") }}
+        <div class="qh-bp__card">
+          <p class="qh-bp__h"><code>payments</code> <span class="qh-bp__n">12</span> rows on HEAD <b>→</b> <span class="qh-bp__n qh-bp__n--acc">9</span> in the working tree</p>
+          <p class="qh-bp__m">The new <code>where</code> drops three failed payments.</p>
+          <pre class="qh-bp__code"><span class="qh-src__add">+ where status = 'success'</span></pre>
+        </div>
+      </figure>
+    </div>
+    <p class="qh-feat__cap">▶ Preview runs one CTE through <code>dbt show</code>, on either side of the diff. dbt Power User’s Execute CTE only runs on the right.</p>
+  </section>
+
+  <section class="qh-section qh-wrap qh-feat qh-feat--flip" id="two-files">
+    <h2>Compare <span class="qh-acc">two files</span></h2>
+    <div class="qh-feat__body">
+      <figure class="qh-bp">
+        {{ stage("orders_v1.sql ↔ orders_v2.sql", "assets/img/way-files.jpg", "Compare Files in the sidebar: Old orders_v1.sql, New orders_v2.sql, and their diff open beside it") }}
+        <div class="qh-bp__card">
+          <p class="qh-bp__h"><code>payments</code> ⇄ <span class="qh-bp__n qh-bp__n--del">3</span> rows only in the old file</p>
+          <p class="qh-bp__m">Left 12 rows, right 9. The three failed payments.</p>
+          <table class="qh-bp__t qh-bp__t--del">
+            <thead><tr><th></th><th>order_id</th><th>payment_id</th><th>amount</th><th>status</th></tr></thead>
+            <tbody>
+              <tr><td>−</td><td>52</td><td>7</td><td>15</td><td>fail</td></tr>
+              <tr><td>−</td><td>14</td><td>3</td><td>8</td><td>fail</td></tr>
+              <tr><td>−</td><td>87</td><td>11</td><td>9</td><td>fail</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </figure>
+      <div class="qh-tabs" data-tabs>
+        <div class="qh-tabs__bar" role="tablist" aria-label="Compare two files">
+          <button role="tab" aria-selected="true">orders_v1.sql</button><button role="tab">orders_v2.sql</button><button role="tab">Clicks</button>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+<pre class="qh-src"><span class="qh-src__c">-- Old: the logic in production</span>
+payments as (
+    select * from {{ "{{" }} ref('stg_payments') {{ "}}" }}
+),</pre>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+<pre class="qh-src"><span class="qh-src__c">-- New: your copy</span>
+payments as (
+    select * from {{ "{{" }} ref('stg_payments') {{ "}}" }}
+<span class="qh-src__add">    where status = 'success'</span>
+),</pre>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+          <ol class="qh-steps">
+            <li>In the sidebar’s <b>Compare Files</b>, hover <b>orders_v1.sql</b> and click <b>←</b> to make it <b>Old</b>.</li>
+            <li>Hover <b>orders_v2.sql</b> and click <b>→</b> to make it <b>New</b>.</li>
+            <li>Click <b>Open the diff</b>, then <b>⇄ Compare sides</b> above <code>payments</code>.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <p class="qh-feat__cap">Two paths, not two versions of one: a dev copy against prod’s, or a rewrite against the original. No file at all? <b>CTE Diff: New Comparison</b> takes two pasted queries.</p>
+  </section>
+
+  <section class="qh-section qh-wrap qh-feat" id="branch">
+    <h2>Check against <span class="qh-acc">another branch</span></h2>
+    <div class="qh-feat__body">
+      <div class="qh-tabs" data-tabs>
+        <div class="qh-tabs__bar" role="tablist" aria-label="Check against another branch">
+          <button role="tab" aria-selected="true">Clicks</button><button role="tab">Branches</button><button role="tab">On the left</button>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+          <ol class="qh-steps">
+            <li>On <code>dev</code>, hover <b>orders.sql</b> in <b>Compare Files</b> and click <b>⑂</b>. Or click <b>Compare with Branch…</b> in the sidebar’s title bar.</li>
+            <li>Pick <code>qa</code>. <b>orders.sql (qa) ↔ orders.sql</b> opens.</li>
+            <li>Click <b>⇄ Compare sides</b> above <code>order_payments</code>.</li>
+          </ol>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+<pre class="qh-src"><span class="qh-src__c">Compare orders.sql with a branch</span>
+<span class="qh-src__sel">qa</span>               <span class="qh-src__c">last used, first</span>
+main
+origin/main      <span class="qh-src__c">remote, as of your last fetch</span>
+origin/qa</pre>
+          <p class="qh-tabs__note">Local branches, then remote ones. The branch you’re on and tags are left out.</p>
+        </div>
+        <div class="qh-tabs__panel" role="tabpanel">
+          <ul class="qh-steps qh-steps--plain">
+            <li>The left side is the branch’s latest commit, not the commit your branch forked from.</li>
+            <li>The right side is your working tree, uncommitted edits included.</li>
+            <li>Both run on your one dbt target, so the comparison shows what the SQL changed, not what QA’s tables hold.</li>
+          </ul>
+        </div>
+      </div>
+      <figure class="qh-bp">
+        <i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i>
+        <div class="qh-bp__win">
+          <div class="qh-bp__bar"><span>git log --graph</span><b>orders.sql</b></div>
+          <svg class="qh-git" viewBox="0 0 560 210" role="img" aria-label="main, qa and dev as lanes. dev branches from qa. Compare with Branch compares qa's latest commit with dev's working tree.">
+            <g class="qh-git__lane"><path d="M30 40 H520"/><path d="M70 40 C100 40 100 105 130 105 H330"/><path d="M190 105 C220 105 220 170 250 170 H440"/></g>
+            <g class="qh-git__dot"><circle cx="30" cy="40" r="6"/><circle cx="160" cy="40" r="6"/><circle cx="300" cy="40" r="6"/><circle cx="430" cy="40" r="6"/>
+              <circle cx="130" cy="105" r="6"/><circle cx="250" cy="170" r="6"/><circle cx="340" cy="170" r="6"/></g>
+            <circle class="qh-git__qa" cx="330" cy="105" r="9"/>
+            <circle class="qh-git__wt" cx="450" cy="170" r="9"/>
+            <path class="qh-git__cmp" d="M342 105 C400 105 450 120 450 155"/>
+            <text x="526" y="44">main</text><text x="210" y="96">qa</text><text x="270" y="190">dev</text>
+            <text class="qh-git__lbl qh-git__lbl--qa" x="330" y="82" text-anchor="middle">qa’s latest commit</text>
+            <text class="qh-git__lbl qh-git__lbl--wt" x="450" y="200" text-anchor="middle">your working tree</text>
+            <text class="qh-git__lbl" x="452" y="120">⇄ compare</text>
+          </svg>
+        </div>
+        <div class="qh-bp__card">
+          <p class="qh-bp__h"><code>order_payments</code> ⇄ <span class="qh-bp__n qh-bp__n--acc">3</span> changed rows</p>
+          <p class="qh-bp__m">Its SQL didn’t change. It reads <code>payments</code>, which did.</p>
+          <table class="qh-bp__t">
+            <thead><tr><th>order_id</th><th>total_amount on qa</th><th>on dev</th></tr></thead>
+            <tbody>
+              <tr><td>14</td><td class="qh-bp__old">32</td><td class="qh-bp__new">24</td></tr>
+              <tr><td>52</td><td class="qh-bp__old">45</td><td class="qh-bp__new">30</td></tr>
+              <tr><td>87</td><td class="qh-bp__old">18</td><td class="qh-bp__new">9</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </figure>
+    </div>
+    <p class="qh-feat__cap">Working on <code>dev</code> and merging into <code>qa</code>? See what the merge does to the data before you open the pull request.</p>
   </section>
 
   <!-- ------------------------------------------------------- how comparing works -->
