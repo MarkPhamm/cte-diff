@@ -12,6 +12,7 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 ## Open a comparison
 
 - **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your [settings](settings.md); CTE Diff offers to turn it on the first time a SQL diff opens, and the title bar and the sidebar work either way.
+- **Another branch:** click **⑂ Compare with Branch…** in the sidebar's title bar, or run **CTE Diff: Compare with Branch…**, and pick a branch. The open SQL file opens in a diff with that branch's latest commit on the left and your working tree on the right. With no SQL file open, it asks for one first. Remote branches are as of your last `git fetch`.
 - **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
@@ -31,7 +32,7 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 
 Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it.
 
-Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
+Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**. A file's **⑂** compares it with a branch.
 
 ![Compare Files in the sidebar: orders_v1.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="100%" }
 

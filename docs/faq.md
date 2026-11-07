@@ -26,6 +26,10 @@ dbt runs in the dbt project's folder, so it finds `profiles.yml` there or in `~/
 
 It runs in the project holding the SQL file: the nearest folder up with a `dbt_project.yml`. Pasted SQL has no file, so it runs in the workspace's project. When the workspace has several, it asks once, and keeps the answer until VS Code reloads. **CTE Diff: Choose dbt Project** changes that answer. Set `cteDiff.projectDir` to choose one for good.
 
+### Comparing with a branch: does the left side read that branch's tables?
+
+No. Both sides run on your one dbt target, so `ref('stg_orders')` reads your target's `stg_orders` on both sides. The comparison shows what the model's own SQL changes, on the same upstream data, not what another environment such as QA holds.
+
 ### What does a run cost?
 
 One query per click, on your warehouse. A comparison computes the CTE on both sides in full, so it scans what the CTE scans, twice. `cteDiff.limit` caps the rows returned, not the rows scanned. A new run cancels the one still going, and **Cancel** on the progress notification stops it.

@@ -2,7 +2,7 @@
   "name": "cte-diff",
   "displayName": "CTE Diff for dbt and Snowflake",
   "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your Snowflake profile just work.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "publisher": "MarkPhamm",
   "author": "Minh (Mark) Pham",
   "license": "Apache-2.0",
@@ -83,6 +83,12 @@
         "title": "Compare Two Files…",
         "category": "CTE Diff",
         "icon": "$(files)"
+      },
+      {
+        "command": "cteDiff.compareWithBranch",
+        "title": "Compare with Branch…",
+        "category": "CTE Diff",
+        "icon": "$(git-branch)"
       },
       {
         "command": "cteDiff.files.pick",
@@ -281,6 +287,11 @@
       ],
       "view/title": [
         {
+          "command": "cteDiff.compareWithBranch",
+          "when": "view == cteDiff.ctes",
+          "group": "navigation"
+        },
+        {
           "command": "cteDiff.compareFiles",
           "when": "view == cteDiff.ctes",
           "group": "navigation"
@@ -331,6 +342,11 @@
           "command": "cteDiff.files.setNew",
           "when": "view == cteDiff.files && viewItem == sqlFile",
           "group": "inline@2"
+        },
+        {
+          "command": "cteDiff.compareWithBranch",
+          "when": "view == cteDiff.files && viewItem == sqlFile",
+          "group": "inline@3"
         }
       ]
     },
@@ -403,7 +419,7 @@
     "viewsWelcome": [
       {
         "view": "cteDiff.ctes",
-        "contents": "Open a SQL file to list its CTEs. To see which CTEs changed and compare their rows, open two versions side by side, three ways:\nClick a changed model in Source Control. In the diff, Compare a CTE… is in the editor's title bar.\n[Compare Two Files…](command:cteDiff.compareFiles)\n[Paste Two Queries](command:cteDiff.newComparison)\nWhen dbt fails, [Check Setup](command:cteDiff.checkSetup) shows what dbt finds."
+        "contents": "Open a SQL file to list its CTEs. To see which CTEs changed and compare their rows, open two versions side by side, four ways:\nClick a changed model in Source Control. In the diff, Compare a CTE… is in the editor's title bar.\n[Compare with Branch…](command:cteDiff.compareWithBranch)\n[Compare Two Files…](command:cteDiff.compareFiles)\n[Paste Two Queries](command:cteDiff.newComparison)\nWhen dbt fails, [Check Setup](command:cteDiff.checkSetup) shows what dbt finds."
       }
     ]
   },

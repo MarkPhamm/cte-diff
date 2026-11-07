@@ -23,12 +23,16 @@ _Avoid_: adapter (in text for users)
 ## A diff
 
 **Git diff**:
-One SQL path opened as a diff. The left side is HEAD, the committed file. The right side is the working tree.
-_Avoid_: both sides of the working tree
+One SQL path opened as a diff. The left side is a committed version: HEAD by default, or a branch's. The right side is the working tree.
+_Avoid_: both sides of the working tree, branch diff
 
 **HEAD**:
-The committed version of a file. The left side of a git diff.
+The committed version of a file on the current branch. The default left side of a git diff.
 _Avoid_: old side, original
+
+**Branch**:
+The branch picked for a git diff's left side, such as `qa` while working on `dev`. Its latest commit is used, not the commit where the current branch forked from it.
+_Avoid_: base branch, target (a dbt target is a warehouse connection)
 
 **Working tree**:
 The version of a file in the working directory, including uncommitted edits. The right side of a git diff.

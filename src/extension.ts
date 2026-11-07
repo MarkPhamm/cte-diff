@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { refLabel } from "./branch.ts";
 import { cteQuery } from "./cte.ts";
 import { debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
@@ -20,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
   const lens = new CteLens();
   tree = new CteTree();
   tree.view = vscode.window.createTreeView("cteDiff.ctes", { treeDataProvider: tree });
-  const files = new FilesTree();
+  const files = new FilesTree(context.workspaceState);
   files.follow(vscode.window.activeTextEditor?.document);
   const watcher = vscode.workspace.createFileSystemWatcher("**/*.sql", false, true, false);
   let pending: ReturnType<typeof setTimeout> | undefined;
@@ -69,6 +70,10 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.commands.registerCommand("cteDiff.files.setOld", (n: FileNode & { kind: "file" }) => files.set("old", n.uri)),
     vscode.commands.registerCommand("cteDiff.files.setNew", (n: FileNode & { kind: "file" }) => files.set("new", n.uri)),
     vscode.commands.registerCommand("cteDiff.files.open", () => guard(() => files.open())),
+    // From the Compare Files list it gets the file's node; from the title bar or Command Palette, nothing.
+    vscode.commands.registerCommand("cteDiff.compareWithBranch", (n?: FileNode) =>
+      guard(() => files.compareWithBranch(n?.kind === "file" ? n.uri : undefined)),
+    ),
     vscode.commands.registerCommand("cteDiff.compareCte", () => guardRun(pickCte)),
     vscode.commands.registerCommand("cteDiff.previewCte", () => guardRun(pickCte)),
     vscode.commands.registerCommand("cteDiff.rerun", () => guardRun(async () => again?.())),
@@ -141,8 +146,9 @@ async function preview(uri: vscode.Uri, name?: string): Promise<void> {
   if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit, result.meta);
 }
 
-/** A file's name for the results' heading; a git: URI is the committed version. */
-const fileName = (uri: vscode.Uri) => (path.basename(uri.path) || "untitled") + (uri.scheme === "git" ? " (git)" : "");
+/** A file's name for the results' heading; a git: URI is a committed version, named by its branch when it has one. */
+const fileName = (uri: vscode.Uri) =>
+  (path.basename(uri.path) || "untitled") + (uri.scheme === "git" ? ` (${refLabel(uri.query) ?? "git"})` : "");
 
 async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   const diff = diffOf(uri);

@@ -49,7 +49,8 @@ When the old logic and the new logic are two files, Compare Files opens them. Co
 1. Install **CTE Diff** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff), or from [Open VSX](https://open-vsx.org/extension/MarkPhamm/cte-diff) for Cursor, Windsurf and VSCodium.
 2. Open a dbt project. It needs dbt Fusion or dbt-core 1.5 or later, with a working profile.
 3. Open a changed model as a diff. Click **▶ Preview** above a CTE on the left, then on the right.
-4. To compare two files, open the **CTE Diff** sidebar, set **Old** and **New**, click **Open the diff**, then **⇄ Compare sides**.
+4. To compare with another branch, such as `qa`, click **Compare with Branch…** in the **CTE Diff** sidebar's title bar and pick the branch.
+5. To compare two files, open the **CTE Diff** sidebar, set **Old** and **New**, click **Open the diff**, then **⇄ Compare sides**.
 
 Diff editors hide the **▶ Preview | ⇄ Compare sides** buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings. The sidebar and the editor's title bar work either way.
 
