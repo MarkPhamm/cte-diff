@@ -2,7 +2,7 @@
 
 ## Calls
 
-One film, silent, 38 seconds. The open is two stills of dbt Power User 0.67: Execute CTE is on the right editor of a git diff and absent on the left. The live half previews payments on HEAD (12 rows) and on the working tree (9), then compares payments across orders_v1.sql and orders_v2.sql (three failed payments, only in the old file). The storyline not built is the previous one: sidebar marks, then order_payments, then final's columns. HyperFrames plan usage: unknown (the CLI reported `unsupported_harness`).
+One film, silent, 28 seconds. The camera tracks the cursor. The 12-row and 9-row titles stay up for about a second. The open is two stills of dbt Power User 0.67: Execute CTE is on the right editor of a git diff and absent on the left. The live half previews payments on HEAD (12 rows) and on the working tree (9), then compares payments across orders_v1.sql and orders_v2.sql (three failed payments, only in the old file). The storyline not built is the previous one: sidebar marks, then order_payments, then final's columns. HyperFrames plan usage: unknown (the CLI reported `unsupported_harness`).
 
 ## Measured
 

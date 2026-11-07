@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The demo is 28 seconds. The camera follows the cursor, and the 12-row and 9-row titles stay up for about a second.
+
 ## 0.7.0
 
 - The demo previews a CTE on both sides of a git diff, then compares that CTE across two files.

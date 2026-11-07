@@ -33,7 +33,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ctediff.dev/#demo"><img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-poster.jpg" width="100%" alt="Watch the 38-second demo"></a>
+  <a href="https://ctediff.dev/#demo"><img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-poster.jpg" width="100%" alt="Watch the 28-second demo"></a>
 </p>
 
 ## Why

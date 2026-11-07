@@ -1,0 +1,66 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
+    .ttl { position: absolute; left: 96px; top: 74px; z-index: 3; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
+      line-height: 1.1; white-space: nowrap; }
+    .w { display: inline-block; }
+    .acc { color: #027567; }
+    .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
+    .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
+      background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
+    .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
+  </style>
+  <div id="root" data-composition-id="files" data-width="1920" data-height="1080">
+    <div class="stage" data-layout-allow-overflow>
+      <div id="files-enter" class="enter">
+        <div id="files-cam" class="cam">
+          <div class="vwin">
+            <video id="files-a" class="clip" src="assets/footage/files.mp4" data-start="0" data-duration="5.72" data-media-start="1.45" data-playback-rate="1" data-track-index="1" muted playsinline></video>
+            <video id="files-b" class="clip" src="assets/footage/files.mp4" data-start="5.72" data-duration="0.784" data-media-start="7.17" data-playback-rate="2.5" data-track-index="2" muted playsinline></video>
+            <video id="files-c" class="clip" src="assets/footage/files.mp4" data-start="6.504" data-duration="1.496" data-media-start="9.13" data-playback-rate="1" data-track-index="3" muted playsinline></video>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h1 id="files-t" class="clip ttl" data-start="1.3" data-duration="1.6" data-track-index="4"><span class="w">Two</span> <span class="w">files.</span> <span class="w">Two</span> <span class="w acc">logics.</span></h1>
+    <h1 id="files-u" class="clip ttl" data-start="6.85" data-duration="0.8" data-track-index="5"><span class="w">Three</span> <span class="w">failed</span> <span class="w">payments.</span></h1>
+    <h1 id="files-v" class="clip ttl" data-start="7.45" data-duration="0.5" data-track-index="6"><span class="w">Only</span> <span class="w">in</span> <span class="w">the</span> <span class="w acc">old</span> <span class="w">file.</span></h1>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const IN = { opacity: 0, filter: "blur(6px)" };
+      const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
+      const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
+      const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
+      const at = (s, cx, cy, fx, fy) => {
+        const qx = 96 + 1.2 * cx, qy = 1.2 * cy - 42;
+        return { x: fx - s * qx, y: fy - 190 - s * qy, scale: s };
+      };
+      const follow = (keys) => {
+        keys.forEach((k, i) => {
+          const p = at(1.65, k[1], k[2], 880, 520);
+          if (i === 0) { tl.set("#files-cam", p, 0); return; }
+          tl.to("#files-cam", { ...p, duration: k[0] - keys[i - 1][0], ease: "none" }, keys[i - 1][0]);
+        });
+      };
+      follow([
+        [0, 1159, 498], [0.17, 1355, 841], [0.3, 1269, 792], [0.43, 1148, 722], [0.55, 996, 635],
+        [0.67, 826, 538], [0.8, 695, 464], [0.93, 490, 346], [1.05, 383, 285], [1.17, 272, 222],
+        [1.3, 209, 186], [1.43, 201, 182], [2.93, 201, 182], [3.05, 227, 188], [3.17, 327, 214],
+        [3.3, 525, 265], [3.43, 710, 312], [3.55, 848, 348], [3.67, 1012, 390], [3.8, 1128, 420],
+        [3.93, 1172, 431], [4.43, 1172, 430], [4.55, 1171, 428], [4.67, 1162, 406], [4.8, 1152, 379],
+        [4.93, 1132, 329], [5.05, 1121, 302], [5.17, 1103, 259], [5.3, 1086, 216], [5.43, 1079, 198],
+        [5.55, 1076, 191], [6.5, 1076, 191],
+      ]);
+      tl.to("#files-cam", { ...at(1.45, 640, 680, 960, 720), duration: 0.32, ease: "power2.out" }, 6.5);
+      say("#files-t", 1.3, 2.75);
+      say("#files-u", 6.85, 7.4);
+      say("#files-v", 7.45, 7.85);
+      tl.to("#files-enter", { x: -360, opacity: 0, filter: "blur(14px)", duration: 0.2, ease: "power3.in" }, 7.9);
+      window.__timelines["files"] = tl;
+    })();
+  </script>
+</template>

@@ -4,12 +4,11 @@
     #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
     .ttl { position: absolute; left: 96px; top: 74px; z-index: 3; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
       line-height: 1.1; white-space: nowrap; }
-    .paper { position: absolute; left: 0; top: 0; z-index: 2; width: 1920px; height: 188px; background: #f7f9f8; opacity: 0; }
     .w { display: inline-block; }
     .acc { color: #027567; }
-    .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+    .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
     .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
-    .vwin { position: absolute; left: 96px; top: 190px; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
+    .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
       background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
     .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
   </style>
@@ -20,13 +19,16 @@
           <div class="vwin">
             <video id="head-a" class="clip" src="assets/footage/git.mp4" data-start="0" data-duration="3.48" data-media-start="0.2" data-playback-rate="1" data-track-index="1" muted playsinline></video>
             <video id="head-b" class="clip" src="assets/footage/git.mp4" data-start="3.48" data-duration="0.524" data-media-start="3.68" data-playback-rate="2.5" data-track-index="2" muted playsinline></video>
-            <video id="head-c" class="clip" src="assets/footage/git.mp4" data-start="4.004" data-duration="5.496" data-media-start="4.99" data-playback-rate="1" data-track-index="3" muted playsinline></video>
+            <video id="head-c" class="clip" src="assets/footage/git.mp4" data-start="4.004" data-duration="1.476" data-media-start="4.99" data-playback-rate="1" data-track-index="3" muted playsinline></video>
+            <video id="head-d" class="clip" src="assets/footage/git.mp4" data-start="5.48" data-duration="1.13" data-media-start="10.25" data-playback-rate="1" data-track-index="4" muted playsinline></video>
+            <video id="head-e" class="clip" src="assets/footage/git.mp4" data-start="6.61" data-duration="1.896" data-media-start="11.38" data-playback-rate="2.5" data-track-index="5" muted playsinline></video>
+            <video id="head-f" class="clip" src="assets/footage/git.mp4" data-start="8.506" data-duration="1.494" data-media-start="16.12" data-playback-rate="1" data-track-index="6" muted playsinline></video>
           </div>
         </div>
       </div>
     </div>
-    <div id="head-paper" class="paper"></div>
-    <h1 id="head-t" class="clip ttl" data-start="4.15" data-duration="5.15" data-track-index="4"><span class="w acc">12</span> <span class="w">rows</span> <span class="w">on</span> <span class="w">HEAD.</span></h1>
+    <h1 id="head-t" class="clip ttl" data-start="4.18" data-duration="1.1" data-track-index="7"><span class="w acc">12</span> <span class="w">rows</span> <span class="w">on</span> <span class="w">HEAD.</span></h1>
+    <h1 id="head-u" class="clip ttl" data-start="8.9" data-duration="0.95" data-track-index="8"><span class="w acc">9</span> <span class="w">rows</span> <span class="w">in</span> <span class="w">the</span> <span class="w">working</span> <span class="w">tree.</span></h1>
   </div>
   <script>
     (function () {
@@ -35,18 +37,34 @@
       const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
       const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
       const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
-      // (cx, cy) is a point in the 1440×900 capture. It lands at film (fx, fy). The window rests at y=190, under the title.
-      const cam = (sel, t, s, cx, cy, fx, fy, d) => {
-        const qx = 96 + 1.2 * cx, qy = 190 + 1.2 * (cy - 35);
-        const x = fx - s * qx, y = fy - s * qy;
-        if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
-        else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
+      // (cx, cy) is the cursor in the 1440×900 capture. It lands at film (fx, fy). The stage starts at y=190.
+      const at = (s, cx, cy, fx, fy) => {
+        const qx = 96 + 1.2 * cx, qy = 1.2 * cy - 42;
+        return { x: fx - s * qx, y: fy - 190 - s * qy, scale: s };
       };
-      cam("#head-cam", 0, 1, 0, 35, 96, 190);
-      cam("#head-cam", 0.25, 2.8, 1080, 215, 1060, 520, 0.5);
-      cam("#head-cam", 4.1, 1.6, 500, 630, 960, 820, 0.55);
-      tl.to("#head-paper", { opacity: 1, duration: 0.2, ease: "power2.out" }, 4.05);
-      say("#head-t", 4.15, 9.15);
+      // Keys are the measured cursor. Linear gaps, so the frame stays on the pointer.
+      const follow = (keys, setFirst) => {
+        keys.forEach((k, i) => {
+          const p = at(1.65, k[1], k[2], 880, 520);
+          if (i === 0) { if (setFirst) tl.set("#head-cam", p, 0); return; }
+          tl.to("#head-cam", { ...p, duration: k[0] - keys[i - 1][0], ease: "none" }, keys[i - 1][0]);
+        });
+      };
+      follow([
+        [0, 1105, 431], [0.42, 1105, 427], [0.55, 1105, 414], [0.68, 1105, 381], [0.8, 1105, 349],
+        [0.92, 1105, 308], [1.05, 1105, 281], [1.18, 1106, 258], [2.05, 1106, 258], [2.18, 1090, 257],
+        [2.3, 1048, 254], [2.42, 957, 248], [2.55, 838, 239], [2.68, 666, 227], [2.8, 595, 222],
+        [2.92, 423, 210], [3.05, 331, 203], [3.18, 213, 195], [3.3, 155, 191], [4.004, 155, 191],
+      ], true);
+      tl.to("#head-cam", { ...at(1.45, 500, 600, 960, 700), duration: 0.28, ease: "power2.out" }, 4.004);
+      tl.to("#head-cam", { ...at(1.65, 155, 191, 880, 520), duration: 0.28, ease: "power2.inOut" }, 5.2);
+      follow([
+        [5.48, 155, 191], [5.61, 196, 191], [5.73, 281, 191], [5.85, 418, 191], [5.98, 569, 191],
+        [6.11, 686, 191], [6.23, 726, 191], [6.35, 813, 191], [6.48, 832, 191], [6.61, 832, 191], [8.51, 832, 191],
+      ], false);
+      tl.to("#head-cam", { ...at(1.45, 520, 600, 960, 700), duration: 0.32, ease: "power2.out" }, 8.51);
+      say("#head-t", 4.18, 5.15);
+      say("#head-u", 8.9, 9.7);
       window.__timelines["head"] = tl;
     })();
   </script>

@@ -36,10 +36,10 @@
           x = Math.min(-s * 96, Math.max(1920 - s * 1824, 960 - s * qx));
           y = Math.min(0, Math.max(890 - s * 1038, 445 - s * qy));
         }
-        if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
+        if (t === 0) tl.set(sel, { x, y, scale: s }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      cam("#still-right-cam", 0, 2.05, 1040, 175);
+      cam("#still-right-cam", 0, 2.2, 1020, 320);
       tl.fromTo("#still-right-t .w", IN, { ...ON }, 0.08);
       window.__timelines["still-right"] = tl;
     })();
