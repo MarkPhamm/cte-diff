@@ -17,10 +17,21 @@ function shipped(file: string): boolean {
 
 test("every file package.json points at ships in the .vsix", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-  for (const f of [pkg.main, pkg.icon, ...pkg.contributes.viewsContainers.activitybar.map((v: { icon: string }) => v.icon)].map((f: string) => path.normalize(f).replace(/\\/g, "/"))) {
+  const walkthrough = pkg.contributes.walkthroughs.flatMap((w: { steps: { media: Record<string, unknown> }[] }) =>
+    w.steps.map((s) => s.media.image ?? s.media.markdown),
+  );
+  const files = [pkg.main, pkg.icon, ...pkg.contributes.viewsContainers.activitybar.map((v: { icon: string }) => v.icon), ...walkthrough];
+  for (const f of files.map((f: string) => path.normalize(f).replace(/\\/g, "/"))) {
     assert.ok(fs.existsSync(path.join(root, f)) || f.startsWith("out/"), `${f} exists`);
     assert.ok(shipped(f), `${f} is listed in .vscodeignore`);
   }
+});
+
+test("examples/duckdb is the site's sample", async () => {
+  const { before, after } = await import("../web/sample.ts");
+  const model = (f: string) => fs.readFileSync(path.join(root, "examples", "duckdb", "models", f), "utf8");
+  assert.equal(model("orders.sql"), before);
+  assert.equal(model("orders_v2.sql"), after);
 });
 
 test("every command the code runs is contributed", () => {

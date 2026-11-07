@@ -11,7 +11,7 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 
 ## Open a comparison
 
-- **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your [settings](settings.md); the title bar and the sidebar work either way.
+- **A git change:** open the model from Source Control. Click **⇄ Compare a CTE…** in the editor's title bar and pick a CTE. Diff editors hide the buttons above each CTE unless `"diffEditor.codeLens": true` is in your [settings](settings.md); CTE Diff offers to turn it on the first time a SQL diff opens, and the title bar and the sidebar work either way.
 - **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
 
@@ -39,7 +39,7 @@ You can try the marking, and the rows, in the [playground](playground.md). It ru
 
 ## The results
 
-Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal.
+Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal. Under each heading: the files, the dbt target and how long the run took.
 
 - A preview shows the rows, up to [`cteDiff.limit`](settings.md), with the row and column counts.
 - A comparison shows each side's row count and how many rows are only on the left or only on the right. Then it lists those rows, marked **−** (left, old) and **+** (right, new).
@@ -59,3 +59,5 @@ A comparison of `final`, which gained a column and lost one:
 ![Compare on final from the sidebar: refunded only on the left, first_name only on the right](assets/img/demo-final.gif){ width="100%" }
 
 The view's title bar has **Run Again**, which reruns the last preview or comparison after you edit the SQL, and **Show Log**. Each run is logged to **Output › CTE Diff**, along with the exact SQL. A new run cancels the one still going.
+
+When dbt fails, the panel shows dbt's error and a **Check Setup** link. **CTE Diff: Check Setup** runs `dbt debug` with CTE Diff's settings and shows what it found. A new install also gets a walkthrough: **Help › Welcome**, then **Get started with CTE Diff**.

@@ -159,6 +159,53 @@
         "command": "cteDiff.tree.reveal",
         "title": "Go to CTE",
         "category": "CTE Diff"
+      },
+      {
+        "command": "cteDiff.checkSetup",
+        "title": "Check Setup",
+        "category": "CTE Diff"
+      },
+      {
+        "command": "cteDiff.chooseProject",
+        "title": "Choose dbt Project",
+        "category": "CTE Diff"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "cteDiff.start",
+        "title": "Get started with CTE Diff",
+        "description": "See what a dbt change did to the data, one CTE at a time.",
+        "steps": [
+          {
+            "id": "open",
+            "title": "Open a change",
+            "description": "Click a changed model in Source Control: its old and new versions open side by side, and the CTE Diff sidebar marks each CTE changed, new, removed or reads a changed CTE.\nNo git change? Compare two files, or paste two queries.\n[Open Source Control](command:workbench.view.scm)\n[Compare Two Files](command:cteDiff.compareFiles)\n[Paste Two Queries](command:cteDiff.newComparison)",
+            "media": { "image": "docs/assets/img/sidebar.png", "altText": "The CTE Diff sidebar marking each CTE of a diff" },
+            "completionEvents": ["onView:cteDiff.ctes"]
+          },
+          {
+            "id": "lens",
+            "title": "Show the buttons in diffs",
+            "description": "Diff editors hide the ▶ Preview and ⇄ Compare sides buttons above each CTE unless \"diffEditor.codeLens\" is on. The sidebar and the editor's title bar have the same buttons either way.\n[Turn On diffEditor.codeLens](command:workbench.action.openSettings?%5B%22diffEditor.codeLens%22%5D)",
+            "media": { "image": "docs/assets/img/preview.png", "altText": "▶ Preview above a CTE, and its rows in the CTE Diff panel" },
+            "completionEvents": ["onSettingChanged:diffEditor.codeLens"]
+          },
+          {
+            "id": "compare",
+            "title": "Compare a CTE",
+            "description": "Click ⇄ above a CTE, in the sidebar, or in the editor's title bar. dbt runs the CTE on both sides in one query, and the panel lists the rows only one side returns, with changed rows paired old above new.",
+            "media": { "image": "docs/assets/img/compare.png", "altText": "A comparison: changed rows paired, with the changed cells highlighted" },
+            "completionEvents": ["onCommand:cteDiff.compare", "onCommand:cteDiff.compareCte", "onCommand:cteDiff.tree.compare"]
+          },
+          {
+            "id": "setup",
+            "title": "If dbt fails, check the setup",
+            "description": "Check Setup runs dbt debug with CTE Diff's settings and shows the dbt it found, the project and the target.\n[Check Setup](command:cteDiff.checkSetup)",
+            "media": { "markdown": "media/walkthrough/setup.md" },
+            "completionEvents": ["onCommand:cteDiff.checkSetup"]
+          }
+        ]
       }
     ],
     "menus": {
@@ -356,7 +403,7 @@
     "viewsWelcome": [
       {
         "view": "cteDiff.ctes",
-        "contents": "Open a SQL file to list its CTEs, or open two versions in a diff (click a changed model in Source Control) to see which CTEs changed and compare their rows.\n[New Comparison](command:cteDiff.newComparison)\nPaste an old and a new query side by side."
+        "contents": "Open a SQL file to list its CTEs. To see which CTEs changed and compare their rows, open two versions side by side, three ways:\nClick a changed model in Source Control. In the diff, Compare a CTE… is in the editor's title bar.\n[Compare Two Files…](command:cteDiff.compareFiles)\n[Paste Two Queries](command:cteDiff.newComparison)\nWhen dbt fails, [Check Setup](command:cteDiff.checkSetup) shows what dbt finds."
       }
     ]
   },

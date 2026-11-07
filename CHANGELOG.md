@@ -1,7 +1,18 @@
 # Changelog
 
-## 0.6.3
+## 0.7.0
 
+- The first time a SQL diff opens, CTE Diff offers to show the **▶ Preview | ⇄ Compare sides** buttons above each CTE, which diff editors hide by default. One click sets `"diffEditor.codeLens": true`.
+- **CTE Diff: Check Setup** runs `dbt debug` with CTE Diff's settings and shows the dbt it found, the project, the target, and dbt's own words when something is wrong. A failed run links to it.
+- A **Get started with CTE Diff** walkthrough on VS Code's Welcome page.
+- **CTE Diff: Choose dbt Project** changes the project that runs pasted SQL, without reloading VS Code.
+- Under each result's heading: the files, the dbt target and how long the run took.
+- Cancelling a run says "Cancelled", not "dbt failed".
+- Errors from before dbt runs, such as no dbt project found, show in the results panel instead of a pop-up.
+- A comparison on a warehouse other than Snowflake or DuckDB says so plainly, says that Preview works there, and links to ask for that warehouse. It used to show the warehouse's SQL error.
+- dbt-core's errors show without colour codes.
+- The sidebar's welcome text names all three ways to open a comparison: Source Control, Compare Files, and pasting two queries.
+- `examples/duckdb` is now the change from the docs site and the demo video: jaffle_shop's `orders` model and a new version of it.
 - Settings explains that the buttons above a CTE in a diff need `"diffEditor.codeLens": true`. The sidebar and the title bar work without it.
 
 ## 0.6.2

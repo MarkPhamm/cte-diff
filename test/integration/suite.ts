@@ -47,7 +47,9 @@ export async function run(): Promise<void> {
   assert.equal(tree.view?.message, "1 changed · 1 new · 1 removed · 1 reads a changed CTE");
   assert.match(String(tree.getTreeItem(nodes[4]).tooltip), /reads a CTE that changed/);
   const commands = await vscode.commands.getCommands(true);
-  for (const c of ["cteDiff.compareCte", "cteDiff.previewCte", "cteDiff.rerun", "cteDiff.showLog"]) assert.ok(commands.includes(c), c);
+  for (const c of ["cteDiff.compareCte", "cteDiff.previewCte", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
+    assert.ok(commands.includes(c), c);
+  }
 
   // Clicking a CTE selects its name in the diff's right side.
   await vscode.commands.executeCommand("cteDiff.tree.reveal", nodes[1]);

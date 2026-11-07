@@ -50,6 +50,26 @@ function projectEnv(dir: string): Record<string, string> {
   }
 }
 
+/** The environment dbt runs in: the project's .env fills in what VS Code's environment lacks. DBT_STATIC_ANALYSIS: dbt
+ * Fusion would otherwise type-check the SQL first, which fails on tables outside the project and adds time; dbt-core
+ * ignores it. dbt-core colours its logs unless DBT_USE_COLORS is off, and the panel would show the escape codes. */
+const envFor = (dir: string) => ({ ...projectEnv(dir), ...process.env, DBT_STATIC_ANALYSIS: "off", NO_COLOR: "1", DBT_USE_COLORS: "false" });
+
+const notFound = (dbt: string) => `dbt not found at "${dbt}". Set cteDiff.dbtPath to your dbt executable.`;
+
+/** `dbt debug` in the project: whether dbt finds the project, its profile and the warehouse, and the end of its output. */
+export function debug(o: Omit<ShowOptions, "limit">): Promise<{ ok: boolean; output: string }> {
+  const args = ["debug", ...(o.target ? ["--target", o.target] : [])];
+  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${args.join(" ")}`);
+  return new Promise((resolve) => {
+    execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
+      if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") resolve({ ok: false, output: notFound(o.dbt) });
+      else resolve({ ok: !err, output: dbtError(stdout, stderr) });
+    });
+  });
+}
+
 export interface ShowOptions {
   dbt: string;
   projectDir: string;
@@ -68,16 +88,13 @@ export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise
   if (o.target) args.push("--target", o.target);
   o.log?.(`$ cd ${o.projectDir} && ${o.dbt} show -q --inline <sql> --output json --limit ${o.limit}${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
   return new Promise((resolve, reject) => {
-    // The project's .env fills in what VS Code's environment lacks. DBT_STATIC_ANALYSIS: dbt Fusion would otherwise
-    // type-check the SQL first, which fails on tables outside the project and adds time; dbt-core ignores it.
-    const env = { ...projectEnv(o.projectDir), ...process.env, DBT_STATIC_ANALYSIS: "off", NO_COLOR: "1" };
     // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
-    const child = execFile(o.dbt, args, { cwd: o.projectDir, env, maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
+    const child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (running === child) running = undefined;
       o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
       if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));
       if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") {
-        return reject(new Error(`dbt not found at "${o.dbt}". Set cteDiff.dbtPath to your dbt executable.`));
+        return reject(new Error(notFound(o.dbt)));
       }
       const rows = err ? undefined : parseShow(stdout);
       if (rows) resolve(rows);
