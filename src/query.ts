@@ -2,19 +2,37 @@
 
 export type Row = Record<string, unknown>;
 
-/** Jinja that dbt renders to `duckdb` or `snowflake` SQL, by the profile's adapter. */
-const byAdapter = (duckdb: string, snowflake: string) => `{% if target.type == 'duckdb' %}${duckdb}{% else %}${snowflake}{% endif %}`;
+/** The warehouses a comparison has SQL for, by dbt's `target.type`. */
+export const SUPPORTED = ["duckdb", "snowflake"] as const;
+type Adapter = (typeof SUPPORTED)[number];
 
-/** `sql` as dbt renders it for one adapter: each byAdapter block becomes that adapter's branch. Other Jinja stays. */
+/** The start of the dbt error a comparison raises on any other warehouse; its `target.type` follows. */
+const UNSUPPORTED = "CTE Diff: Compare has no SQL for";
+
+/** Jinja that dbt renders to the profile's adapter's SQL. On any other adapter it raises an error that unsupported() reads. */
+const byAdapter = (sql: Record<Adapter, string>) =>
+  SUPPORTED.map((t, i) => `{% ${i ? "elif" : "if"} target.type == '${t}' %}${sql[t]}`).join("") +
+  `{% else %}{{ exceptions.raise_compiler_error("${UNSUPPORTED} " ~ target.type) }}{% endif %}`;
+
+/** `sql` as dbt renders it for one adapter: each byAdapter block becomes that adapter's branch, else its else branch.
+ * Other Jinja stays. */
 export const forAdapter = (sql: string, type: string) =>
-  sql.replace(/{% if target\.type == '(\w+)' %}(.*?){% else %}(.*?){% endif %}/gs, (_, t, a, b) => (t === type ? a : b));
+  sql.replace(/{% if target\.type == '\w+' %}.*?{% endif %}/gs, (block) => {
+    // ["", type, sql, type, sql, undefined (the else), sql]
+    const parts = block.slice(0, -"{% endif %}".length).split(/{% (?:el)?if target\.type == '(\w+)' %}|{% else %}/);
+    for (let i = 1; i < parts.length; i += 2) if (parts[i] === type || parts[i] === undefined) return parts[i + 1];
+    return "";
+  });
+
+/** The warehouse a dbt error names when a comparison has no SQL for it; undefined for any other error. */
+export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPORTED} (\\w+)`))?.[1];
 
 /** A row of `__t` as JSON text with its keys sorted. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column
  * order, so its keys are sorted by hand. */
-const rowJson = byAdapter(
-  `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
-  "to_json(object_construct_keep_null(*))",
-);
+const rowJson = byAdapter({
+  duckdb: `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
+  snowflake: "to_json(object_construct_keep_null(*))",
+});
 
 /** Rows only on one side, plus row counts: one query, so one dbt run. Each row becomes JSON with sorted keys, so
  * columns match by name, not position, and a column missing on one side shows as a difference instead of an error.
@@ -29,7 +47,7 @@ ${right}
 __only_l as (select __row from __l except select __row from __r),
 __only_r as (select __row from __r except select __row from __l)
 select * from (
-  select 0 as __k, 'counts' as __side, to_json(${byAdapter("json_object", "object_construct")}(
+  select 0 as __k, 'counts' as __side, to_json(${byAdapter({ duckdb: "json_object", snowflake: "object_construct" })}(
     'left', (select count(*) from __l), 'right', (select count(*) from __r),
     'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r)))::varchar as __row
   union all select 1, 'left', __row from __only_l

@@ -98,8 +98,8 @@ Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and 
 
 ## Requirements
 
-- dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile.
-- Comparisons run on Snowflake and DuckDB; dbt picks the SQL for your adapter. Previews run on any warehouse dbt supports.
+- dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile. **CTE Diff: Check Setup** runs `dbt debug` and shows what it finds.
+- Comparisons run on Snowflake and DuckDB; dbt picks the SQL for your adapter. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports.
 - A trusted workspace: dbt runs the project's macros.
 
 ## Settings

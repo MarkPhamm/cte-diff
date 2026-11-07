@@ -1,11 +1,11 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { cteQuery } from "./cte.ts";
-import { findDbt, projectDirOf, show } from "./dbt.ts";
+import { debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
-import { results, showComparison, showError, showRows, showRunning } from "./panel.ts";
-import { compareQuery, readComparison, type Row } from "./query.ts";
+import { results, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
+import { compareQuery, readComparison, unsupported, type Row } from "./query.ts";
 import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 
 let log: vscode.OutputChannel;
@@ -29,6 +29,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     pending = setTimeout(() => void tree.update(), 300);
   };
   update();
+  offerDiffLens(context);
   context.subscriptions.push(
     log,
     tree.view,
@@ -39,6 +40,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.window.tabGroups.onDidChangeTabs(() => {
       lens.refresh();
       update();
+      offerDiffLens(context);
     }),
     vscode.window.registerWebviewViewProvider("cteDiff.results", results),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -55,33 +57,71 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
       lens.refresh(); // the other side's Compare lenses depend on this side's CTEs
     }),
     vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),
-    vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guard(() => preview(n.uri!, n.name))),
-    vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guard(() => preview(n.left!, n.name))),
-    vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guard(() => preview(n.right!, n.name))),
-    vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guard(() => compare(n.right!, n.name))),
-    vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guard(() => preview(uri, name))),
-    vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guard(() => compare(uri, name))),
+    vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guardRun(() => preview(n.uri!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guardRun(() => preview(n.left!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guardRun(() => preview(n.right!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name))),
+    vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guardRun(() => preview(uri, name))),
+    vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guardRun(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
     vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(() => files.compare())),
     vscode.commands.registerCommand("cteDiff.files.pick", (side: Side) => guard(async () => void (await files.pick(side)))),
     vscode.commands.registerCommand("cteDiff.files.setOld", (n: FileNode & { kind: "file" }) => files.set("old", n.uri)),
     vscode.commands.registerCommand("cteDiff.files.setNew", (n: FileNode & { kind: "file" }) => files.set("new", n.uri)),
     vscode.commands.registerCommand("cteDiff.files.open", () => guard(() => files.open())),
-    vscode.commands.registerCommand("cteDiff.compareCte", () => guard(pickCte)),
-    vscode.commands.registerCommand("cteDiff.previewCte", () => guard(pickCte)),
-    vscode.commands.registerCommand("cteDiff.rerun", () => guard(async () => again?.())),
+    vscode.commands.registerCommand("cteDiff.compareCte", () => guardRun(pickCte)),
+    vscode.commands.registerCommand("cteDiff.previewCte", () => guardRun(pickCte)),
+    vscode.commands.registerCommand("cteDiff.rerun", () => guardRun(async () => again?.())),
     vscode.commands.registerCommand("cteDiff.showLog", () => log.show(true)),
+    vscode.commands.registerCommand("cteDiff.checkSetup", () => guardRun(checkSetup)),
+    vscode.commands.registerCommand("cteDiff.chooseProject", () => guard(chooseProject)),
     { dispose: () => clearTimeout(pending) },
   );
   return { tree, files };
 }
 
+const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 async function guard(f: () => Promise<void>): Promise<void> {
   try {
     await f();
   } catch (e) {
-    vscode.window.showErrorMessage(`CTE Diff: ${e instanceof Error ? e.message : String(e)}`);
+    vscode.window.showErrorMessage(`CTE Diff: ${message(e)}`);
   }
+}
+
+/** guard for commands that show results: an error from before dbt runs goes to the results panel, where the run's
+ * own errors go. */
+async function guardRun(f: () => Promise<void>): Promise<void> {
+  try {
+    await f();
+  } catch (e) {
+    showError("CTE Diff", message(e), "Couldn't run");
+  }
+}
+
+const ASKED_DIFF_LENS = "cteDiff.askedDiffLens";
+
+/** The first time a SQL diff opens with the buttons above each CTE hidden (VS Code hides CodeLens in diffs by
+ * default), offers once to show them. */
+function offerDiffLens(context: vscode.ExtensionContext): void {
+  const config = vscode.workspace.getConfiguration("diffEditor");
+  if (context.globalState.get(ASKED_DIFF_LENS) || config.get<boolean>("codeLens")) return;
+  const isSql = (uri: vscode.Uri) =>
+    /\.sql$/i.test(uri.path) || SQL_LANGUAGES.includes(vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString())?.languageId ?? "");
+  const sqlDiff = vscode.window.tabGroups.all.some((g) => g.tabs.some((t) => t.input instanceof vscode.TabInputTextDiff && isSql(t.input.modified)));
+  if (!sqlDiff) return;
+  void context.globalState.update(ASKED_DIFF_LENS, true);
+  const yes = "Show Them";
+  void vscode.window
+    .showInformationMessage(
+      'CTE Diff: diff editors hide the ▶ Preview and ⇄ Compare sides buttons above each CTE. Show them? This sets "diffEditor.codeLens": true. The sidebar and the title bar work either way.',
+      yes,
+      "Not Now",
+    )
+    .then((a) => {
+      if (a === yes) void config.update("codeLens", true, vscode.ConfigurationTarget.Global);
+    });
 }
 
 const label = (name?: string) => name ?? "the whole query";
@@ -97,9 +137,12 @@ async function preview(uri: vscode.Uri, name?: string): Promise<void> {
   const doc = await vscode.workspace.openTextDocument(uri);
   const sql = cteQuery(doc.getText(), name);
   const what = `${label(name)} (${path.basename(uri.path) || "untitled"})`;
-  const result = await run(uri, `Preview: ${label(name)}`, what, sql);
-  if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit);
+  const result = await run(uri, `Preview: ${label(name)}`, what, sql, fileName(uri));
+  if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit, result.meta);
 }
+
+/** A file's name for the results' heading; a git: URI is the committed version. */
+const fileName = (uri: vscode.Uri) => (path.basename(uri.path) || "untitled") + (uri.scheme === "git" ? " (git)" : "");
 
 async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   const diff = diffOf(uri);
@@ -116,8 +159,8 @@ async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   const sql = compareQuery(side(left, "left"), side(right, "right"));
   const title = `Compare: ${label(name)}`;
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
-  const result = await run(diff.right, title, label(name), sql);
-  if (result) showComparison(title, label(name), readComparison(result.rows), result.limit);
+  const result = await run(diff.right, title, label(name), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
+  if (result) showComparison(title, label(name), readComparison(result.rows), result.limit, result.meta);
 }
 
 /** The editor title bar's button: pick one of the active SQL's CTEs, as the sidebar lists them. In a diff it compares,
@@ -149,14 +192,21 @@ async function newComparison(): Promise<void> {
   await vscode.commands.executeCommand("vscode.diff", left.uri, right.uri, "CTE Diff: old ↔ new");
 }
 
-/** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled or overtaken by a newer run. */
-async function run(uri: vscode.Uri, title: string, what: string, sql: string): Promise<{ rows: Row[]; limit: number } | undefined> {
+/** Where and how dbt runs for `uri`: the settings, the project, and the dbt executable. */
+async function setup(uri: vscode.Uri) {
   const config = vscode.workspace.getConfiguration("cteDiff", uri);
   const projectDir = await projectFor(uri, config.get<string>("projectDir", ""));
-  const limit = config.get<number>("limit", 100);
   const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
   const dbt = findDbt(config.get<string>("dbtPath", ""), [projectDir, ...folders]);
+  return { dbt, projectDir, limit: config.get<number>("limit", 100), target: config.get<string>("target") || undefined, log: (l: string) => log.appendLine(l) };
+}
+
+/** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled, failed (the panel says so) or
+ * overtaken by a newer run. `meta` is the heading's line: the files, the target and the run time. */
+async function run(uri: vscode.Uri, title: string, what: string, sql: string, files: string): Promise<{ rows: Row[]; limit: number; meta: string } | undefined> {
+  const o = await setup(uri);
   const id = ++latest;
+  const start = Date.now();
   showRunning(title, what);
   try {
     const rows = await vscode.window.withProgress(
@@ -164,15 +214,54 @@ async function run(uri: vscode.Uri, title: string, what: string, sql: string): P
       (_, token) => {
         const abort = new AbortController();
         token.onCancellationRequested(() => abort.abort());
-        return show(sql, { dbt, projectDir, limit, target: config.get<string>("target") || undefined, log: (l) => log.appendLine(l) }, abort.signal);
+        return show(sql, o, abort.signal);
       },
     );
-    return id === latest ? { rows, limit } : undefined;
+    const meta = `${files} · ${o.target ? `target ${o.target}` : "default target"} · ${((Date.now() - start) / 1000).toFixed(1)} s`;
+    return id === latest ? { rows, limit: o.limit, meta } : undefined;
   } catch (e) {
     if (id !== latest) return undefined;
-    showError(title, e instanceof Error ? e.message : String(e));
+    const warehouse = unsupported(message(e));
+    if (message(e) === "Cancelled") showCancelled(title, what);
+    else if (warehouse) showUnsupported(title, warehouse);
+    else showError(title, message(e));
     return undefined;
   }
+}
+
+/** Runs dbt debug for the active file's project, with the settings it ran with, and shows what it found. */
+async function checkSetup(): Promise<void> {
+  const uri = vscode.window.activeTextEditor?.document.uri ?? vscode.workspace.workspaceFolders?.[0]?.uri;
+  if (!uri) throw new Error("Open a dbt project's folder first.");
+  const o = await setup(uri);
+  const checks: [string, string][] = [
+    ["dbt", o.dbt === "dbt" ? "dbt on PATH (set cteDiff.dbtPath if it isn't found)" : o.dbt],
+    ["Project", o.projectDir],
+    ["Target", o.target ?? "the profile's default (cteDiff.target)"],
+  ];
+  const id = ++latest;
+  showRunning("Check Setup", "Setup", "dbt debug");
+  const { ok, output } = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: "CTE Diff: running dbt debug" },
+    () => debug(o),
+  );
+  if (id === latest) showSetup(checks, ok, output);
+}
+
+/** Picks the project that runs SQL outside any dbt project, such as pasted queries, for the rest of the session. */
+async function chooseProject(): Promise<void> {
+  const dir = await pickProject();
+  if (!dir) return;
+  picked = dir;
+  vscode.window.showInformationMessage(`CTE Diff: SQL outside a dbt project now runs in ${dir}.`);
+}
+
+/** One of the workspace's dbt projects: the only one, else the user's pick (undefined if dismissed). */
+async function pickProject(): Promise<string | undefined> {
+  const found = await vscode.workspace.findFiles("**/dbt_project.yml", "**/{dbt_packages,dbt_modules,node_modules,target}/**", 50);
+  const dirs = found.map((f) => path.dirname(f.fsPath)).sort((a, b) => a.length - b.length);
+  if (dirs.length === 0) throw new Error("No dbt_project.yml in this workspace. Open your dbt project, or set cteDiff.projectDir.");
+  return dirs.length === 1 ? dirs[0] : vscode.window.showQuickPick(dirs, { title: "Which dbt project should run the SQL?" });
 }
 
 /** The dbt project to run in: the setting, else the one holding the file, else one picked from the workspace. */
@@ -181,11 +270,7 @@ async function projectFor(uri: vscode.Uri, setting: string): Promise<string> {
   if (setting) return path.resolve(folder?.uri.fsPath ?? "", setting);
   const own = uri.scheme === "untitled" ? undefined : projectDirOf(uri.fsPath);
   if (own) return own;
-  if (picked) return picked;
-  const found = await vscode.workspace.findFiles("**/dbt_project.yml", "**/{dbt_packages,dbt_modules,node_modules,target}/**", 50);
-  const dirs = found.map((f) => path.dirname(f.fsPath)).sort((a, b) => a.length - b.length);
-  if (dirs.length === 0) throw new Error("No dbt_project.yml in this workspace. Open your dbt project, or set cteDiff.projectDir.");
-  picked = dirs.length === 1 ? dirs[0] : await vscode.window.showQuickPick(dirs, { title: "Which dbt project should run the SQL?" });
-  if (!picked) throw new Error("No dbt project picked.");
+  picked ??= await pickProject();
+  if (!picked) throw new Error("No dbt project picked. CTE Diff: Choose dbt Project picks one.");
   return picked;
 }

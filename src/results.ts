@@ -32,22 +32,45 @@ function table(rows: Row[], cols: string[], first: string, body: string): string
   return `<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
 }
 
-/** The view's heading: what ran, and the counts under it. */
-const heading = (what: string, stats: string[]) => `<h2>${esc(what)}</h2><div class="stats">${stats.join("")}</div>`;
+/** The view's heading: what ran, where and how long it took (`meta`), and the counts under it. */
+const heading = (what: string, stats: string[], meta?: string) =>
+  `<h2>${esc(what)}</h2>${meta ? `<p class="meta muted">${esc(meta)}</p>` : ""}<div class="stats">${stats.join("")}</div>`;
 const stat = (text: string, cls = "") => `<span class="stat ${cls}">${text}</span>`;
 
-export function runningHtml(what: string): string {
-  return `<div class="progress"></div><h2>${esc(what)}</h2><p class="muted">Running <code>dbt show</code>…</p>`;
+export function runningHtml(what: string, command = "dbt show"): string {
+  return `<div class="progress"></div><h2>${esc(what)}</h2><p class="muted">Running <code>${esc(command)}</code>…</p>`;
 }
 
-export function errorHtml(message: string): string {
-  return `<h2 class="bad">dbt failed</h2><pre class="error">${esc(message)}</pre><p class="muted">The full log, with the SQL that ran, is in Output › CTE Diff (the log button in this view's title bar).</p>`;
+/** An error; `title` says whether dbt failed or the run never started. */
+export function errorHtml(message: string, title = "dbt failed"): string {
+  return `<h2 class="bad">${esc(title)}</h2><pre class="error">${esc(message)}</pre><p class="muted">The full log, with the SQL that ran, is in Output › CTE Diff (the log button in this view's title bar).</p>`;
+}
+
+export function cancelledHtml(what: string): string {
+  return `<h2>${esc(what)}</h2><p class="muted">Cancelled. <b>Run Again</b> is in this view's title bar.</p>`;
+}
+
+/** A comparison on a warehouse it has no SQL for: what does work, and where to ask for it. */
+export function unsupportedHtml(warehouse: string, supported: readonly string[]): string {
+  const ask = `https://github.com/MarkPhamm/cte-diff/issues/new?title=${encodeURIComponent(`Compare on ${warehouse}`)}`;
+  return `<h2>Compare doesn't run on ${esc(warehouse)} yet</h2>
+<p>Comparisons run on ${esc(supported.join(" and "))}. <b>▶ Preview</b> works on ${esc(warehouse)}.</p>
+<p><a href="${ask}">Ask for ${esc(warehouse)}</a>: the warehouses people ask for come next.</p>`;
+}
+
+/** What Check Setup found: each check's value, and dbt debug's verdict with its output when it failed. */
+export function setupHtml(checks: [string, string][], ok: boolean, output: string): string {
+  const rows = checks.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
+  const verdict = ok
+    ? '<p class="verdict"><span class="good">✓</span> <code>dbt debug</code> passed: dbt finds the project, its profile and the warehouse.</p>'
+    : `<p class="verdict"><span class="bad">✗</span> <code>dbt debug</code> failed.</p><pre class="error">${esc(output)}</pre>`;
+  return `<h2>Setup</h2><table class="setup">${rows}</table>${verdict}`;
 }
 
 /** A preview: the rows, numbered, with row and column counts. */
-export function rowsHtml(what: string, rows: Row[], limit: number): string {
+export function rowsHtml(what: string, rows: Row[], limit: number, meta?: string): string {
   const cols = columns(rows);
-  let body = heading(what, [stat(plural(rows.length, "row")), stat(plural(cols.length, "column"))]);
+  let body = heading(what, [stat(plural(rows.length, "row")), stat(plural(cols.length, "column"))], meta);
   if (rows.length >= limit) body += `<p class="muted">The first ${plural(limit, "row")}. Raise <code>cteDiff.limit</code> for more.</p>`;
   if (rows.length) {
     const trs = rows.map((r, i) => `<tr><td class="idx">${i + 1}</td>${cols.map((c) => cell(r, c)).join("")}</tr>`).join("");
@@ -57,7 +80,7 @@ export function rowsHtml(what: string, rows: Row[], limit: number): string {
 }
 
 /** A comparison: counts, a verdict, then changed rows as old/new pairs and the rows only on one side. */
-export function comparisonHtml(what: string, c: Comparison, limit: number): string {
+export function comparisonHtml(what: string, c: Comparison, limit: number, meta?: string): string {
   const k = c.counts;
   const p = pairRows(c);
   const stats = k
@@ -68,7 +91,7 @@ export function comparisonHtml(what: string, c: Comparison, limit: number): stri
         stat(`Only right ${n(k.only_right)}`, k.only_right ? "r" : ""),
       ]
     : [];
-  let body = heading(what, stats);
+  let body = heading(what, stats, meta);
   if (!k) body += '<p class="muted">Row counts unavailable.</p>';
   else if (!k.only_left && !k.only_right) {
     body += `<p class="verdict"><span class="good">✓</span> ${k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates."}</p>`;
@@ -115,6 +138,9 @@ body, :host { position: relative; display: block; font-family: var(--vscode-font
   color: var(--vscode-foreground); padding: 4px 12px 12px; }
 h2 { font-size: 1.1em; font-weight: 600; margin: 6px 0 6px; font-family: var(--vscode-editor-font-family); }
 p { margin: 6px 0; }
+.meta { margin: -2px 0 8px; }
+a { color: var(--vscode-textLink-foreground); }
+.setup th { position: static; background: none; padding-left: 0; }
 code { font-family: var(--vscode-editor-font-family); }
 .stats { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .stat { padding: 1px 8px; border-radius: 10px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }

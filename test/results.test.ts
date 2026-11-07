@@ -1,6 +1,28 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { comparisonHtml, rowsHtml } from "../src/results.ts";
+import { comparisonHtml, errorHtml, rowsHtml, setupHtml, unsupportedHtml } from "../src/results.ts";
+
+test("rowsHtml shows the run's files, target and time under the heading", () => {
+  assert.match(rowsHtml("x", [], 100, "orders.sql · target dev · 1.2 s"), /<h2>x<\/h2><p class="meta muted">orders.sql · target dev · 1.2 s<\/p>/);
+  assert.doesNotMatch(rowsHtml("x", [], 100), /meta/, "the site's demo passes no meta");
+});
+
+test("errorHtml says whether dbt failed or the run never started", () => {
+  assert.match(errorHtml("boom"), /<h2 class="bad">dbt failed<\/h2>/);
+  assert.match(errorHtml("No dbt_project.yml", "Couldn't run"), /<h2 class="bad">Couldn&#39;t run<\/h2>/);
+});
+
+test("unsupportedHtml says what works and links an issue asking for the warehouse", () => {
+  const html = unsupportedHtml("redshift", ["DuckDB", "Snowflake"]);
+  assert.match(html, /Comparisons run on DuckDB and Snowflake\. <b>▶ Preview<\/b> works on redshift\./);
+  assert.match(html, /href="https:\/\/github\.com\/MarkPhamm\/cte-diff\/issues\/new\?title=Compare%20on%20redshift"/);
+});
+
+test("setupHtml shows dbt debug's output only when it failed", () => {
+  assert.match(setupHtml([["Project", "/p"]], true, "noise"), /<th>Project<\/th><td>\/p<\/td>[\s\S]*passed/);
+  assert.doesNotMatch(setupHtml([], true, "noise"), /noise/);
+  assert.match(setupHtml([], false, "Could not find profile"), /failed[\s\S]*Could not find profile/);
+});
 
 test("comparisonHtml lists a changed row as a pair with its changed cell marked", () => {
   const html = comparisonHtml(

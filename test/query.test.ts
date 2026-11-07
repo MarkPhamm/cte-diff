@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseShow, readComparison, type Comparison, type Row } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseShow, readComparison, unsupported, type Comparison, type Row } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
@@ -20,6 +20,15 @@ test("compareQuery picks each adapter's SQL", () => {
   assert.match(duckdb, /json_each\(to_json\(__t\)\)/);
   assert.match(duckdb, /to_json\(json_object\(/);
   assert.doesNotMatch(duckdb, /object_construct/);
+});
+
+test("compareQuery raises a plain error on a warehouse it has no SQL for", () => {
+  const redshift = forAdapter(compareQuery("select 1 x", "select 2 x"), "redshift");
+  assert.doesNotMatch(redshift, /{%|object_construct|json_each/);
+  assert.match(redshift, /{{ exceptions\.raise_compiler_error\("CTE Diff: Compare has no SQL for " ~ target\.type\) }}/);
+  // As dbt-core prints the raised error.
+  assert.equal(unsupported("Compilation Error in sql_operation inline_query\n  CTE Diff: Compare has no SQL for redshift"), "redshift");
+  assert.equal(unsupported("Database Error: syntax error at or near 'except'"), undefined);
 });
 
 test("parseShow reads dbt Fusion's output, logs around it", () => {
@@ -88,6 +97,8 @@ test("cutFrom spots a comparison cut by the limit", () => {
 
 test("forAdapter keeps other Jinja", () => {
   assert.equal(forAdapter("select {{ ref('a') }}, {% if target.type == 'duckdb' %}1{% else %}2{% endif %}", "duckdb"), "select {{ ref('a') }}, 1");
+  const chain = "{% if target.type == 'duckdb' %}1{% elif target.type == 'snowflake' %}2{% else %}3{% endif %}";
+  assert.deepEqual(["duckdb", "snowflake", "postgres"].map((t) => forAdapter(chain, t)), ["1", "2", "3"]);
 });
 
 const sides = (left: Row[], right: Row[]): Comparison => ({
