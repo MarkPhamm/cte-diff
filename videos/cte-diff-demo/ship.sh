@@ -18,8 +18,8 @@ fi
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-# 4.6s, not 2s: at 2s the capture is still Source Control beside an empty editor. The diff is open by here.
-ffmpeg -y -loglevel error -ss 4.6 -i renders/cte-diff-demo.mp4 -frames:v 1 "$work/frame.png"
+# 9.2s: the 12-row HEAD preview, title up, camera settled. That is the shot the other extension cannot make.
+ffmpeg -y -loglevel error -ss 9.2 -i renders/cte-diff-demo.mp4 -frames:v 1 "$work/frame.png"
 cat > "$work/poster.html" << EOF
 <!doctype html>
 <meta charset="utf-8">

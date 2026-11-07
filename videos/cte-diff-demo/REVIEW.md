@@ -2,21 +2,21 @@
 
 ## Calls
 
-The storyboard was already the film, so no alternate storyline was built. One continuous take of the captured extension, titles in the paper band, one teal word per title (`data`, `changed`, `rows`, `name`). The plan's t=0 snap into the sidebar was eased over 0.5s after the seam sheet showed a scale pop; the punch still lands before the click. The end card names ctediff.dev. HyperFrames plan usage: unknown (the CLI reported `unsupported_harness`).
+One film, silent, 38 seconds. The open is two stills of dbt Power User 0.67: Execute CTE is on the right editor of a git diff and absent on the left. The live half previews payments on HEAD (12 rows) and on the working tree (9), then compares payments across orders_v1.sql and orders_v2.sql (three failed payments, only in the old file). The storyline not built is the previous one: sidebar marks, then order_payments, then final's columns. HyperFrames plan usage: unknown (the CLI reported `unsupported_harness`).
 
 ## Measured
 
-`npx hyperframes check --json` (0.9.19): 0 errors. Contrast 25/25. Layout clean. Snapshots: the review sheets (beats, five seams, phone) and settled frames at 1.2, 4.6, 9.5, 22.6, 30.2, 34.2, then the compare-to-final range again after the ease. Sound was measured, not heard: there is none.
+`npx hyperframes check --json` (0.9.19): 0 errors. Contrast 16/16. Layout clean. Snapshots at 1.2, 3.2, 6.0, 9.2, 17.0, 21.5, 28.5, 30.8, 35.0, and the end frame. Sound was measured, not heard: there is none.
 
 ## Kept on purpose
 
 - `film_silent` / `audio_none`: the plan approved a silent film.
-- `nested_media_start_basis_ambiguous` on the later clips in preview, compare and final: those `data-start` values are composition-local.
+- `nested_media_start_basis_ambiguous` on the later clips: those `data-start` values are composition-local.
 
 ## Weakest shot
 
-The opening second is Source Control beside an empty editor. That is the capture, before the diff opens, and the title carries it. The final punch shows the columns-differ line and the hatched cells; the last table rows sit on the stage crop.
+The left still still shows Power User's "Get Started" tab above the diff. The payments block under it has no Execute CTE, which is the point of the shot. The 12-row and 9-row punches show the badges and the failed rows leaving.
 
 ## P0
 
-None open. The seam at 24.9s was a scale pop and is now a 0.5s ease.
+None open.

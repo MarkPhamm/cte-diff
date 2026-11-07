@@ -26,10 +26,10 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="100%" alt="A dbt model's change opened from Source Control: the CTE Diff sidebar marks each CTE, then comparing order_payments lists three changed rows">
+  <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo.gif" width="100%" alt="Preview payments on HEAD, 12 rows, then on the working tree, 9 rows, then three failed payments only in the old file">
 </p>
 <p align="center">
-  <em>One new line in <code>payments</code>, and the rows it changed in <code>order_payments</code>, whose SQL didn't change. <a href="https://ctediff.dev/playground/">Try it in your browser →</a></em>
+  <em>Preview payments on HEAD (12 rows) and on the working tree (9). Then compare the old file with the new one. <a href="https://ctediff.dev/playground/">Try it in your browser →</a></em>
 </p>
 
 <p align="center">
@@ -38,18 +38,18 @@
 
 ## Why
 
-A diff shows what the SQL changed. It can't show what the data did.
+A git diff's left side is HEAD. Its right side is the working tree. dbt Power User's Execute CTE only runs on the right.
 
-Add `where status = 'success'` to `payments` and the diff shows one green line. `order_payments` reads `payments`: its SQL didn't change, yet 3 of its 8 totals did. Checking that by hand means copying both versions into a worksheet, rendering the Jinja and writing the `except` yourself, CTE by CTE.
+CTE Diff previews the same CTE on both. `payments` on HEAD returns 12 rows. On the working tree, after `where status = 'success'`, it returns 9.
 
-CTE Diff marks every CTE that changed or reads one that did, and runs any CTE on both sides of the diff, in your dbt project.
+When the old logic and the new logic are two files, Compare Files opens them. Compare sides on `payments` lists the three failed payments, only in the old file. Queries run in your dbt project.
 
 ## Quick start
 
 1. Install **CTE Diff** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff), or from [Open VSX](https://open-vsx.org/extension/MarkPhamm/cte-diff) for Cursor, Windsurf and VSCodium.
 2. Open a dbt project. It needs dbt Fusion or dbt-core 1.5 or later, with a working profile.
-3. Open a changed model from **Source Control**, so its old and new versions open side by side.
-4. Open the **CTE Diff** sidebar. Hover a CTE marked **changed** or **reads a changed CTE**, and click **⇄** to compare its rows on both sides.
+3. Open a changed model as a diff. Click **▶ Preview** above a CTE on the left, then on the right.
+4. To compare two files, open the **CTE Diff** sidebar, set **Old** and **New**, click **Open the diff**, then **⇄ Compare sides**.
 
 Diff editors hide the **▶ Preview | ⇄ Compare sides** buttons above each CTE unless `"diffEditor.codeLens": true` is in your settings. The sidebar and the editor's title bar work either way.
 
@@ -85,7 +85,7 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 ### Compares any two files, or two pasted queries
 
-<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-files.png" width="100%" alt="Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New">
+<img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/compare-files.png" width="100%" alt="Compare Files in the sidebar: orders_v1.sql as Old, orders_v2.sql as New">
 
 - **Compare Files**, below the CTEs: put two SQL files of the workspace in **Old** and **New**, then click **Open the diff**.
 - **CTE Diff: New Comparison (Paste Two Queries)**: paste an old and a new query side by side.

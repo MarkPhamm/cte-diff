@@ -10,29 +10,25 @@
     .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 890px; transform-origin: 0 0; }
     .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
       background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
-    .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
+    .vwin img { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
   </style>
-  <div id="root" data-composition-id="hook" data-width="1920" data-height="1080">
+  <div id="root" data-composition-id="still-left" data-width="1920" data-height="1080">
     <div class="stage" data-layout-allow-overflow>
-      <div id="hook-enter" class="enter">
-        <div id="hook-cam" class="cam">
+      <div id="still-left-enter" class="enter">
+        <div id="still-left-cam" class="cam">
           <div class="vwin">
-            <video id="hook-v" class="clip" src="assets/footage/review.mp4" data-start="0" data-duration="6.2" data-media-start="1" data-playback-rate="1" data-track-index="1" muted playsinline></video>
+            <img id="still-left-img" class="clip" src="assets/stills/power-user-left.png" alt="" data-start="0" data-duration="2" data-track-index="1">
           </div>
         </div>
       </div>
     </div>
-    <h1 id="hook-t1" class="clip ttl" data-start="0.3" data-duration="2.72" data-track-index="2"><span class="w">A</span> <span class="w">diff</span> <span class="w">shows</span> <span class="w">what</span> <span class="w">the</span> <span class="w">SQL</span> <span class="w">changed.</span></h1>
-    <h1 id="hook-t2" class="clip ttl" data-start="3.15" data-duration="2.97" data-track-index="3"><span class="w">It</span> <span class="w">can’t</span> <span class="w">show</span> <span class="w">what</span> <span class="w">the</span> <span class="w acc">data</span> <span class="w">did.</span></h1>
+    <h1 id="still-left-t" class="clip ttl" data-start="0.08" data-duration="1.92" data-track-index="2"><span class="w">No</span> <span class="w">Execute</span> <span class="w">CTE</span> <span class="w">on</span> <span class="w">the</span> <span class="w acc">left.</span></h1>
   </div>
   <script>
     (function () {
       const tl = gsap.timeline({ paused: true });
       const IN = { opacity: 0, filter: "blur(6px)" };
       const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
-      const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
-      const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
-      /** Puts window point (cx, cy) in 1440×900 page px at the stage centre. */
       const cam = (sel, t, s, cx, cy, d) => {
         const qx = 96 + 1.2 * cx, qy = 1.2 * (cy - 35);
         let x = 0, y = 0;
@@ -43,10 +39,9 @@
         if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      cam("#hook-cam", 0, 1, 0, 0);
-      say("#hook-t1", 0.3, 2.85);
-      say("#hook-t2", 3.15, 5.95);
-      window.__timelines["hook"] = tl;
+      cam("#still-left-cam", 0, 2.05, 360, 200);
+      tl.fromTo("#still-left-t .w", IN, { ...ON }, 0.08);
+      window.__timelines["still-left"] = tl;
     })();
   </script>
 </template>

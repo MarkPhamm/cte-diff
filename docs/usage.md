@@ -33,7 +33,7 @@ Hover a CTE for its buttons: **←** previews the left (old) side, **→** previ
 
 Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**.
 
-![Compare Files in the sidebar: orders.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="100%" }
+![Compare Files in the sidebar: orders_v1.sql as Old, orders_v2.sql as New](assets/img/compare-files.png){ width="100%" }
 
 You can try the marking, and the rows, in the [playground](playground.md). It runs the same parser and the same SQL.
 

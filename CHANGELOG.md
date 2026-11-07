@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The demo previews a CTE on both sides of a git diff, then compares that CTE across two files.
+
 ## 0.7.0
 
 - The first time a SQL diff opens, CTE Diff offers to show the **▶ Preview | ⇄ Compare sides** buttons above each CTE, which diff editors hide by default. One click sets `"diffEditor.codeLens": true`.

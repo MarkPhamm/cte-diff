@@ -12,20 +12,19 @@
       background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
     .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
   </style>
-  <div id="root" data-composition-id="final" data-width="1920" data-height="1080">
+  <div id="root" data-composition-id="slots" data-width="1920" data-height="1080">
     <div class="stage" data-layout-allow-overflow>
-      <div id="final-enter" class="enter">
-        <div id="final-cam" class="cam">
+      <div id="slots-enter" class="enter">
+        <div id="slots-cam" class="cam">
           <div class="vwin">
-            <video id="final-a" class="clip" src="assets/footage/review.mp4" data-start="0" data-duration="2.542" data-media-start="30.9" data-playback-rate="1.2" data-track-index="1" muted playsinline></video>
-            <video id="final-b" class="clip" src="assets/footage/review.mp4" data-start="2.542" data-duration="1.2" data-media-start="33.95" data-playback-rate="3" data-track-index="2" muted playsinline></video>
-            <video id="final-c" class="clip" src="assets/footage/review.mp4" data-start="3.742" data-duration="3.658" data-media-start="37.55" data-playback-rate="1" data-track-index="3" muted playsinline></video>
+            <video id="slots-a" class="clip" src="assets/footage/files.mp4" data-start="0" data-duration="1.24" data-media-start="0.35" data-playback-rate="1" data-track-index="1" muted playsinline></video>
+            <video id="slots-b" class="clip" src="assets/footage/files.mp4" data-start="1.24" data-duration="1.35" data-media-start="1.59" data-playback-rate="1" data-track-index="2" muted playsinline></video>
+            <video id="slots-c" class="clip" src="assets/footage/files.mp4" data-start="2.59" data-duration="1.61" data-media-start="2.94" data-playback-rate="1" data-track-index="3" muted playsinline></video>
           </div>
         </div>
       </div>
     </div>
-    <h1 id="final-t1" class="clip ttl" data-start="0.3" data-duration="3.46" data-track-index="4"><span class="w">Compare</span> <span class="w">from</span> <span class="w">the</span> <span class="w">sidebar</span></h1>
-    <h1 id="final-t2" class="clip ttl" data-start="3.8" data-duration="3.36" data-track-index="5"><span class="w">Columns</span> <span class="w">match</span> <span class="w">by</span> <span class="w acc">name</span></h1>
+    <h1 id="slots-t" class="clip ttl" data-start="0.2" data-duration="3.8" data-track-index="4"><span class="w">Two</span> <span class="w">files.</span> <span class="w">Two</span> <span class="w acc">logics.</span></h1>
   </div>
   <script>
     (function () {
@@ -44,15 +43,9 @@
         if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      const whipOut = (sel, t) => tl.to(sel, { x: -360, opacity: 0, filter: "blur(14px)", duration: 0.2, ease: "power3.in" }, t);
-      cam("#final-cam", 0, 1, 0, 0);
-      cam("#final-cam", 0.12, 1.8, 190, 220, 0.5);
-      cam("#final-cam", 2.6, 1, 0, 0);
-      cam("#final-cam", 3.8, 1.55, 665, 640);
-      say("#final-t1", 0.3, 3.6);
-      say("#final-t2", 3.8, 7.0);
-      whipOut("#final-enter", 7.1);
-      window.__timelines["final"] = tl;
+      cam("#slots-cam", 0, 1.85, 200, 240);
+      say("#slots-t", 0.2, 3.95);
+      window.__timelines["slots"] = tl;
     })();
   </script>
 </template>

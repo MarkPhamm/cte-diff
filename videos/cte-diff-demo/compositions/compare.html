@@ -1,13 +1,11 @@
 <template>
   <style>
     @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
-    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
     #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
     .ttl { position: absolute; left: 96px; top: 74px; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
       line-height: 1.1; white-space: nowrap; }
     .w { display: inline-block; }
     .acc { color: #027567; }
-    .mono { font-family: "Geist Mono", monospace; font-weight: 500; }
     .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
     .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 890px; transform-origin: 0 0; }
     .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
@@ -19,16 +17,16 @@
       <div id="compare-enter" class="enter">
         <div id="compare-cam" class="cam">
           <div class="vwin">
-            <video id="compare-a" class="clip" src="assets/footage/review.mp4" data-start="0" data-duration="2.267" data-media-start="20.2" data-playback-rate="1.5" data-track-index="1" muted playsinline></video>
-            <video id="compare-b" class="clip" src="assets/footage/review.mp4" data-start="2.267" data-duration="0.5" data-media-start="23.6" data-playback-rate="1" data-track-index="2" muted playsinline></video>
-            <video id="compare-c" class="clip" src="assets/footage/review.mp4" data-start="2.767" data-duration="1.24" data-media-start="24.1" data-playback-rate="2.5" data-track-index="3" muted playsinline></video>
-            <video id="compare-d" class="clip" src="assets/footage/review.mp4" data-start="4.007" data-duration="3.693" data-media-start="27.2" data-playback-rate="1" data-track-index="4" muted playsinline></video>
+            <video id="compare-a" class="clip" src="assets/footage/files.mp4" data-start="0" data-duration="1.088" data-media-start="4.55" data-playback-rate="1.25" data-track-index="1" muted playsinline></video>
+            <video id="compare-b" class="clip" src="assets/footage/files.mp4" data-start="1.088" data-duration="1.26" data-media-start="5.91" data-playback-rate="1" data-track-index="2" muted playsinline></video>
+            <video id="compare-c" class="clip" src="assets/footage/files.mp4" data-start="2.348" data-duration="0.784" data-media-start="7.17" data-playback-rate="2.5" data-track-index="3" muted playsinline></video>
+            <video id="compare-d" class="clip" src="assets/footage/files.mp4" data-start="3.132" data-duration="4.368" data-media-start="9.13" data-playback-rate="1" data-track-index="4" muted playsinline></video>
           </div>
         </div>
       </div>
     </div>
-    <h1 id="compare-t1" class="clip ttl" data-start="0.3" data-duration="3.66" data-track-index="5"><span class="w mono">order_payments</span> <span class="w">didn’t</span> <span class="w">change.</span></h1>
-    <h1 id="compare-t2" class="clip ttl" data-start="4" data-duration="3.56" data-track-index="6"><span class="w">Its</span> <span class="w acc">rows</span> <span class="w">did.</span></h1>
+    <h1 id="compare-t1" class="clip ttl" data-start="3.25" data-duration="1.95" data-track-index="5"><span class="w">Three</span> <span class="w">failed</span> <span class="w">payments.</span></h1>
+    <h1 id="compare-t2" class="clip ttl" data-start="5.3" data-duration="1.95" data-track-index="6"><span class="w">Only</span> <span class="w">in</span> <span class="w">the</span> <span class="w acc">old</span> <span class="w">file.</span></h1>
   </div>
   <script>
     (function () {
@@ -47,13 +45,12 @@
         if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      cam("#compare-cam", 0, 1, 0, 0);
-      cam("#compare-cam", 0.1, 1.35, 1100, 300, 0.6);
-      cam("#compare-cam", 2.0, 1.7, 1120, 300);
-      cam("#compare-cam", 4.0, 1.9, 560, 640);
-      cam("#compare-cam", 7.0, 1, 0, 0);
-      say("#compare-t1", 0.3, 3.8);
-      say("#compare-t2", 4.0, 7.4);
+      const whipOut = (sel, t) => tl.to(sel, { x: -360, opacity: 0, filter: "blur(14px)", duration: 0.2, ease: "power3.in" }, t);
+      cam("#compare-cam", 0, 1.65, 1080, 210);
+      cam("#compare-cam", 3.2, 1.55, 640, 680, 0.55);
+      say("#compare-t1", 3.25, 5.15);
+      say("#compare-t2", 5.3, 7.2);
+      whipOut("#compare-enter", 7.25);
       window.__timelines["compare"] = tl;
     })();
   </script>

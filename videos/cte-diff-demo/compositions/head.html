@@ -12,18 +12,19 @@
       background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
     .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
   </style>
-  <div id="root" data-composition-id="marks" data-width="1920" data-height="1080">
+  <div id="root" data-composition-id="head" data-width="1920" data-height="1080">
     <div class="stage" data-layout-allow-overflow>
-      <div id="marks-enter" class="enter">
-        <div id="marks-cam" class="cam">
+      <div id="head-enter" class="enter">
+        <div id="head-cam" class="cam">
           <div class="vwin">
-            <video id="marks-v" class="clip" src="assets/footage/review.mp4" data-start="0" data-duration="5.4" data-media-start="7.2" data-playback-rate="1" data-track-index="1" muted playsinline></video>
+            <video id="head-a" class="clip" src="assets/footage/git.mp4" data-start="0" data-duration="3.48" data-media-start="0.2" data-playback-rate="1" data-track-index="1" muted playsinline></video>
+            <video id="head-b" class="clip" src="assets/footage/git.mp4" data-start="3.48" data-duration="0.524" data-media-start="3.68" data-playback-rate="2.5" data-track-index="2" muted playsinline></video>
+            <video id="head-c" class="clip" src="assets/footage/git.mp4" data-start="4.004" data-duration="5.496" data-media-start="4.99" data-playback-rate="1" data-track-index="3" muted playsinline></video>
           </div>
         </div>
       </div>
     </div>
-    <h1 id="marks-t1" class="clip ttl" data-start="0.3" data-duration="2.22" data-track-index="2"><span class="w">CTE</span> <span class="w">Diff</span> <span class="w">marks</span> <span class="w">every</span> <span class="w">CTE</span></h1>
-    <h1 id="marks-t2" class="clip ttl" data-start="2.6" data-duration="2.8" data-track-index="3"><span class="w">even</span> <span class="w">ones</span> <span class="w">reading</span> <span class="w">a</span> <span class="w acc">changed</span> <span class="w">CTE</span></h1>
+    <h1 id="head-t" class="clip ttl" data-start="4.15" data-duration="5.15" data-track-index="4"><span class="w acc">12</span> <span class="w">rows</span> <span class="w">on</span> <span class="w">HEAD.</span></h1>
   </div>
   <script>
     (function () {
@@ -42,12 +43,11 @@
         if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      cam("#marks-cam", 0, 1, 0, 0);
-      cam("#marks-cam", 0.3, 1.9, 190, 195);
-      cam("#marks-cam", 4.7, 1, 0, 0);
-      say("#marks-t1", 0.3, 2.35);
-      say("#marks-t2", 2.6, 5.2);
-      window.__timelines["marks"] = tl;
+      cam("#head-cam", 0, 1, 0, 0);
+      cam("#head-cam", 0.25, 1.7, 1040, 200, 0.5);
+      cam("#head-cam", 4.1, 1.6, 340, 630, 0.55);
+      say("#head-t", 4.15, 9.15);
+      window.__timelines["head"] = tl;
     })();
   </script>
 </template>

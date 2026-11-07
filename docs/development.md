@@ -14,15 +14,16 @@ Release: bump `version` in `package.json`, add a `CHANGELOG.md` entry, commit, t
 
 ## Screenshots and footage
 
-The README's and the docs' screenshots, and the footage for the demo video, come from the packaged extension in a real VS Code. `npm run capture` packages the extension, builds a scratch dbt-duckdb project from `web/sample.ts` (the site's example), and commits its `orders` model before the change. It then drives VS Code the way the site's live demo plays: open the change from Source Control, preview `payments`, compare `order_payments`, and compare `final` from the sidebar.
+The README's Compare Files still, and the footage for the demo video, come from the packaged extension in a real VS Code. `npm run capture` packages the extension and builds a scratch dbt-duckdb project from `web/sample.ts`. `orders.sql` is committed as the old query, then rewritten, so a git diff has HEAD on the left and the working tree on the right. `orders_v1.sql` stays the old query. `orders_v2.sql` is the new query. The capture then previews `payments` on the left and the right (`git.mp4`), and compares `payments` across the two files (`files.mp4`).
 
 ```sh
-npm run capture   # writes docs/assets/img/*.png, and out/capture/review.mp4 with its marks
+npm run capture                          # compare-files.png, and out/capture/git.mp4 and files.mp4
+node scripts/capture.ts stills           # Power User stills, CTE Diff not installed
 ```
 
 It needs ffmpeg, the duckdb CLI and a dbt with dbt-duckdb: set `CTE_DIFF_DBT`, or set up `examples/duckdb`'s venv (see its README). Rerun it after any change to what the sidebar, the CodeLens or the results look like.
 
-The short GIFs in the README and on Use it are scenes of the demo film. `videos/cte-diff-demo/gifs.sh` cuts them from the web copy; `ship.sh` runs it after the film. Compare Files is not in the film, so that shot stays a still.
+`npm run render` in `videos/cte-diff-demo` writes `renders/cte-diff-demo.mp4`. `ship.sh` reads that file and writes the web mp4, the poster and, through `gifs.sh`, the README's opening GIF. The Use it loops (`demo-diff`, `demo-marks`, `demo-preview`, `demo-compare`, `demo-final`) are the previous film. `gifs.sh` does not recut them.
 
 ## This site
 

@@ -1,11 +1,13 @@
-// Screenshots for the README and docs, and footage for the demo video, taken from the packaged extension in a real
-// VS Code. It builds a scratch dbt-duckdb project from web/sample.ts (the site's example: jaffle_shop's orders model and
-// its made-up tables), commits the model's old version and writes the new one. Then it drives VS Code over the Chrome
-// DevTools Protocol, the way the site's hero demo plays: open the change from Source Control, preview payments, compare
-// order_payments, compare final from the sidebar. Recorder, Hand and the injected cursor come from qdbd's
-// videos/capture/record.py.
+// Footage for the demo video, and the Compare Files still, taken from the packaged extension in a real VS Code.
+// It builds a scratch dbt-duckdb project from web/sample.ts (the site's example: jaffle_shop's orders model and its
+// made-up tables). orders.sql is committed as the old query, then rewritten, so a git diff has HEAD on the left and
+// the working tree on the right. orders_v1.sql stays the old query; orders_v2.sql is the new query.
+// Two clips: git.mp4 previews payments on the left, then the right; files.mp4 opens those two files and compares
+// payments. The README GIF is cut from the finished film, not here.
+// `node scripts/capture.ts stills` is the other shoot: dbt Power User, CTE Diff not installed. It writes
+// videos/cte-diff-demo/assets/stills, and stops if Execute CTE is on the left editor.
 // Needs ffmpeg, the duckdb CLI and a dbt with dbt-duckdb: CTE_DIFF_DBT, else examples/duckdb's venv (see its README).
-// Run: npm run capture   (stills go to docs/assets/img, footage and its marks to out/capture)
+// Run: npm run capture   (the Compare Files still goes to docs/assets/img; footage and its marks to out/capture)
 import { execFileSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -17,6 +19,8 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const OUT = path.join(ROOT, "out", "capture");
 const WS = path.join(OUT, "jaffle_shop");
 const IMG = path.join(ROOT, "docs", "assets", "img");
+const FOOT = path.join(ROOT, "videos", "cte-diff-demo", "assets", "footage");
+const STILLS = path.join(ROOT, "videos", "cte-diff-demo", "assets", "stills");
 const DBT = process.env.CTE_DIFF_DBT ?? path.join(ROOT, "examples", "duckdb", ".venv", "bin", "dbt");
 const VSCODE = "1.145.0"; // pinned, so the stills don't change with each VS Code release
 const VIEW = { width: 1440, height: 900 };
@@ -99,44 +103,46 @@ async function until<T>(f: () => T | false | undefined | Promise<T | false | und
   throw new Error(`timed out waiting for ${what}`);
 }
 
-/** The scratch dbt project: the site's tables as seeds, and models/orders.sql changed since its last commit. */
-function fixture(): void {
-  fs.rmSync(OUT, { recursive: true, force: true });
+/** The scratch dbt project under `ws`. orders.sql is committed as the old query, then rewritten. orders_v1.sql stays
+ * the old query. orders_v2.sql is the new query. */
+function fixture(ws: string): void {
+  fs.rmSync(ws, { recursive: true, force: true });
   const files: Record<string, string> = {
     "dbt_project.yml": 'name: jaffle_shop\nversion: "1.0.0"\nprofile: jaffle_shop\n',
     "profiles.yml": "jaffle_shop:\n  target: dev\n  outputs:\n    dev:\n      type: duckdb\n      path: jaffle_shop.duckdb\n      threads: 1\n",
     ".gitignore": "target/\nlogs/\n*.duckdb*\n.user.yml\n.vscode/\n",
     ".vscode/settings.json": JSON.stringify({ "cteDiff.dbtPath": DBT }),
     "models/orders.sql": before,
-    "models/orders_v2.sql": after, // a rewrite in a new file, for the Compare Files still
+    "models/orders_v1.sql": before, // the old query, never rewritten, for the file comparison
+    "models/orders_v2.sql": after,
   };
   for (const [file, text] of Object.entries(files)) {
-    fs.mkdirSync(path.dirname(path.join(WS, file)), { recursive: true });
-    fs.writeFileSync(path.join(WS, file), text);
+    fs.mkdirSync(path.dirname(path.join(ws, file)), { recursive: true });
+    fs.writeFileSync(path.join(ws, file), text);
   }
-  fs.mkdirSync(path.join(WS, "seeds"));
+  fs.mkdirSync(path.join(ws, "seeds"));
   const seeds = ["stg_customers", "stg_orders", "stg_payments"].map((t) => `copy ${t} to 'seeds/${t}.csv' (header);`);
-  execFileSync("duckdb", ["-c", tables + seeds.join("\n")], { cwd: WS });
-  const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=demo", "-c", "user.email=demo@example.com", ...args], { cwd: WS });
+  execFileSync("duckdb", ["-c", tables + seeds.join("\n")], { cwd: ws });
+  const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=demo", "-c", "user.email=demo@example.com", ...args], { cwd: ws });
   git("init", "-q", "-b", "main");
   git("add", ".");
   git("commit", "-qm", "orders model");
-  fs.writeFileSync(path.join(WS, "models", "orders.sql"), after);
-  execFileSync(DBT, ["seed"], { cwd: WS, stdio: "inherit" });
+  fs.writeFileSync(path.join(ws, "models", "orders.sql"), after);
+  execFileSync(DBT, ["seed"], { cwd: ws, stdio: "inherit" });
 }
 
-/** VS Code with the packaged extension installed in a fresh profile, and its workbench page over CDP. */
-async function launch(): Promise<{ page: Page; close: () => Promise<void> }> {
+/** VS Code in a fresh profile, and its workbench page over CDP. `extension` is a vsix path or a marketplace id. */
+async function launch(home: string, ws: string, extension: string): Promise<{ page: Page; close: () => Promise<void> }> {
   const code = await downloadAndUnzipVSCode(VSCODE);
-  const dirs = [`--user-data-dir=${path.join(OUT, "user-data")}`, `--extensions-dir=${path.join(OUT, "extensions")}`];
-  const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const dirs = [`--user-data-dir=${path.join(home, "user-data")}`, `--extensions-dir=${path.join(home, "extensions")}`];
   const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(code, { reuseMachineInstall: true });
-  execFileSync(cli, [...cliArgs, ...dirs, "--install-extension", path.join(ROOT, `cte-diff-${version}.vsix`)], { stdio: "inherit" });
-  fs.mkdirSync(path.join(OUT, "user-data", "User"), { recursive: true });
-  fs.writeFileSync(path.join(OUT, "user-data", "User", "settings.json"), JSON.stringify(SETTINGS, null, 1));
+  execFileSync(cli, [...cliArgs, ...dirs, "--install-extension", extension, "--force"], { stdio: "inherit" });
+  fs.mkdirSync(path.join(home, "user-data", "User"), { recursive: true });
+  fs.writeFileSync(path.join(home, "user-data", "User", "settings.json"), JSON.stringify(SETTINGS, null, 1));
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE; // set inside VS Code's terminals
-  const args = [WS, "--new-window", ...dirs, "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes"];
+  env.PATH = `${path.dirname(DBT)}${path.delimiter}${env.PATH ?? ""}`;
+  const args = [ws, "--new-window", ...dirs, "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes"];
   const proc = spawn(code, [...args, `--remote-debugging-port=${CDP_PORT}`, "--force-device-scale-factor=2"], { env, stdio: "ignore" });
   const url = `http://127.0.0.1:${CDP_PORT}`;
   await until(() => fetch(`${url}/json/version`).then((r) => r.ok, () => false), "VS Code's debugging port");
@@ -250,11 +256,14 @@ class Hand {
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const right = (page: Page) => page.locator(".monaco-diff-editor .editor.modified");
+const sideEditor = (page: Page, side: "left" | "right") =>
+  page.locator(`.monaco-diff-editor .editor.${side === "left" ? "original" : "modified"}`);
+const right = (page: Page) => sideEditor(page, "right");
 
-/** The diff's right-side line whose whole text is `text` (Monaco renders spaces as no-break spaces; \s matches them). */
-const line = (page: Page, text: string) =>
-  right(page).locator(".view-line").filter({ hasText: new RegExp(`^\\s*${text.split(/\s+/).map(escape).join("\\s+")}\\s*$`) }).first();
+/** The diff side's line whose whole text is `text` (Monaco renders spaces as no-break spaces; \s matches them). */
+const lineOn = (page: Page, side: "left" | "right", text: string) =>
+  sideEditor(page, side).locator(".view-line").filter({ hasText: new RegExp(`^\\s*${text.split(/\s+/).map(escape).join("\\s+")}\\s*$`) }).first();
+const line = (page: Page, text: string) => lineOn(page, "right", text);
 
 /** Scrolls the diff (both sides move together) until the right side's line `text` sits in the editor's upper half. */
 async function scrollTo(page: Page, hand: Hand, text: string): Promise<void> {
@@ -270,25 +279,30 @@ async function scrollTo(page: Page, hand: Hand, text: string): Promise<void> {
   throw new Error(`couldn't scroll to ${text}`);
 }
 
-/** The CodeLens button `title` on the right side, in the row just above the line `text`. */
-async function lens(page: Page, text: string, title: string): Promise<Locator> {
-  const at = (await line(page, text).boundingBox())!;
-  const buttons = right(page).locator(".codelens-decoration a", { hasText: title });
+/** The CodeLens button `title` on one side, in the row just above the line `text`. */
+async function lensOn(page: Page, side: "left" | "right", text: string, title: string): Promise<Locator> {
+  const at = await lineOn(page, side, text).boundingBox();
+  if (!at) throw new Error(`no line ${text} on the ${side}`);
+  const buttons = sideEditor(page, side).locator(".codelens-decoration a", { hasText: title });
   let best = -1;
   for (let i = 0, gap = Infinity; i < (await buttons.count()); i++) {
     const b = await buttons.nth(i).boundingBox();
     if (b && b.y < at.y && at.y - b.y < gap) [best, gap] = [i, at.y - b.y];
   }
-  if (best < 0) throw new Error(`no ${title} above ${text}`);
+  if (best < 0) throw new Error(`no ${title} above ${text} on the ${side}`);
   return buttons.nth(best);
 }
 
-/** Waits for the results view (a webview: an iframe in an iframe) to show `heading` with dbt's answer. */
-async function result(page: Page, heading: string): Promise<void> {
+/** Waits for the results view (a webview: an iframe in an iframe) to show `heading`. When `stat` is set, the badges
+ * must include it, so a second run of the same CTE is not mistaken for the first. */
+async function result(page: Page, heading: string, stat?: string): Promise<void> {
   const probe = `(() => {
     const h = document.querySelector("h2");
-    if (h && h.classList.contains("bad")) return "error: " + document.body.innerText;
-    return h && h.textContent === ${JSON.stringify(heading)} && document.querySelector(".stats") && !document.querySelector(".progress") ? "ok" : "";
+    if (h && h.classList.contains("bad")) return "error: " + document.body.innerText.slice(0, 800);
+    const stats = document.querySelector(".stats");
+    if (!h || h.textContent !== ${JSON.stringify(heading)} || !stats || document.querySelector(".progress")) return "";
+    if (${JSON.stringify(stat ?? "")} && !stats.textContent.includes(${JSON.stringify(stat ?? "")})) return "";
+    return "ok";
   })()`;
   const state = await until(async () => {
     for (const f of page.frames()) {
@@ -320,32 +334,6 @@ const activity = (page: Page, name: string) => page.locator(`.part.activitybar a
 const pane = (page: Page, title: string) => page.locator(".pane", { has: page.locator(".pane-header", { hasText: title }) });
 const box = async (el: Locator) => (await el.boundingBox())!;
 
-/** Across the editor, from `top` (the lens clicked, or the panel) down to the end of the results' table, or to the
- * last whole row the panel shows. */
-async function results(page: Page, top: Locator, pad = 8) {
-  const [e, p, t] = [await box(page.locator(".part.editor")), await box(page.locator(".part.panel")), await box(top)];
-  // The table is in the results webview, an iframe in an iframe: ask each frame.
-  const [frame, scroll] = await until(async () => {
-    for (const f of page.frames()) {
-      const b = await f.locator(".scroll").first().boundingBox({ timeout: 300 }).catch(() => null);
-      if (b) return [f, b] as const;
-    }
-  }, "the results' table");
-  // The table scrolls inside its frame: past the frame's end, cut below the last whole row.
-  const table = await box(frame.locator("table").first());
-  const visible = Math.min(scroll.y + scroll.height, p.y + p.height);
-  let bottom = table.y + table.height + 14;
-  if (table.y + table.height > visible) {
-    bottom = t.y;
-    for (const row of await frame.locator("tr").all()) {
-      const b = await row.boundingBox();
-      if (b && b.y + b.height <= visible) bottom = Math.max(bottom, b.y + b.height + 1);
-    }
-  }
-  const y = t.y - pad;
-  return { x: e.x, y, width: e.width, height: bottom - y };
-}
-
 /** The activity bar and the sidebar, from the sidebar's top down to `last`. */
 async function sidebarTo(page: Page, last: Locator) {
   const [s, l] = [await box(page.locator(".part.sidebar")), await box(last)];
@@ -365,107 +353,206 @@ async function growPanel(page: Page, by: number): Promise<void> {
   await page.keyboard.press("Meta+J");
 }
 
-async function flow(page: Page): Promise<void> {
-  const hand = new Hand(page);
-  // Off camera: a taller results panel, the CTE Diff sidebar's Compare Files view folded, back to the Explorer.
-  await growPanel(page, 120);
-  await activity(page, "CTE Diff").click();
-  await pane(page, "Compare Files").locator(".pane-header").click();
-  await activity(page, "Explorer").click();
-  await sleep(800);
+/** Opens or closes the primary sidebar. A click on an activity-bar icon opens it on that view. */
+async function setSidebar(page: Page, open: boolean): Promise<void> {
+  const b = await page.locator(".part.sidebar").boundingBox();
+  const isOpen = !!b && b.width > 20;
+  if (isOpen !== open) {
+    await page.keyboard.press("Meta+B");
+    await sleep(500);
+  }
+}
 
-  const rec = new Recorder(page, "review");
-  await rec.start();
-  await sleep(800);
-  // The change, from Source Control.
+/** Opens the git diff of orders.sql from Source Control. The sidebar stays open on Source Control. */
+async function openGitDiff(page: Page, hand: Hand): Promise<void> {
+  await setSidebar(page, true);
   await hand.click(activity(page, "Source Control"));
-  rec.mark("scm");
   const change = page.locator(".scm-view .monaco-list-row", { hasText: "orders.sql" }).first();
   await change.waitFor();
-  await sleep(700);
+  await sleep(400);
   await hand.click(change);
-  rec.mark("diff");
-  await right(page).locator(".codelens-decoration").first().waitFor();
-  await sleep(1200);
-  // The sidebar marks every CTE of both sides.
-  await hand.click(activity(page, "CTE Diff"));
-  rec.mark("sidebar");
-  await sleep(2500);
-  await still(page, rec, "diff");
-  await still(page, rec, "sidebar", await sidebarTo(page, pane(page, "CTEs").locator(".monaco-list-row").last()));
-  // Preview payments: its new where clause drops rows.
-  await scrollTo(page, hand, "payments as (");
-  await sleep(400);
-  const preview = await lens(page, "payments as (", "▶ Preview");
-  await hand.click(preview);
-  rec.mark("preview");
-  await result(page, "payments (orders.sql)");
-  rec.mark("preview-rows");
-  await sleep(2500);
-  await still(page, rec, "preview", await results(page, preview));
-  // Compare order_payments: its SQL didn't change, but it reads payments, so its rows did.
-  await scrollTo(page, hand, "order_payments as (");
-  await sleep(400);
-  const compare = await lens(page, "order_payments as (", "⇄ Compare sides");
-  await hand.click(compare);
-  rec.mark("compare");
-  await result(page, "order_payments");
-  rec.mark("compare-rows");
-  await sleep(3000);
-  await still(page, rec, "compare", await results(page, compare));
-  // Compare final from the sidebar: a column added, one dropped.
-  const final = pane(page, "CTEs").locator(".monaco-list-row", { hasText: /^final/ }).first();
-  await hand.over(final.locator(".label-name"));
-  rec.mark("final-hover");
-  await sleep(700);
-  await hand.click(final.locator('.action-label[aria-label^="Compare Both Sides"]'), 400);
-  rec.mark("final");
-  await result(page, "final");
-  rec.mark("final-rows");
-  await sleep(3000);
-  await still(page, rec, "compare-final", await results(page, page.locator(".part.panel"), 0));
-  await rec.stop();
+  await right(page).waitFor({ timeout: 30000 });
+  await sleep(800);
+}
 
-  // Compare Files: orders.sql as Old, orders_v2.sql (a rewrite in a new file) as New. File rows come after the slots.
-  await pane(page, "Compare Files").locator(".pane-header").click();
+/** The results badges, for the capture log. */
+async function statsText(page: Page): Promise<string> {
+  for (const f of page.frames()) {
+    const s = await f.evaluate(`document.querySelector(".stats")?.textContent || ""`).catch(() => "");
+    if (s) return String(s);
+  }
+  return "";
+}
+
+/** A full-window PNG at the screencast's 2x, cursor hidden. */
+async function fullShot(page: Page, dest: string): Promise<void> {
+  await page.evaluate(`document.querySelector(".qv-cursor").style.visibility = "hidden"`);
+  const cdp = await page.context().newCDPSession(page);
+  const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });
+  await cdp.detach();
+  await page.evaluate(`document.querySelector(".qv-cursor").style.visibility = "visible"`);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, Buffer.from(data, "base64"));
+}
+
+async function flow(page: Page): Promise<void> {
+  const hand = new Hand(page);
+  // Off camera: a taller results panel, then the git diff, sidebar closed, payments in view.
+  await growPanel(page, 160);
+  await openGitDiff(page, hand);
+  await setSidebar(page, false);
+  await scrollTo(page, hand, "payments as (");
+  await lensOn(page, "left", "payments as (", "▶ Preview");
+  await sleep(400);
+
+  const git = new Recorder(page, "git");
+  await git.start();
+  await sleep(600);
+  git.mark("where");
+  const where = line(page, "where status = 'success'");
+  if (await where.count()) await hand.over(where, 500);
+  await sleep(900);
+  await hand.click(await lensOn(page, "left", "payments as (", "▶ Preview"));
+  git.mark("preview-left");
+  await result(page, "payments (orders.sql)", "12 rows");
+  git.mark("rows-left");
+  console.log("left", await statsText(page));
+  await sleep(5200);
+  await hand.click(await lensOn(page, "right", "payments as (", "▶ Preview"));
+  git.mark("preview-right");
+  await result(page, "payments (orders.sql)", "9 rows");
+  git.mark("rows-right");
+  console.log("right", await statsText(page));
+  await sleep(5200);
+  await git.stop();
+
+  // Off camera: close the results, then fill the slots. The clip starts there.
+  await page.keyboard.press("Meta+J");
+  await sleep(400);
+  await setSidebar(page, true);
+  await hand.click(activity(page, "CTE Diff"));
+  await sleep(700);
+  await pane(page, "CTEs").locator(".pane-header").click();
+  await sleep(300);
   const files = pane(page, "Compare Files");
   const file = (name: string) => files.locator(".monaco-list-row", { hasText: name }).last();
   const models = files.locator(".monaco-list-row", { hasText: "models" }).first();
   await models.waitFor();
-  if (!(await file("orders_v2.sql").count())) await models.click();
+  if (!(await file("orders_v1.sql").count())) await hand.click(models, 300);
   await file("orders_v2.sql").waitFor();
-  for (const [name, action] of [["orders.sql", "Use as Old"], ["orders_v2.sql", "Use as New"]]) {
+  for (const [name, action] of [
+    ["orders_v1.sql", "Use as Old"],
+    ["orders_v2.sql", "Use as New"],
+  ] as const) {
     await hand.over(file(name));
     await hand.click(file(name).locator(`.action-label[aria-label^="${action}"]`), 300);
-    await sleep(500);
+    await sleep(400);
   }
+  const twistie = models.locator(".monaco-tl-twistie");
+  if (await twistie.count()) await hand.click(twistie, 250);
+  await sleep(300);
+  const openRow = files.locator(".monaco-list-row", { hasText: "Open the diff" });
+  await openRow.waitFor();
+  await openRow.scrollIntoViewIfNeeded();
   await hand.to(VIEW.width - 80, VIEW.height - 60, 300);
-  await still(page, undefined, "compare-files", await sidebarTo(page, files.locator(".monaco-list-row").last()));
+  await still(page, undefined, "compare-files", await sidebarTo(page, openRow));
+
+  const filesRec = new Recorder(page, "files");
+  await filesRec.start();
+  await sleep(1600);
+  filesRec.mark("slots");
+  await hand.click(openRow);
+  filesRec.mark("open");
+  await right(page).locator(".codelens-decoration").first().waitFor();
+  filesRec.mark("diff");
+  await sleep(600);
+  await scrollTo(page, hand, "payments as (");
+  await sleep(500);
+  filesRec.mark("where");
+  await hand.click(await lensOn(page, "right", "payments as (", "⇄ Compare sides"));
+  filesRec.mark("compare");
+  await result(page, "payments", "Only left 3");
+  filesRec.mark("rows");
+  console.log("compare", await statsText(page));
+  await sleep(4500);
+  await filesRec.stop();
+
+  fs.mkdirSync(FOOT, { recursive: true });
+  for (const name of ["git", "files"]) {
+    fs.copyFileSync(path.join(OUT, `${name}.mp4`), path.join(FOOT, `${name}.mp4`));
+    fs.copyFileSync(path.join(OUT, `${name}.marks.json`), path.join(FOOT, `${name}.marks.json`));
+  }
 }
 
-/** The README's GIF, cut from the footage at its marks: the change opens with the sidebar's marks, then a CTE whose SQL
- * didn't change is compared. 10 fps and 128 colours keep it near 1 MB (a palette per clip, as qdbd's demo.gif). */
-function gif(): void {
-  const m = JSON.parse(fs.readFileSync(path.join(OUT, "review.marks.json"), "utf8"));
-  const cuts = [
-    [m.diff - 0.4, m.sidebar + 2.4],
-    [m.compare - 1.8, m["compare-rows"] + 3],
-  ];
-  const trims = cuts.map(([a, b], i) => `[0:v]trim=${a.toFixed(2)}:${b.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`).join(";");
-  const palette = "fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle";
-  const filter = `${trims};${cuts.map((_, i) => `[c${i}]`).join("")}concat=n=${cuts.length},${palette}`;
-  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", path.join(OUT, "review.mp4"), "-filter_complex", filter, path.join(IMG, "demo.gif")]);
-  console.log(`wrote docs/assets/img/demo.gif (${Math.round(fs.statSync(path.join(IMG, "demo.gif")).size / 1024)} KB)`);
+/** dbt Power User, without CTE Diff. Two stills of the git diff. Stops when Preview CTE is on the left editor. */
+async function powerUserStills(): Promise<void> {
+  const home = path.join(ROOT, "out", "power-user");
+  const ws = path.join(home, "jaffle_shop");
+  fs.rmSync(home, { recursive: true, force: true });
+  fixture(ws);
+  const { page, close } = await launch(home, ws, "innoverio.vscode-dbt-power-user");
+  try {
+    const hand = new Hand(page);
+    await page.keyboard.press("Escape");
+    await openGitDiff(page, hand);
+    await setSidebar(page, false);
+    await scrollTo(page, hand, "payments as (");
+    // Power User 0.67 labels the lens "Execute CTE", not "Preview CTE". Either string counts.
+    const lens = /Execute CTE|Preview CTE/;
+    try {
+      await until(async () => {
+        const n = await sideEditor(page, "right").locator(".codelens-decoration", { hasText: lens }).count();
+        return n > 0 ? n : false;
+      }, "Execute CTE or Preview CTE on the right editor", 45000);
+    } catch (err) {
+      for (const side of ["left", "right"] as const) {
+        console.log(side, await sideEditor(page, side).locator(".codelens-decoration").allTextContents());
+      }
+      await fullShot(page, path.join(home, "no-lens.png"));
+      throw err;
+    }
+    for (const side of ["left", "right"] as const) {
+      const texts = await sideEditor(page, side).locator(".codelens-decoration").allTextContents();
+      console.log(side, texts);
+    }
+    const leftN = await sideEditor(page, "left").locator(".codelens-decoration", { hasText: lens }).count();
+    if (leftN > 0) {
+      await fullShot(page, path.join(home, "left-has-lens.png"));
+      throw new Error("The CTE lens is on the left editor too. See out/power-user/left-has-lens.png");
+    }
+    const rightN = await sideEditor(page, "right").locator(".codelens-decoration", { hasText: lens }).count();
+    if (!rightN) throw new Error("the right editor lost its CTE lens");
+    const ask = page.getByText("Don't ask again", { exact: true });
+    if (await ask.count()) await ask.click();
+    const started = page.locator(".tab", { hasText: "Get Started" }).first();
+    if (await started.count()) {
+      await started.hover();
+      const close = started.locator(".tab-close, .codicon-close").first();
+      if (await close.count()) await close.click();
+    }
+    await sleep(400);
+    await hand.click(lineOn(page, "left", "payments as ("));
+    await sleep(500);
+    await fullShot(page, path.join(STILLS, "power-user-left.png"));
+    await hand.click(lineOn(page, "right", "payments as ("));
+    await sleep(700);
+    await fullShot(page, path.join(STILLS, "power-user-right.png"));
+    console.log("wrote the Power User stills");
+  } finally {
+    await close();
+  }
 }
 
-// `node scripts/capture.ts gif` only remakes the GIF from the last footage.
-if (process.argv[2] !== "gif") {
-  fixture();
-  const { page, close } = await launch();
+const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+if (process.argv[2] === "stills") {
+  await powerUserStills();
+} else {
+  fs.rmSync(OUT, { recursive: true, force: true });
+  fixture(WS);
+  const { page, close } = await launch(OUT, WS, path.join(ROOT, `cte-diff-${version}.vsix`));
   try {
     await flow(page);
   } finally {
     await close();
   }
 }
-gif();
