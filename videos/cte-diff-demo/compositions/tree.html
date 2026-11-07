@@ -2,13 +2,14 @@
   <style>
     @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
     #root { position: absolute; inset: 0; font-family: "Geist", sans-serif; color: #19211e; }
-    .ttl { position: absolute; left: 96px; top: 74px; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
+    .ttl { position: absolute; left: 96px; top: 74px; z-index: 3; margin: 0; font-size: 64px; font-weight: 600; letter-spacing: -0.03em;
       line-height: 1.1; white-space: nowrap; }
+    .paper { position: absolute; left: 0; top: 0; z-index: 2; width: 1920px; height: 188px; background: #f7f9f8; opacity: 0; }
     .w { display: inline-block; }
     .acc { color: #027567; }
-    .stage { position: absolute; left: 0; top: 190px; width: 1920px; height: 890px; overflow: hidden; }
-    .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 890px; transform-origin: 0 0; }
-    .vwin { position: absolute; left: 96px; top: 0; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
+    .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+    .enter, .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    .vwin { position: absolute; left: 96px; top: 190px; width: 1728px; height: 1038px; border-radius: 14px 14px 0 0; overflow: hidden;
       background: #fff; box-shadow: 0 0 0 1px rgba(25, 33, 30, 0.12), 0 12px 32px -16px rgba(25, 33, 30, 0.22); }
     .vwin video { position: absolute; left: 0; top: -42px; width: 1728px; height: 1080px; }
   </style>
@@ -24,6 +25,7 @@
         </div>
       </div>
     </div>
+    <div id="tree-paper" class="paper"></div>
     <h1 id="tree-t" class="clip ttl" data-start="2.75" data-duration="3.85" data-track-index="4"><span class="w acc">9</span> <span class="w">rows</span> <span class="w">in</span> <span class="w">the</span> <span class="w">working</span> <span class="w">tree.</span></h1>
   </div>
   <script>
@@ -33,18 +35,15 @@
       const ON = { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" };
       const OUT = { opacity: 0, filter: "blur(6px)", duration: 0.16, stagger: 0.03, ease: "power3.in" };
       const say = (id, a, b) => { tl.fromTo(id + " .w", IN, { ...ON }, a); tl.to(id + " .w", { ...OUT }, b); };
-      const cam = (sel, t, s, cx, cy, d) => {
-        const qx = 96 + 1.2 * cx, qy = 1.2 * (cy - 35);
-        let x = 0, y = 0;
-        if (s > 1) {
-          x = Math.min(-s * 96, Math.max(1920 - s * 1824, 960 - s * qx));
-          y = Math.min(0, Math.max(890 - s * 1038, 445 - s * qy));
-        }
+      const cam = (sel, t, s, cx, cy, fx, fy, d) => {
+        const qx = 96 + 1.2 * cx, qy = 190 + 1.2 * (cy - 35);
+        const x = fx - s * qx, y = fy - s * qy;
         if (t === 0) tl.fromTo(sel, { x: 0, y: 0, scale: 1 }, { x, y, scale: s, duration: 0.01 }, 0);
         else tl.to(sel, { x, y, scale: s, duration: d || 0.5, ease: "power2.inOut" }, t);
       };
-      cam("#tree-cam", 0, 1.7, 1040, 190);
-      cam("#tree-cam", 2.65, 1.6, 340, 640, 0.55);
+      cam("#tree-cam", 0, 2.8, 1080, 215, 1060, 520);
+      cam("#tree-cam", 2.65, 1.6, 500, 640, 960, 820, 0.55);
+      tl.to("#tree-paper", { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.6);
       say("#tree-t", 2.75, 6.55);
       window.__timelines["tree"] = tl;
     })();

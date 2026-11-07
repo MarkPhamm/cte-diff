@@ -21,7 +21,7 @@ MOTION:  words arrive with a 6 px blur -> 0 in 0.13 s, 0.067 s apart, no transla
 SHOTS:
   01 still-left  0.0-2.0   Left editor, no Execute CTE. "No Execute CTE on the left." (left accent). Punch 2.05x.
   02 still-right 2.0-4.0   Right editor, Execute CTE present. "It only exists on the right." (right accent). Punch 2.05x.
-  03 head        4.0-13.5  git diff of orders.sql, already open. Punch 1.7x on the new where line. No title.
+  03 head        4.0-13.5  git diff of orders.sql, already open. Punch 2.8x on the new where line, right editor only. No title.
                            Click ▶ Preview on the left. dbt at 2.5x. "12 rows on HEAD." (12 accent). Punch 1.6x
                            on the row badge.
   04 tree        13.5-20.3 Click ▶ Preview on the right. dbt at 2.5x. "9 rows in the working tree." (9 accent).
