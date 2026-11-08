@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0
 
 - Comparisons now run on **BigQuery** and **Redshift**, as well as Snowflake and DuckDB. On BigQuery a reordered column list shows as a difference. On Redshift there are no row counts, and the two sides' columns must line up: adding, dropping, renaming or reordering a column makes the warehouse reject the comparison. The marketplace name is now **CTE Diff for dbt**.
 - The demo shows Compare with Branch: orders.sql compared with the qa branch, and three order totals that changed. It is 37 seconds, and the docs have a GIF of it.
