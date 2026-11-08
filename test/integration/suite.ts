@@ -33,10 +33,11 @@ export async function run(): Promise<void> {
     ["0:▶ Preview", "0:⇄ Compare sides", "1:▶ Preview", "1:⇄ Compare sides", "2:▶ Preview", "3:▶ Preview query", "3:⇄ Compare sides"],
   );
 
-  const nodes = await until(() => tree.getChildren().length === 5 && tree.getChildren(), "the sidebar to list both sides");
+  const nodes = await until(() => tree.getChildren().length === 6 && tree.getChildren(), "the sidebar to list both sides");
   assert.deepEqual(
-    nodes.map((n) => [n.name ?? "(whole query)", n.status, tree.getTreeItem(n).contextValue]),
+    nodes.map((n) => [n.compiled ? "Compare Compiled SQL" : (n.name ?? "(whole query)"), n.status, tree.getTreeItem(n).contextValue]),
     [
+      ["Compare Compiled SQL", undefined, "compiled"],
       ["a", "same", "left right"],
       ["b", "changed", "left right"],
       ["new_one", "added", "right"],
@@ -44,15 +45,16 @@ export async function run(): Promise<void> {
       ["(whole query)", "affected", "left right"],
     ],
   );
+  assert.equal(tree.getTreeItem(nodes[0]).command?.command, "cteDiff.compareCompiled");
   assert.equal(tree.view?.message, "1 changed · 1 new · 1 removed · 1 reads a changed CTE");
-  assert.match(String(tree.getTreeItem(nodes[4]).tooltip), /reads a CTE that changed/);
+  assert.match(String(tree.getTreeItem(nodes[5]).tooltip), /reads a CTE that changed/);
   const commands = await vscode.commands.getCommands(true);
   for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
     assert.ok(commands.includes(c), c);
   }
 
   // Clicking a CTE selects its name in the diff's right side.
-  await vscode.commands.executeCommand("cteDiff.tree.reveal", nodes[1]);
+  await vscode.commands.executeCommand("cteDiff.tree.reveal", nodes[2]);
   const editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.toString() === right.toString())!;
   assert.equal(editor.document.getText(editor.selection), "b");
 

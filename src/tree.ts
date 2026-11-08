@@ -15,6 +15,8 @@ export interface CteNode {
   left?: vscode.Uri;
   right?: vscode.Uri;
   uri?: vscode.Uri;
+  /** The list's action row: compare both sides' compiled SQL. Not a CTE. */
+  compiled?: boolean;
 }
 
 const LOOK: Record<Status, { icon: string; color?: string; note: string; tip: string }> = {
@@ -46,12 +48,15 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
     if (diff) {
       const [l, r] = await Promise.all([diff.left, diff.right].map((u) => vscode.workspace.openTextDocument(u)));
       const statuses = compareCtes(l.getText(), r.getText());
-      this.nodes = statuses.map(({ name, status }) => ({
-        name,
-        status,
-        left: status === "added" ? undefined : diff.left,
-        right: status === "removed" ? undefined : diff.right,
-      }));
+      this.nodes = [
+        { compiled: true },
+        ...statuses.map(({ name, status }) => ({
+          name,
+          status,
+          left: status === "added" ? undefined : diff.left,
+          right: status === "removed" ? undefined : diff.right,
+        })),
+      ];
       this.shown = [diff.left.toString(), diff.right.toString()];
       const count = (s: Status) => statuses.filter((x) => x.status === s).length;
       // The notes are written for one CTE: "2 read a changed CTE".
@@ -67,6 +72,8 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       this.shown = [];
       this.describe(undefined, undefined);
     }
+    // The sidebar's title button follows this list, which stays a diff when the sidebar takes focus.
+    void vscode.commands.executeCommand("setContext", "cteDiff.inDiff", diff !== undefined);
     this.changed.fire();
   }
 
@@ -85,6 +92,13 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
   }
 
   getTreeItem(node: CteNode): vscode.TreeItem {
+    if (node.compiled) {
+      const item = new vscode.TreeItem("Compare Compiled SQL");
+      item.tooltip = "Diff what dbt renders for each side. Nothing runs on the warehouse.";
+      item.contextValue = "compiled";
+      item.command = { command: "cteDiff.compareCompiled", title: "Compare Compiled SQL" };
+      return item;
+    }
     const item = new vscode.TreeItem(node.name ?? "(whole query)");
     if (node.status) {
       const look = LOOK[node.status];

@@ -304,6 +304,11 @@
       ],
       "view/title": [
         {
+          "command": "cteDiff.compareCompiled",
+          "when": "view == cteDiff.ctes && cteDiff.inDiff",
+          "group": "navigation"
+        },
+        {
           "command": "cteDiff.compareWithBranch",
           "when": "view == cteDiff.ctes",
           "group": "navigation"
