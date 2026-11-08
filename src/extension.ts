@@ -26,7 +26,8 @@ const compiledDocs: vscode.TextDocumentContentProvider = {
 
 /** A URI holding `sql`, named `label`. Unique per call, so a new comparison doesn't show an old side's text. */
 function compiledUri(label: string, sql: string): vscode.Uri {
-  const uri = vscode.Uri.from({ scheme: COMPILED, path: `/${label}.sql`, query: String(++compiledRun) });
+  const name = /\.sql$/i.test(label) ? label : `${label}.sql`;
+  const uri = vscode.Uri.from({ scheme: COMPILED, path: `/${name}`, query: String(++compiledRun) });
   compiledText.set(uri.toString(), sql);
   if (compiledText.size > 40) {
     const oldest = compiledText.keys().next().value;
