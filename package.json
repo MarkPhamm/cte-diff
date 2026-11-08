@@ -73,6 +73,12 @@
         "category": "CTE Diff"
       },
       {
+        "command": "cteDiff.compareCompiled",
+        "title": "Compare Compiled SQL",
+        "category": "CTE Diff",
+        "icon": "$(code)"
+      },
+      {
         "command": "cteDiff.newComparison",
         "title": "New Comparison (Paste Two Queries)",
         "category": "CTE Diff",
@@ -221,6 +227,10 @@
           "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/"
         },
         {
+          "command": "cteDiff.compareCompiled",
+          "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/"
+        },
+        {
           "command": "cteDiff.previewCte",
           "when": "!isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/"
         },
@@ -276,6 +286,11 @@
       "editor/title": [
         {
           "command": "cteDiff.compareCte",
+          "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/",
+          "group": "navigation"
+        },
+        {
+          "command": "cteDiff.compareCompiled",
           "when": "isInDiffEditor && resourceLangId =~ /^(sql|jinja-sql|snowflake-sql)$/",
           "group": "navigation"
         },

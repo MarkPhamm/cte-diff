@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseShow, readComparison, unsupported, type Comparison, type Row } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseCompiled, parseShow, readComparison, unsupported, type Comparison, type Row } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
@@ -71,6 +71,32 @@ test("dbtError keeps Fusion's error blocks and drops warnings", () => {
     "[error] [JinjaError (dbt1501)]: Failed to render SQL unknown function\n(in target/inline_45a64675.sql:1:8)\n  --> target/inline_45a64675.sql:1:8",
   );
   assert.equal(dbtError("Compilation Error\n  bad thing", ""), "Compilation Error\n  bad thing");
+});
+
+test("parseCompiled reads the CompiledNode event dbt-core and Fusion print", () => {
+  const sql = 'select * from "example"."main"."orders"\nwhere status = \'success\'';
+  // Captured from dbt-core 1.12.6 and dbt Fusion 2.0.9: dbt compile --inline ... --log-format json
+  const event = (info: object, data?: object) => JSON.stringify({ ...(data ? { data } : {}), info });
+  const core = `${event(
+    { code: "Q042", name: "CompiledNode", msg: `Compiled inline node is:\n${sql}` },
+    { compiled: sql, is_inline: true, node_name: "inline_query" },
+  )}\n`;
+  assert.equal(parseCompiled(core), sql);
+  // Without the event's data, the message carries it, as dbt 1.5 and 1.6 word it.
+  const old = `12:00:00  Compiling...\n${event({ code: "Q042", msg: `Compiled node 'inline_query' is:\n${sql}` })}\n`;
+  assert.equal(parseCompiled(old), sql);
+  assert.equal(parseCompiled(`dbt 2.0.9\n[{"x":1}]\n`), undefined);
+});
+
+test("parseCompiled finds the event among dbt's other output", () => {
+  const line = JSON.stringify({ info: { code: "Q042", msg: "Compiled inline node is:\nselect 1 as x" } });
+  assert.equal(parseCompiled(`   dbt 2.0.9\n   Loading profiles.yml\n${line}\n Succeeded model inline [1 of 1 in 0.01s]\n`), "select 1 as x");
+});
+
+test("dbtError reads a JSON log's error events, not the JSON around them", () => {
+  const event = (level: string, msg: string) => JSON.stringify({ info: { code: "Z002", level, msg } });
+  const out = [event("info", "Running with dbt=1.12.6"), event("error", "[ERROR]: Encountered an error:\nError parsing inline query"), event("error", "[ERROR]: second")].join("\n");
+  assert.equal(dbtError(out, ""), "[ERROR]: Encountered an error:\nError parsing inline query\n\n[ERROR]: second");
 });
 
 test("readComparison splits counts from rows, whatever the column case", () => {

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Compare Compiled SQL** shows what dbt renders for both sides of an open diff, as a diff: the Jinja, `ref`s, sources and macros resolved, with nothing run on the warehouse. After Compare with Branch, it shows the branch's compiled SQL against your working tree's.
 - The demo shows Compare with Branch: orders.sql compared with the qa branch, and three order totals that changed. It is 37 seconds, and the docs have a GIF of it.
 
 ## 0.7.1

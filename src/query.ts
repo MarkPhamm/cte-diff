@@ -141,6 +141,32 @@ export function parseShow(stdout: string): Row[] | undefined {
   return undefined;
 }
 
+/** dbt's heading before the compiled SQL: "Compiled inline node is:" from dbt 1.7 and Fusion, "Compiled node
+ * 'inline_query' is:" from dbt 1.5 and 1.6. */
+const COMPILED = /Compiled (?:inline )?node(?: '[^']*')? is:\s*/;
+
+/** The SQL `dbt compile --inline --log-format json` printed: its CompiledNode event, which dbt-core and Fusion write
+ * to stdout. Undefined when dbt printed none, so the caller shows dbt's error instead. */
+export function parseCompiled(stdout: string): string | undefined {
+  for (const line of stdout.split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text.startsWith("{")) continue;
+    let event: { data?: { compiled?: unknown }; info?: { compiled_code?: unknown; msg?: unknown } };
+    try {
+      event = JSON.parse(text);
+    } catch {
+      continue; // a log line that happens to start with a brace
+    }
+    const compiled = event.data?.compiled ?? event.info?.compiled_code;
+    if (typeof compiled === "string" && compiled.trim()) return compiled.trim();
+    const msg = event.info?.msg;
+    if (typeof msg !== "string") continue;
+    const m = COMPILED.exec(msg);
+    if (m) return msg.slice(m.index + m[0].length).trim() || undefined;
+  }
+  return undefined;
+}
+
 /** The leading balanced JSON value of `s` (brackets matched outside strings), or undefined. */
 function balanced(s: string): string | undefined {
   let depth = 0;
@@ -157,11 +183,30 @@ function balanced(s: string): string | undefined {
   return undefined;
 }
 
-/** dbt's error, without the noise: Fusion's `[error]` blocks, else the last lines of output. */
+/** dbt's error, without the noise: Fusion's `[error]` blocks, a JSON log's error events, else the last lines of
+ * output. */
 export function dbtError(stdout: string, stderr: string): string {
   const all = `${stderr}\n${stdout}`;
   const blocks = all.split(/\n(?=\[(?:error|warning)\])/).filter((b) => b.trimStart().startsWith("[error]"));
   if (blocks.length) return blocks.map((b) => b.trim()).join("\n\n");
+  const errors = jsonErrors(all);
+  if (errors) return errors;
   const lines = all.split(/\r?\n/).filter((l) => l.trim());
   return lines.slice(-25).join("\n") || "dbt failed without output";
+}
+
+/** The messages of `--log-format json`'s error events, which is where dbt puts the error itself. */
+function jsonErrors(all: string): string | undefined {
+  const messages: string[] = [];
+  for (const line of all.split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text.startsWith("{")) continue;
+    try {
+      const event = JSON.parse(text);
+      if (event?.info?.level === "error" && typeof event.info.msg === "string") messages.push(event.info.msg.trim());
+    } catch {
+      // a log line that happens to start with a brace
+    }
+  }
+  return messages.length ? messages.join("\n\n") : undefined;
 }
