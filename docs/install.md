@@ -1,6 +1,6 @@
 # Install
 
-Install **CTE Diff for dbt and Snowflake** from either store:
+Install **CTE Diff for dbt** from either store:
 
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkPhamm.cte-diff), for VS Code.
 - [Open VSX](https://open-vsx.org/extension/MarkPhamm/cte-diff), for Cursor, VSCodium and other editors built on VS Code.
@@ -14,7 +14,7 @@ ext install MarkPhamm.cte-diff
 ## Requirements
 
 - **dbt Fusion, or dbt-core 1.5 or later.** Both have `dbt show --inline`, which runs every query. dbt needs a working profile.
-- **Snowflake or DuckDB, for comparisons.** A comparison uses each one's JSON functions. Previews work on any warehouse dbt supports.
+- **BigQuery, DuckDB, Redshift or Snowflake, for comparisons.** Each warehouse has its own SQL for the comparison; Redshift diffs the rows themselves, with no row counts. Previews work on any warehouse dbt supports.
 - **A trusted workspace.** dbt runs the project's macros, so the extension stays off in Restricted Mode.
 
 ## Finding dbt and the project

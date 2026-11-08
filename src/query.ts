@@ -1,9 +1,9 @@
-/* The SQL a comparison runs (Snowflake or DuckDB), and reading `dbt show --output json` back. No `vscode` import. */
+/* The SQL a comparison runs (BigQuery, DuckDB, Redshift or Snowflake), and reading `dbt show --output json` back. No `vscode` import. */
 
 export type Row = Record<string, unknown>;
 
 /** The warehouses a comparison has SQL for, by dbt's `target.type`. */
-export const SUPPORTED = ["duckdb", "snowflake"] as const;
+export const SUPPORTED = ["bigquery", "duckdb", "redshift", "snowflake"] as const;
 type Adapter = (typeof SUPPORTED)[number];
 
 /** The start of the dbt error a comparison raises on any other warehouse; its `target.type` follows. */
@@ -27,32 +27,67 @@ export const forAdapter = (sql: string, type: string) =>
 /** The warehouse a dbt error names when a comparison has no SQL for it; undefined for any other error. */
 export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPORTED} (\\w+)`))?.[1];
 
-/** A row of `__t` as JSON text with its keys sorted. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column
- * order, so its keys are sorted by hand. */
-const rowJson = byAdapter({
+/** A row of `__t` as JSON text. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column order, so its keys
+ * are sorted by hand; BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
+ * which keeps the STRUCT's field order (TO_JSON would sort the keys), so a reordered column list reads as a
+ * difference there. */
+const rowJson: Record<Exclude<Adapter, "redshift">, string> = {
+  bigquery: "TO_JSON_STRING(__t)",
   duckdb: `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
   snowflake: "to_json(object_construct_keep_null(*))",
-});
+};
 
-/** Rows only on one side, plus row counts: one query, so one dbt run. Each row becomes JSON with sorted keys, so
- * columns match by name, not position, and a column missing on one side shows as a difference instead of an error.
- * shortcut: EXCEPT is a set operation, so duplicate rows count once; key-based matching would catch duplicates. */
-export function compareQuery(left: string, right: string): string {
-  return `with __l as (select ${rowJson} as __row from (
+/** The counts row of a JSON comparison, as JSON text. BigQuery has no object builder, so it is a STRUCT of four numbers. */
+const countsJson: Record<Exclude<Adapter, "redshift">, string> = {
+  bigquery:
+    "TO_JSON_STRING(STRUCT((select count(*) from __l) AS `left`, (select count(*) from __r) AS `right`, " +
+    "(select count(*) from __only_l) AS `only_left`, (select count(*) from __only_r) AS `only_right`))",
+  duckdb: "to_json(json_object('left', (select count(*) from __l), 'right', (select count(*) from __r), 'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r)))::varchar",
+  snowflake:
+    "to_json(object_construct('left', (select count(*) from __l), 'right', (select count(*) from __r), 'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r)))::varchar",
+};
+
+/** EXCEPT DISTINCT is BigQuery's set operator; the others take a plain EXCEPT. */
+const exceptOp: Record<Exclude<Adapter, "redshift">, string> = { bigquery: "except distinct", duckdb: "except", snowflake: "except" };
+
+/** Rows only on one side, plus row counts: one query, so one dbt run. Each row becomes JSON, so columns match by name,
+ * not position, and a column missing on one side shows as a difference instead of an error. EXCEPT is a set operation,
+ * so duplicate rows count once; key-based matching would catch duplicates. */
+const jsonCompare = (left: string, right: string, a: Exclude<Adapter, "redshift">) => `with __l as (select ${rowJson[a]} as __row from (
 ${left}
-) __t),
-__r as (select ${rowJson} as __row from (
+) AS __t),
+__r as (select ${rowJson[a]} as __row from (
 ${right}
-) __t),
-__only_l as (select __row from __l except select __row from __r),
-__only_r as (select __row from __r except select __row from __l)
+) AS __t),
+__only_l as (select __row from __l ${exceptOp[a]} select __row from __r),
+__only_r as (select __row from __r ${exceptOp[a]} select __row from __l)
 select * from (
-  select 0 as __k, 'counts' as __side, to_json(${byAdapter({ duckdb: "json_object", snowflake: "object_construct" })}(
-    'left', (select count(*) from __l), 'right', (select count(*) from __r),
-    'only_left', (select count(*) from __only_l), 'only_right', (select count(*) from __only_r)))::varchar as __row
+  select 0 as __k, 'counts' as __side, ${countsJson[a]} as __row
   union all select 1, 'left', __row from __only_l
   union all select 1, 'right', __row from __only_r
 ) order by __k, __row, __side`;
+
+/** Redshift has no row-to-JSON for an unknown column list, so its comparison runs on the rows themselves: the differing
+ * rows come back with a `__side` marker and their own columns, and there is no counts row. An added, dropped, renamed
+ * or reordered column then errors in Redshift instead of showing as a difference. */
+const rawCompare = (left: string, right: string) => `with __l as (
+${left}
+),
+__r as (
+${right}
+),
+__only_l as (select * from __l except select * from __r),
+__only_r as (select * from __r except select * from __l)
+select 'left' as __side, * from __only_l
+union all select 'right' as __side, * from __only_r`;
+
+export function compareQuery(left: string, right: string): string {
+  return byAdapter({
+    bigquery: jsonCompare(left, right, "bigquery"),
+    duckdb: jsonCompare(left, right, "duckdb"),
+    redshift: rawCompare(left, right),
+    snowflake: jsonCompare(left, right, "snowflake"),
+  });
 }
 
 export interface Counts {
@@ -67,12 +102,13 @@ export interface Comparison {
   rows: { side: "left" | "right"; row: Row }[];
 }
 
-/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so it cuts the
- * differing rows at limit - 1. Undefined when every differing row is there. */
+/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so a JSON
+ * comparison cuts the differing rows at limit - 1. A raw comparison (Redshift) has no counts row, so it cuts at
+ * limit. Undefined when every differing row is there. */
 export function cutFrom(c: Comparison, limit: number): number | undefined {
   const total = c.counts ? c.counts.only_left + c.counts.only_right : undefined;
   if (total !== undefined) return c.rows.length < total ? total : undefined;
-  return c.rows.length >= limit - 1 ? c.rows.length : undefined; // the counts row itself was cut: the total is unknown
+  return c.rows.length >= limit ? c.rows.length : undefined;
 }
 
 /** A column name that reads as a row's identifier: `id`, `order_id`, `ORDER_KEY`, `customer_sk`. */
@@ -108,15 +144,21 @@ export function pairRows(c: Comparison): Paired {
   return { key, pairs, left: rest, right: right.filter((r) => !paired.has(r)) };
 }
 
-/** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. */
+/** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. A JSON comparison's rows hold
+ * their data as a `__row` JSON string (counts first); Redshift's hold the row's own columns beside `__side`. */
 export function readComparison(rows: Row[]): Comparison {
   const get = (r: Row, k: string) => r[k] ?? r[k.toUpperCase()];
   const out: Comparison = { rows: [] };
   for (const r of rows) {
     const side = get(r, "__side");
-    const row = JSON.parse(String(get(r, "__row")));
-    if (side === "counts") out.counts = row;
-    else out.rows.push({ side: side === "left" ? "left" : "right", row });
+    const text = get(r, "__row");
+    if (side === "counts") out.counts = JSON.parse(String(text));
+    else if (text !== undefined) out.rows.push({ side: side === "left" ? "left" : "right", row: JSON.parse(String(text)) });
+    else
+      out.rows.push({
+        side: side === "left" ? "left" : "right",
+        row: Object.fromEntries(Object.entries(r).filter(([k]) => !/^__(?:side|k)$/i.test(k))),
+      });
   }
   return out;
 }

@@ -48,7 +48,7 @@ export const showRows = (title: string, what: string, rows: Row[], limit: number
 export const showComparison = (title: string, what: string, c: Comparison, limit: number, meta: string) =>
   show(title, comparisonHtml(what, c, limit, meta));
 
-const NAMES: Record<string, string> = { duckdb: "DuckDB", snowflake: "Snowflake" };
+const NAMES: Record<string, string> = { bigquery: "BigQuery", duckdb: "DuckDB", redshift: "Redshift", snowflake: "Snowflake" };
 const name = (type: string) => NAMES[type] ?? type;
 
 function page(body: string): string {
