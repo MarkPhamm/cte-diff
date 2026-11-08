@@ -108,12 +108,12 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query through `dbt show --inline`, in your dbt project. So Jinja (`ref`, `source`, macros, `var`) renders as in a real run, and dbt connects with your profile: key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first.
 
-Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://ctediff.dev/comparison/)
+On Snowflake, DuckDB and BigQuery, rows become JSON and the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Snowflake and DuckDB sort the keys; BigQuery keeps column order. Redshift diffs the rows themselves, with no counts. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://ctediff.dev/comparison/)
 
 ## Requirements
 
 - dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile. **CTE Diff: Check Setup** runs `dbt debug` and shows what it finds.
-- Comparisons run on Snowflake and DuckDB; dbt picks the SQL for your adapter. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports.
+- Comparisons run on BigQuery, DuckDB, Redshift and Snowflake; dbt picks the SQL for your adapter. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports. On Redshift the comparison has no row counts, and its columns must line up on both sides: adding, dropping, renaming or reordering a column errors there instead of showing as a difference. On BigQuery a reordered column list shows as a difference.
 - A trusted workspace: dbt runs the project's macros.
 
 ## Settings

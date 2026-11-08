@@ -4,7 +4,7 @@ import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseCompiled, p
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
-  assert.match(q, /select \* from a -- trailing comment\n\) __t\)/, "a trailing comment can't swallow the closing parens");
+  assert.match(q, /select \* from a -- trailing comment\n\) AS __t\)/, "a trailing comment can't swallow the closing parens");
   assert.match(q, /__only_l as \(select __row from __l except select __row from __r\)/);
   assert.match(q, /__only_r as \(select __row from __r except select __row from __l\)/);
 });
@@ -13,21 +13,31 @@ test("compareQuery picks each adapter's SQL", () => {
   const q = compareQuery("select 1 x", "select 2 x");
   const snowflake = forAdapter(q, "snowflake");
   const duckdb = forAdapter(q, "duckdb");
-  assert.doesNotMatch(snowflake + duckdb, /{%/);
+  const bigquery = forAdapter(q, "bigquery");
+  const redshift = forAdapter(q, "redshift");
+  assert.doesNotMatch(snowflake + duckdb + bigquery + redshift, /{%/);
   assert.match(snowflake, /to_json\(object_construct_keep_null\(\*\)\)/);
   assert.match(snowflake, /to_json\(object_construct\(/);
   assert.doesNotMatch(snowflake, /json_each|json_object/);
   assert.match(duckdb, /json_each\(to_json\(__t\)\)/);
   assert.match(duckdb, /to_json\(json_object\(/);
   assert.doesNotMatch(duckdb, /object_construct/);
+  assert.match(bigquery, /TO_JSON_STRING\(__t\)/);
+  assert.match(bigquery, /TO_JSON_STRING\(STRUCT\(\(select count\(\*\) from __l\) AS `left`.*\)\)/);
+  assert.match(bigquery, /except distinct/);
+  assert.doesNotMatch(bigquery, /object_construct|json_each|::varchar/);
+  // Redshift has no row-to-JSON: the differing rows come back raw, with a __side marker and no counts row.
+  assert.match(redshift, /select \* from __l except select \* from __r/);
+  assert.match(redshift, /'left' as __side/);
+  assert.doesNotMatch(redshift, /__row|counts|TO_JSON_STRING/);
 });
 
 test("compareQuery raises a plain error on a warehouse it has no SQL for", () => {
-  const redshift = forAdapter(compareQuery("select 1 x", "select 2 x"), "redshift");
-  assert.doesNotMatch(redshift, /{%|object_construct|json_each/);
-  assert.match(redshift, /{{ exceptions\.raise_compiler_error\("CTE Diff: Compare has no SQL for " ~ target\.type\) }}/);
+  const postgres = forAdapter(compareQuery("select 1 x", "select 2 x"), "postgres");
+  assert.doesNotMatch(postgres, /{%|object_construct|json_each/);
+  assert.match(postgres, /{{ exceptions\.raise_compiler_error\("CTE Diff: Compare has no SQL for " ~ target\.type\) }}/);
   // As dbt-core prints the raised error.
-  assert.equal(unsupported("Compilation Error in sql_operation inline_query\n  CTE Diff: Compare has no SQL for redshift"), "redshift");
+  assert.equal(unsupported("Compilation Error in sql_operation inline_query\n  CTE Diff: Compare has no SQL for postgres"), "postgres");
   assert.equal(unsupported("Database Error: syntax error at or near 'except'"), undefined);
 });
 
@@ -112,19 +122,32 @@ test("readComparison splits counts from rows, whatever the column case", () => {
   ]);
 });
 
+test("readComparison reads Redshift's raw rows: the row's columns beside __side, no counts", () => {
+  const c = readComparison([
+    { __side: "left", id: 1, amount: 32 },
+    { __side: "right", id: 1, amount: 24 },
+  ]);
+  assert.equal(c.counts, undefined);
+  assert.deepEqual(c.rows, [
+    { side: "left", row: { id: 1, amount: 32 } },
+    { side: "right", row: { id: 1, amount: 24 } },
+  ]);
+});
+
 test("cutFrom spots a comparison cut by the limit", () => {
   const counts = { left: 500, right: 500, only_left: 150, only_right: 150 };
   const rows = (k: number) => Array.from({ length: k }, () => ({ side: "left" as const, row: {} }));
   assert.equal(cutFrom({ counts, rows: rows(99) }, 100), 300, "limit 100 = the counts row + 99 differing rows");
   assert.equal(cutFrom({ counts: { ...counts, only_left: 1, only_right: 1 }, rows: rows(2) }, 100), undefined);
-  assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, a full result is taken as cut");
+  assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, the limit is all differing rows");
+  assert.equal(cutFrom({ rows: rows(99) }, 100), undefined, "without counts, 99 rows under a limit of 100 is the whole result");
   assert.equal(cutFrom({ rows: rows(3) }, 100), undefined);
 });
 
 test("forAdapter keeps other Jinja", () => {
   assert.equal(forAdapter("select {{ ref('a') }}, {% if target.type == 'duckdb' %}1{% else %}2{% endif %}", "duckdb"), "select {{ ref('a') }}, 1");
-  const chain = "{% if target.type == 'duckdb' %}1{% elif target.type == 'snowflake' %}2{% else %}3{% endif %}";
-  assert.deepEqual(["duckdb", "snowflake", "postgres"].map((t) => forAdapter(chain, t)), ["1", "2", "3"]);
+  const chain = "{% if target.type == 'bigquery' %}1{% elif target.type == 'duckdb' %}2{% elif target.type == 'redshift' %}3{% elif target.type == 'snowflake' %}4{% else %}5{% endif %}";
+  assert.deepEqual(["bigquery", "duckdb", "redshift", "snowflake", "postgres"].map((t) => forAdapter(chain, t)), ["1", "2", "3", "4", "5"]);
 });
 
 const sides = (left: Row[], right: Row[]): Comparison => ({

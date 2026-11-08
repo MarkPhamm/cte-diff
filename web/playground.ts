@@ -3,8 +3,9 @@
 /* The landing page's playground: two editable queries, coloured, their changed lines tinted, ▶ Preview and ⇄ Compare
  * on each CTE as in the extension. The sidebar and the results panel are the live demo's (web/ui.ts). Rows come from
  * running the extension's own SQL on DuckDB in the browser (duckdb-wasm from jsDelivr, loaded once the playground is
- * near the screen) over web/sample.ts's made-up tables, and rerun as you type. The SQL tab shows that SQL for Snowflake
- * or DuckDB. Bundled by `npm run site:js` into docs/javascripts/playground.js. */
+ * near the screen) over web/sample.ts's made-up tables, and rerun as you type. The SQL tab shows that SQL for the
+ * chosen warehouse (BigQuery, DuckDB, Redshift or Snowflake) while the rows always come from DuckDB. Bundled by
+ * `npm run site:js` into docs/javascripts/playground.js. */
 import { compareCtes, cteQuery, type Status } from "../src/cte.ts";
 import { compareQuery, forAdapter, readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
@@ -68,7 +69,7 @@ if (root) {
     `<div class="cd-win__body qp-body"><aside class="cd-side"><div class="cd-side__head"><b>CTE Diff</b> old.sql ↔ new.sql</div><p class="cd-side__msg"></p><ul class="cd-side__list"></ul>` +
     `<button class="qp-reset" type="button">Reset the example</button></aside>` +
     `<section class="cd-panel" aria-label="Results"><div class="cd-panel__tabs" role="tablist"><button type="button" role="tab" data-tab="rows">Rows</button><button type="button" role="tab" data-tab="sql">SQL</button>` +
-    `<span class="qp-adapter" role="group" aria-label="Warehouse the SQL is for"><button type="button" data-adapter="snowflake">Snowflake</button><button type="button" data-adapter="duckdb">DuckDB</button></span>` +
+    `<span class="qp-adapter" role="group" aria-label="Warehouse the SQL is for"><button type="button" data-adapter="bigquery">BigQuery</button><button type="button" data-adapter="duckdb">DuckDB</button><button type="button" data-adapter="redshift">Redshift</button><button type="button" data-adapter="snowflake">Snowflake</button></span>` +
     `<em class="cd-panel__title"></em></div><div class="cd-panel__body" aria-live="polite"></div></section></div>`;
 
   const eds = Object.fromEntries(
