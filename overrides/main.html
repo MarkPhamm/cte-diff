@@ -1,5 +1,30 @@
 {% extends "base.html" %}
 
+{#- Share card. Without og:image, LinkedIn takes the first picture on the page, the author avatar. -#}
+{% block extrahead %}
+  {{ super() }}
+  {% if page.is_homepage %}
+    {% set share_title = "See what a dbt change did to the data, one CTE at a time." %}
+  {% else %}
+    {% set share_title = page.title ~ " · cte-diff" %}
+  {% endif %}
+  {% set share_image = config.site_url ~ "assets/img/social.png" %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name | e }}">
+  <meta property="og:title" content="{{ share_title | e }}">
+  <meta property="og:description" content="{{ config.site_description | e }}">
+  <meta property="og:url" content="{{ page.canonical_url | e }}">
+  <meta property="og:image" content="{{ share_image | e }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="order_payments compared across a diff: three totals changed, the old amount above the new one.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ share_title | e }}">
+  <meta name="twitter:description" content="{{ config.site_description | e }}">
+  <meta name="twitter:image" content="{{ share_image | e }}">
+{% endblock %}
+
 {#- breadcrumb above every page title: home › page -#}
 {% block content %}
   <nav class="qd-crumbs" aria-label="Breadcrumb">

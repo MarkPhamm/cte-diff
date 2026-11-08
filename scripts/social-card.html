@@ -1,0 +1,159 @@
+<!doctype html>
+<!-- Share image for ctediff.dev, drawn at 1200×630.
+     Regenerate docs/assets/img/social.png from this file with Playwright at that viewport.
+     The rows are order_payments from web/demo-rows.json: old total above new. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>cte-diff</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Geist+Mono:wght@500;600&display=swap">
+  <style>
+    :root {
+      --paper: #f7f9f8;
+      --sheet: #fff;
+      --ink: #19211e;
+      --ink-2: #5f6563;
+      --ink-3: #6b716f;
+      --rule: #e6e9e7;
+      --rule-strong: #d8dad9;
+      --removed: #d23415;
+      --removed-bg: #feebe7;
+      --added: #027567;
+      --added-bg: #e1f8f3;
+      --neutral: #eef1f0;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Geist, system-ui, sans-serif;
+    }
+    .card {
+      height: 630px;
+      display: grid;
+      grid-template-columns: 520px minmax(0, 1fr);
+      gap: 36px;
+      align-items: center;
+      padding: 48px 48px 44px 56px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    .brand svg { display: block; width: 34px; height: 34px; }
+    h1 {
+      margin: 28px 0 0;
+      font-size: 48px;
+      line-height: 0.98;
+      font-weight: 600;
+      letter-spacing: -0.046em;
+    }
+    h1 span {
+      display: block;
+      margin-top: 14px;
+      color: var(--ink-3);
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+    }
+    .panel {
+      background: var(--sheet);
+      border: 1px solid var(--rule-strong);
+      border-radius: 16px;
+      box-shadow: 0 1px 2px rgba(25, 33, 30, .05), 0 18px 40px -24px rgba(25, 33, 30, .35);
+      padding: 22px 22px 8px;
+    }
+    .name {
+      margin: 0;
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+    .stat {
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--neutral);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .stat.l { background: var(--removed-bg); }
+    .stat.r { background: var(--added-bg); }
+    .verdict { margin: 14px 0 12px; font-size: 16px; font-weight: 600; }
+    .verdict b { color: var(--removed); font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+    th {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--rule);
+      color: var(--ink-2);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+    tr:last-child td { border-bottom: 0; }
+    .side { width: 28px; padding-right: 0; font-weight: 600; text-align: center; }
+    tr.l .side { color: var(--removed); }
+    tr.r .side { color: var(--added); }
+    .num { text-align: right; }
+    tr.l .chg { background: var(--removed-bg); }
+    tr.r .chg { background: var(--added-bg); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="copy">
+      <div class="brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6.4 2.4Q1.6 12 6.4 21.6M17.6 2.4Q22.4 12 17.6 21.6" fill="none" stroke="#19211e" stroke-width="2.8" stroke-linecap="round"/>
+          <rect x="8.3" y="5.1" width="7.4" height="3.4" rx="1.3" fill="#19211e" fill-opacity="0.22"/>
+          <rect x="8.3" y="10.3" width="4.8" height="3.4" rx="1.3" fill="#d23415"/>
+          <rect x="8.3" y="15.5" width="6.2" height="3.4" rx="1.3" fill="#028574"/>
+        </svg>
+        cte-diff
+      </div>
+      <h1>See what a dbt change<br>did to the data, <span>one CTE at a time.</span></h1>
+    </div>
+    <section class="panel" aria-label="order_payments compared across both sides of a diff">
+      <h2 class="name">order_payments</h2>
+      <div class="stats">
+        <span class="stat">Left 8 rows</span>
+        <span class="stat">Right 8 rows</span>
+        <span class="stat l">Only left 3</span>
+        <span class="stat r">Only right 3</span>
+      </div>
+      <p class="verdict"><b>×</b> The sides differ: 3 changed rows.</p>
+      <table>
+        <thead>
+          <tr><th></th><th>order_id</th><th class="num">total_amount</th></tr>
+        </thead>
+        <tbody>
+          <tr class="l"><td class="side">−</td><td>14</td><td class="num chg">32</td></tr>
+          <tr class="r"><td class="side">+</td><td>14</td><td class="num chg">24</td></tr>
+          <tr class="l"><td class="side">−</td><td>52</td><td class="num chg">45</td></tr>
+          <tr class="r"><td class="side">+</td><td>52</td><td class="num chg">30</td></tr>
+          <tr class="l"><td class="side">−</td><td>87</td><td class="num chg">18</td></tr>
+          <tr class="r"><td class="side">+</td><td>87</td><td class="num chg">9</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>

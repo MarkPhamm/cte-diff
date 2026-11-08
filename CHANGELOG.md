@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Sharing a link to the site shows a preview of the `order_payments` comparison.
+
 ## 0.8.2
 
 - **Compare Compiled SQL** is in the CTE Diff sidebar when a diff is open: the first row of the CTE list, and a button in the sidebar's title bar. It does the same thing as the button on the diff.
