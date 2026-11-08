@@ -2,7 +2,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { refLabel } from "./branch.ts";
 import { cteQuery } from "./cte.ts";
-import { debug, findDbt, projectDirOf, show } from "./dbt.ts";
+import { compile, debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
 import { results, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
@@ -14,6 +14,27 @@ let picked: string | undefined; // the project chosen for files outside any dbt 
 let latest = 0;
 let again: (() => Promise<void>) | undefined; // the last preview or compare, for Run Again
 let tree: CteTree;
+
+const COMPILED = "cte-diff-compiled";
+const compiledText = new Map<string, string>();
+let compiledRun = 0;
+
+/** Serves the compiled SQL of each side to a diff editor, so nothing is written to disk. */
+const compiledDocs: vscode.TextDocumentContentProvider = {
+  provideTextDocumentContent: (uri) => compiledText.get(uri.toString()),
+};
+
+/** A URI holding `sql`, named `label`. Unique per call, so a new comparison doesn't show an old side's text. */
+function compiledUri(label: string, sql: string): vscode.Uri {
+  const name = /\.sql$/i.test(label) ? label : `${label}.sql`;
+  const uri = vscode.Uri.from({ scheme: COMPILED, path: `/${name}`, query: String(++compiledRun) });
+  compiledText.set(uri.toString(), sql);
+  if (compiledText.size > 40) {
+    const oldest = compiledText.keys().next().value;
+    if (oldest !== undefined) compiledText.delete(oldest);
+  }
+  return uri;
+}
 
 /** Returns the sidebar's views, for the integration test. */
 export function activate(context: vscode.ExtensionContext): { tree: CteTree; files: FilesTree } {
@@ -44,6 +65,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
       offerDiffLens(context);
     }),
     vscode.window.registerWebviewViewProvider("cteDiff.results", results),
+    vscode.workspace.registerTextDocumentContentProvider(COMPILED, compiledDocs),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       update();
       files.follow(editor?.document);
@@ -64,6 +86,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name))),
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guardRun(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guardRun(() => compare(uri, name))),
+    vscode.commands.registerCommand("cteDiff.compareCompiled", () => guardRun(compareCompiled)),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
     vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(() => files.compare())),
     vscode.commands.registerCommand("cteDiff.files.pick", (side: Side) => guard(async () => void (await files.pick(side)))),
@@ -167,6 +190,50 @@ async function compare(uri: vscode.Uri, name?: string): Promise<void> {
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
   const result = await run(diff.right, title, label(name), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
   if (result) showComparison(title, label(name), readComparison(result.rows), result.limit, result.meta);
+}
+
+/** The diff editor tab in front, if any. */
+function activeDiffTab(): vscode.Tab | undefined {
+  const groups = vscode.window.tabGroups;
+  const ordered = [groups.activeTabGroup, ...groups.all.filter((g) => g !== groups.activeTabGroup)];
+  const diffs = ordered.flatMap((g) => g.tabs.filter((t) => t.input instanceof vscode.TabInputTextDiff));
+  return diffs.find((t) => t.isActive) ?? diffs[0];
+}
+
+/** Compares both sides' compiled SQL, not their rows: dbt renders the Jinja, refs and macros of each side, so the diff
+ * shows what the query became. */
+async function compareCompiled(): Promise<void> {
+  const input = activeDiffTab()?.input;
+  if (!(input instanceof vscode.TabInputTextDiff)) throw new Error("Open the two versions in a diff editor first.");
+  if (input.original.scheme === COMPILED || input.modified.scheme === COMPILED) throw new Error("This is already a compiled diff.");
+  const o = await setup(input.modified);
+  const [leftDoc, rightDoc] = await Promise.all([input.original, input.modified].map((uri) => vscode.workspace.openTextDocument(uri)));
+  const id = ++latest;
+  try {
+    const sides = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: "CTE Diff: compiling both sides", cancellable: true },
+      async (_, token) => {
+        const abort = new AbortController();
+        token.onCancellationRequested(() => abort.abort());
+        // One at a time: dbt runs in one project share target/.
+        const leftSql = await compile(cteQuery(leftDoc.getText()), o, abort.signal);
+        const rightSql = await compile(cteQuery(rightDoc.getText()), o, abort.signal);
+        return [leftSql, rightSql] as const;
+      },
+    );
+    if (id !== latest) return;
+    const [leftName, rightName] = [fileName(input.original), fileName(input.modified)];
+    await vscode.commands.executeCommand(
+      "vscode.diff",
+      compiledUri(leftName, sides[0]),
+      compiledUri(rightName, sides[1]),
+      `${leftName} compiled ↔ ${rightName} compiled`,
+    );
+  } catch (e) {
+    if (id !== latest) return;
+    if (message(e) === "Cancelled") showCancelled("Compare Compiled SQL", "both sides' compiled SQL");
+    else showError("Compare Compiled SQL", message(e));
+  }
 }
 
 /** The editor title bar's button: pick one of the active SQL's CTEs, as the sidebar lists them. In a diff it compares,

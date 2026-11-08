@@ -100,6 +100,10 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 - **⑂** beside a file in **Compare Files**, or **Compare with Branch…** in the sidebar's title bar: pick a local or remote branch. Its latest commit goes on the left, your working tree on the right.
 - Both sides run on your one dbt target, so the comparison shows what the SQL changed, not what another environment holds.
 
+### Compares the compiled SQL
+
+**Compare Compiled SQL**, in any diff's title bar, opens a diff of what dbt renders for each side: the Jinja, `ref`s, sources and macros resolved. Nothing runs on the warehouse, so it costs no query. After **Compare with Branch**, that is the branch's compiled SQL against your working tree's.
+
 ## How it works
 
 Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query through `dbt show --inline`, in your dbt project. So Jinja (`ref`, `source`, macros, `var`) renders as in a real run, and dbt connects with your profile: key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first.

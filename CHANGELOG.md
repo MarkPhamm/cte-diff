@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Compare Compiled SQL** shows what dbt renders for both sides of an open diff, as a diff: the Jinja, `ref`s, sources and macros resolved, with nothing run on the warehouse. After Compare with Branch, it shows the branch's compiled SQL against your working tree's.
+
 ## 0.8.0
 
 - Comparisons now run on **BigQuery** and **Redshift**, as well as Snowflake and DuckDB. On BigQuery a reordered column list shows as a difference. On Redshift there are no row counts, and the two sides' columns must line up: adding, dropping, renaming or reordering a column makes the warehouse reject the comparison. The marketplace name is now **CTE Diff for dbt**.

@@ -3,7 +3,7 @@ import { execFile, type ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { dbtError, parseShow, type Row } from "./query.ts";
+import { dbtError, parseCompiled, parseShow, type Row } from "./query.ts";
 
 /** The nearest folder at or above `file`'s folder that holds a dbt_project.yml. */
 export function projectDirOf(file: string): string | undefined {
@@ -80,27 +80,45 @@ export interface ShowOptions {
 
 let running: ChildProcess | undefined;
 
-/** The rows of `sql`. A new call kills the one still running: dbt runs in one project share target/, and the user
- * has moved on anyway. */
-export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise<Row[]> {
+/** dbt's output for `args`, run in the project. A new call kills the one still running: dbt runs in one project share
+ * target/, and the user has moved on anyway. */
+function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; failed: boolean }> {
   running?.kill();
-  const args = ["show", "-q", "--inline", sql, "--output", "json", "--limit", String(o.limit)];
-  if (o.target) args.push("--target", o.target);
-  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} show -q --inline <sql> --output json --limit ${o.limit}${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
   return new Promise((resolve, reject) => {
-    // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
     const child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (running === child) running = undefined;
       o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
       if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));
-      if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") {
-        return reject(new Error(notFound(o.dbt)));
-      }
-      const rows = err ? undefined : parseShow(stdout);
-      if (rows) resolve(rows);
-      else reject(new Error(dbtError(stdout, stderr)));
+      if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") return reject(new Error(notFound(o.dbt)));
+      resolve({ stdout, stderr, failed: err !== null });
     });
     running = child;
     signal?.addEventListener("abort", () => child.kill());
+  });
+}
+
+/** The rows of `sql`. */
+export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise<Row[]> {
+  const args = ["show", "-q", "--inline", sql, "--output", "json", "--limit", String(o.limit)];
+  if (o.target) args.push("--target", o.target);
+  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} show -q --inline <sql> --output json --limit ${o.limit}${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
+  // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
+  return runDbt(args, o, signal).then(({ stdout, stderr, failed }) => {
+    const rows = failed ? undefined : parseShow(stdout);
+    if (rows) return rows;
+    throw new Error(dbtError(stdout, stderr));
+  });
+}
+
+/** The SQL dbt renders for `sql`: Jinja, refs, sources and macros resolved, with nothing run on the warehouse. It
+ * parses the whole project, as show does, so the same failures apply. */
+export function compile(sql: string, o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<string> {
+  const args = ["compile", "--inline", sql, "--log-format", "json"];
+  if (o.target) args.push("--target", o.target);
+  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} compile --inline <sql> --log-format json${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
+  return runDbt(args, o, signal).then(({ stdout, stderr }) => {
+    const compiled = parseCompiled(stdout);
+    if (compiled !== undefined) return compiled;
+    throw new Error(dbtError(stdout, stderr));
   });
 }
