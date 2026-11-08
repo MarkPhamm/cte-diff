@@ -93,8 +93,9 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
     : [];
   let body = heading(what, stats, meta);
   if (!k) body += '<p class="muted">Row counts unavailable.</p>';
-  else if (!k.only_left && !k.only_right) {
-    body += `<p class="verdict"><span class="good">✓</span> ${k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates."}</p>`;
+  const identical = k ? !k.only_left && !k.only_right : c.rows.length === 0;
+  if (identical) {
+    body += `<p class="verdict"><span class="good">✓</span> ${!k || k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates."}</p>`;
   } else {
     const parts = [p.pairs.length && plural(p.pairs.length, "changed row"), p.left.length && `${n(p.left.length)} only left`, p.right.length && `${n(p.right.length)} only right`];
     body += `<p class="verdict"><span class="bad">✗</span> The sides differ${p.pairs.length ? `: ${parts.filter(Boolean).join(", ")}` : ""}.</p>`;

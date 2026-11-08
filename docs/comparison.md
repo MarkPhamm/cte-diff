@@ -1,6 +1,6 @@
 # How the comparison works
 
-For each side, the CTE becomes `select * from <cte>`, keeping the CTEs before it. Text before the `with`, such as `{{ config() }}`, is kept too. Both sides then run in one query, on Snowflake or DuckDB, through `dbt show`, so Jinja renders as in a real run.
+For each side, the CTE becomes `select * from <cte>`, keeping the CTEs before it. Text before the `with`, such as `{{ config() }}`, is kept too. Both sides then run in one query, on BigQuery, DuckDB, Redshift or Snowflake, through `dbt show`, so Jinja renders as in a real run.
 
 ```sql
 with __l as (select to_json(object_construct_keep_null(*)) as __row from (
@@ -16,12 +16,25 @@ select ...  -- the row counts, then the rows of __only_l and __only_r
 
 ## Rows compare by column name
 
-Each row is turned into JSON with its keys sorted, so rows compare by column *name*, not position:
+Each row is turned into JSON, so rows compare by column *name*, not position:
 
 - **Snowflake:** `to_json(object_construct_keep_null(*))`. Snowflake keeps an object's keys sorted.
 - **DuckDB:** `to_json` of the row, re-joined from `json_each` in key order. DuckDB keeps a row's columns in their order, so the keys are sorted by hand.
+- **BigQuery:** `TO_JSON_STRING` of the row itself (the FROM alias is the row as a `STRUCT`), in column order. A reordered column list therefore shows as a difference, but a renamed, added or dropped column still does. The counts are a `STRUCT` of four numbers, also as JSON.
 
-dbt renders the right one: the query holds both, in a `{% if target.type == 'duckdb' %}` block. A renamed, added or dropped column shows up as a difference instead of an error. Both keep a `NULL` column in the JSON, so `NULL` and a missing column differ.
+dbt renders the right one: the query holds every warehouse's branch, in a `{% if target.type == '...' %}` block. A renamed, added or dropped column shows up as a difference instead of an error. Both keep a `NULL` column in the JSON, so `NULL` and a missing column differ.
+
+**Redshift** has no function that turns a row of unknown columns into JSON, so its comparison runs on the rows themselves:
+
+```sql
+select 'left' as __side, * from (
+  select * from ( -- the left side's CTE
+  ) except select * from ( -- the right side's CTE
+  )
+)
+```
+
+The differing rows come back with their own columns and a `__side` marker, and there is no counts row: the panel says so, and still says whether the sides match. Redshift's `EXCEPT` matches columns by position, so the two sides' columns must line up by count, order and type. A change to the columns errors instead of showing as a difference.
 
 ## What the counts mean
 

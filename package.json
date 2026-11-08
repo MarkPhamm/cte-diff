@@ -1,7 +1,7 @@
 {
   "name": "cte-diff",
-  "displayName": "CTE Diff for dbt and Snowflake",
-  "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your Snowflake profile just work.",
+  "displayName": "CTE Diff for dbt",
+  "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your warehouse profile just work.",
   "version": "0.7.1",
   "publisher": "MarkPhamm",
   "author": "Minh (Mark) Pham",
@@ -28,8 +28,10 @@
   ],
   "keywords": [
     "dbt",
-    "snowflake",
+    "bigquery",
     "duckdb",
+    "redshift",
+    "snowflake",
     "sql",
     "cte",
     "diff",

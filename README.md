@@ -109,7 +109,7 @@ Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and 
 ## Requirements
 
 - dbt Fusion, or dbt-core 1.5 or later (both have `dbt show --inline`), with a working profile. **CTE Diff: Check Setup** runs `dbt debug` and shows what it finds.
-- Comparisons run on Snowflake and DuckDB; dbt picks the SQL for your adapter. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports.
+- Comparisons run on BigQuery, DuckDB, Redshift and Snowflake; dbt picks the SQL for your adapter. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports. On Redshift the comparison has no row counts, and its columns must line up on both sides: adding, dropping, renaming or reordering a column errors there instead of showing as a difference. On BigQuery a reordered column list shows as a difference.
 - A trusted workspace: dbt runs the project's macros.
 
 ## Settings

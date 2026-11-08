@@ -287,7 +287,7 @@ origin/qa</pre>
         <table class="qh-how__t qh-how__res"><thead><tr><th></th><th>order_id</th><th>total_amount</th></tr></thead><tbody><tr class="qh-how__group"><td colspan="3">3 changed rows</td></tr><tr class="qh-how__l"><td>−</td><td>14</td><td class="chg">32</td></tr><tr class="qh-how__r"><td>+</td><td>14</td><td class="chg">24</td></tr><tr class="qh-how__l"><td>−</td><td>52</td><td class="chg">45</td></tr><tr class="qh-how__r"><td>+</td><td>52</td><td class="chg">30</td></tr><tr class="qh-how__l"><td>−</td><td>87</td><td class="chg">18</td></tr><tr class="qh-how__r"><td>+</td><td>87</td><td class="chg">9</td></tr></tbody></table>
       </li>
     </ol>
-    <p class="qh-how__note">Snowflake or DuckDB, one query, one <code>dbt show</code> run. It compares distinct rows: if only duplicates changed, the row counts differ but no rows are listed. <a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
+    <p class="qh-how__note">BigQuery, DuckDB, Redshift or Snowflake, one query, one <code>dbt show</code> run. It compares distinct rows: if only duplicates changed, the row counts differ but no rows are listed. <a href="{{ 'comparison/' | url }}">Read how the comparison works</a></p>
   </section>
 
   <!-- --------------------------------------------------------------- requirements -->
@@ -295,7 +295,7 @@ origin/qa</pre>
     <h2>Before you install</h2>
     <dl class="qh-reqs">
       <div><dt>dbt</dt><dd>dbt Fusion, or dbt-core 1.5 or later, with a working profile. Key-pair, SSO and password logins all work. A project <code>.env</code> is loaded first.</dd></div>
-      <div><dt>Warehouse</dt><dd>Previews work on any warehouse dbt supports. Comparisons run on Snowflake and DuckDB.</dd></div>
+      <div><dt>Warehouse</dt><dd>Previews work on any warehouse dbt supports. Comparisons run on BigQuery, DuckDB, Redshift and Snowflake.</dd></div>
       <div><dt>Workspace</dt><dd>A trusted one: dbt runs the project’s macros.</dd></div>
     </dl>
   </section>
