@@ -104,7 +104,7 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 Each side's CTE becomes `select * from <cte>`, keeping the CTEs before it. Both sides run in one query through `dbt show --inline`, in your dbt project. So Jinja (`ref`, `source`, macros, `var`) renders as in a real run, and dbt connects with your profile: key-pair, SSO and password logins all work. If the project has a `.env` file, its variables are loaded first.
 
-Rows become JSON with sorted keys, then the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://ctediff.dev/comparison/)
+On Snowflake, DuckDB and BigQuery, rows become JSON and the query takes `left EXCEPT right` and `right EXCEPT left`, plus each side's row count. Snowflake and DuckDB sort the keys; BigQuery keeps column order. Redshift diffs the rows themselves, with no counts. Results open in the **CTE Diff** tab of the bottom panel, and each run is logged to **Output › CTE Diff** with the exact SQL. [How the comparison works →](https://ctediff.dev/comparison/)
 
 ## Requirements
 

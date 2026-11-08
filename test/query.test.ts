@@ -113,7 +113,8 @@ test("cutFrom spots a comparison cut by the limit", () => {
   const rows = (k: number) => Array.from({ length: k }, () => ({ side: "left" as const, row: {} }));
   assert.equal(cutFrom({ counts, rows: rows(99) }, 100), 300, "limit 100 = the counts row + 99 differing rows");
   assert.equal(cutFrom({ counts: { ...counts, only_left: 1, only_right: 1 }, rows: rows(2) }, 100), undefined);
-  assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, a full result is taken as cut");
+  assert.equal(cutFrom({ rows: rows(100) }, 100), 100, "without counts, the limit is all differing rows");
+  assert.equal(cutFrom({ rows: rows(99) }, 100), undefined, "without counts, 99 rows under a limit of 100 is the whole result");
   assert.equal(cutFrom({ rows: rows(3) }, 100), undefined);
 });
 

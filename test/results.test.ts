@@ -14,12 +14,12 @@ test("errorHtml says whether dbt failed or the run never started", () => {
 
 test("unsupportedHtml says what works and links an issue asking for the warehouse", () => {
   const html = unsupportedHtml("postgres", ["BigQuery", "DuckDB", "Redshift", "Snowflake"]);
-  assert.match(html, /Comparisons run on BigQuery and DuckDB and Redshift and Snowflake\. <b>▶ Preview<\/b> works on postgres\./);
+  assert.match(html, /Comparisons run on BigQuery, DuckDB, Redshift and Snowflake\. <b>▶ Preview<\/b> works on postgres\./);
   assert.match(html, /href="https:\/\/github\.com\/MarkPhamm\/cte-diff\/issues\/new\?title=Compare%20on%20postgres"/);
 });
 
 test("comparisonHtml without counts (Redshift) still says whether the sides match", () => {
-  assert.match(comparisonHtml("a", { rows: [] }, 100), /Row counts unavailable[\s\S]*Both sides return the same rows/);
+  assert.match(comparisonHtml("a", { rows: [] }, 100), /Row counts unavailable[\s\S]*No differing rows/);
   assert.match(
     comparisonHtml("a", { rows: [{ side: "left", row: { id: 1 } }] }, 100),
     /Row counts unavailable[\s\S]*The sides differ/,

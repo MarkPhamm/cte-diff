@@ -53,8 +53,9 @@ export function cancelledHtml(what: string): string {
 /** A comparison on a warehouse it has no SQL for: what does work, and where to ask for it. */
 export function unsupportedHtml(warehouse: string, supported: readonly string[]): string {
   const ask = `https://github.com/MarkPhamm/cte-diff/issues/new?title=${encodeURIComponent(`Compare on ${warehouse}`)}`;
+  const names = supported.length > 1 ? `${supported.slice(0, -1).join(", ")} and ${supported[supported.length - 1]}` : supported.join("");
   return `<h2>Compare doesn't run on ${esc(warehouse)} yet</h2>
-<p>Comparisons run on ${esc(supported.join(" and "))}. <b>▶ Preview</b> works on ${esc(warehouse)}.</p>
+<p>Comparisons run on ${esc(names)}. <b>▶ Preview</b> works on ${esc(warehouse)}.</p>
 <p><a href="${ask}">Ask for ${esc(warehouse)}</a>: the warehouses people ask for come next.</p>`;
 }
 
@@ -95,7 +96,8 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
   if (!k) body += '<p class="muted">Row counts unavailable.</p>';
   const identical = k ? !k.only_left && !k.only_right : c.rows.length === 0;
   if (identical) {
-    body += `<p class="verdict"><span class="good">✓</span> ${!k || k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates."}</p>`;
+    const verdict = !k ? "No differing rows." : k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates.";
+    body += `<p class="verdict"><span class="good">✓</span> ${verdict}</p>`;
   } else {
     const parts = [p.pairs.length && plural(p.pairs.length, "changed row"), p.left.length && `${n(p.left.length)} only left`, p.right.length && `${n(p.right.length)} only right`];
     body += `<p class="verdict"><span class="bad">✗</span> The sides differ${p.pairs.length ? `: ${parts.filter(Boolean).join(", ")}` : ""}.</p>`;

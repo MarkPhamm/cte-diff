@@ -40,8 +40,8 @@ No. dbt runs on your machine with your profile, and the rows go from your wareho
 
 ## Known limits
 
-- **Duplicates.** `EXCEPT` compares distinct rows. When only duplicated rows differ, the row counts show it and no rows are listed.
-- **Warehouses.** Comparisons run on BigQuery, DuckDB, Redshift and Snowflake. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports. On Redshift, changing a CTE's columns (adding, dropping, renaming or reordering one) makes the warehouse reject the comparison instead of showing it as a difference, and there are no row counts. On BigQuery a reordered column list shows as a difference; elsewhere it doesn't.
+- **Duplicates.** `EXCEPT` compares distinct rows. On Snowflake, DuckDB and BigQuery, when only duplicated rows differ, the row counts show it and no rows are listed. On Redshift there are no counts, so a change to duplicates alone shows as no difference.
+- **Warehouses.** Comparisons run on BigQuery, DuckDB, Redshift and Snowflake. On another warehouse the panel says so, with a link to ask for it. Previews run on any warehouse dbt supports. On Redshift, changing a CTE's columns (adding, dropping, renaming or reordering one) makes the warehouse reject the comparison instead of showing it as a difference, and there are no row counts. On BigQuery a reordered column list shows as a difference; on Snowflake and DuckDB it doesn't.
 - **Pairing.** A changed row shows as an old and new pair when an id column (`id`, or a name ending in `_id`, `_key`, `_pk` or `_sk`) is unique among the differing rows. Without one, rows are listed as only left and only right.
 - **CTEs written by Jinja.** The CTE list comes from the SQL as written, with Jinja tags skipped. CTEs that a `{% for %}` loop or a macro writes aren't listed, and the list stops at the first thing it can't read.
 - **`//` in SQL.** It's read as the start of a comment, so DuckDB's integer division can hide the CTEs after it.

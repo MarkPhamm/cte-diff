@@ -28,8 +28,9 @@ export const forAdapter = (sql: string, type: string) =>
 export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPORTED} (\\w+)`))?.[1];
 
 /** A row of `__t` as JSON text. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column order, so its keys
- * are sorted by hand; BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON in column order, so a
- * reordered column list reads as a difference there. */
+ * are sorted by hand; BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
+ * which keeps the STRUCT's field order (TO_JSON would sort the keys), so a reordered column list reads as a
+ * difference there. */
 const rowJson: Record<Exclude<Adapter, "redshift">, string> = {
   bigquery: "TO_JSON_STRING(__t)",
   duckdb: `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
@@ -101,12 +102,13 @@ export interface Comparison {
   rows: { side: "left" | "right"; row: Row }[];
 }
 
-/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so it cuts the
- * differing rows at limit - 1. Undefined when every differing row is there. */
+/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so a JSON
+ * comparison cuts the differing rows at limit - 1. A raw comparison (Redshift) has no counts row, so it cuts at
+ * limit. Undefined when every differing row is there. */
 export function cutFrom(c: Comparison, limit: number): number | undefined {
   const total = c.counts ? c.counts.only_left + c.counts.only_right : undefined;
   if (total !== undefined) return c.rows.length < total ? total : undefined;
-  return c.rows.length >= limit - 1 ? c.rows.length : undefined; // the counts row itself was cut: the total is unknown
+  return c.rows.length >= limit ? c.rows.length : undefined;
 }
 
 /** A column name that reads as a row's identifier: `id`, `order_id`, `ORDER_KEY`, `customer_sk`. */

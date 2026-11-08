@@ -14,7 +14,7 @@ ext install MarkPhamm.cte-diff
 ## Requirements
 
 - **dbt Fusion, or dbt-core 1.5 or later.** Both have `dbt show --inline`, which runs every query. dbt needs a working profile.
-- **BigQuery, DuckDB, Redshift or Snowflake, for comparisons.** Each warehouse has its own SQL for turning a row into JSON and diffing it (Redshift diffs the rows themselves, with no row counts). Previews work on any warehouse dbt supports.
+- **BigQuery, DuckDB, Redshift or Snowflake, for comparisons.** Each warehouse has its own SQL for the comparison; Redshift diffs the rows themselves, with no row counts. Previews work on any warehouse dbt supports.
 - **A trusted workspace.** dbt runs the project's macros, so the extension stays off in Restricted Mode.
 
 ## Finding dbt and the project
