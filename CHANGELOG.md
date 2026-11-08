@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Compare Compiled SQL** is in the CTE Diff sidebar when a diff is open: the first row of the CTE list, and a button in the sidebar's title bar. It does the same thing as the button on the diff.
+
 ## 0.8.1
 
 - **Compare Compiled SQL** shows what dbt renders for both sides of an open diff, as a diff: the Jinja, `ref`s, sources and macros resolved, with nothing run on the warehouse. After Compare with Branch, it shows the branch's compiled SQL against your working tree's.

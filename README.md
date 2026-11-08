@@ -102,7 +102,7 @@ Columns match by name, not position. An added, dropped or renamed column shows a
 
 ### Compares the compiled SQL
 
-**Compare Compiled SQL**, in any diff's title bar, opens a diff of what dbt renders for each side: the Jinja, `ref`s, sources and macros resolved. Nothing runs on the warehouse, so it costs no query. After **Compare with Branch**, that is the branch's compiled SQL against your working tree's.
+**Compare Compiled SQL** opens a diff of what dbt renders for each side: the Jinja, `ref`s, sources and macros resolved. Nothing runs on the warehouse, so it costs no query. When a diff is open it is the first row of the CTE Diff sidebar, and a button in that sidebar's title bar, as well as in the diff's title bar. After **Compare with Branch**, that is the branch's compiled SQL against your working tree's.
 
 ## How it works
 
