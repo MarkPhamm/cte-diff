@@ -70,11 +70,13 @@ No warehouse at hand? [`examples/duckdb`](https://github.com/MarkPhamm/cte-diff/
 
 Hover a CTE for **←** (preview the old side), **→** (preview the new side) and **⇄** (compare both). Click it to jump to it.
 
-### Previews any CTE
+### Previews any CTE or subquery
 
 <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-preview.gif" width="100%" alt="Preview above payments runs that CTE and lists its 9 rows in the panel">
 
 **▶ Preview** above a CTE shows its rows, on either side of a diff or in any SQL file. The last button previews the whole query.
+
+**▶ Preview subquery** above an `exists`, `in`, scalar or derived-table subquery shows its rows too. A correlated subquery, one that reads an outer alias such as `renamed.game_id`, runs with the outer relations it reads, so the reference resolves as it does in the model. The preview keeps the outer tables, not the outer query's join conditions or other filters, so with several outer tables it can show rows the full query would filter out.
 
 ### Compares a CTE on both sides
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareCtes, cteQuery, parse } from "../src/cte.ts";
+import { compareCtes, cteQuery, parse, subqueries, subqueryQuery } from "../src/cte.ts";
 
 const names = (sql: string) => parse(sql).ctes.map((c) => c.name);
 
@@ -72,6 +72,103 @@ test("no WITH: no CTEs, the whole query still previews", () => {
   assert.deepEqual(parse("select 1").ctes, []);
   assert.equal(parse("select 1").withStart, -1);
   assert.equal(cteQuery("  select 1;\n"), "select 1");
+});
+
+test("finds subqueries, not the top-level CTE bodies", () => {
+  const sql = `with a as (
+    select * from t
+    where exists (select 1 from u where u.id = t.id)
+), b as (
+    select * from (select * from v) x
+)
+select * from b`;
+  assert.deepEqual(
+    subqueries(sql).map((s) => [sql.slice(s.start, s.start + 6), s.cte]),
+    [
+      ["select", 0],
+      ["select", 1],
+    ],
+  );
+});
+
+const CORRELATED = `with renamed as (
+    select * from t_game
+),
+
+valid_bets as (
+    select renamed.*
+    from renamed
+    where exists (
+        select valid_game.game_id
+        from {{ ref('bronze_stg_wdts_reporting__t_game') }} as valid_game
+        where
+            valid_game.game_id = renamed.game_id
+            and valid_game.gaming_day = renamed.gaming_day
+    )
+)
+
+select * from valid_bets
+`;
+
+test("a correlated subquery previews with the outer relation it reads", () => {
+  const [sub] = subqueries(CORRELATED);
+  const q = subqueryQuery(CORRELATED, sub.start);
+  assert.ok(q.startsWith("with renamed as ("), "keeps the CTEs before its own");
+  assert.ok(!q.includes("valid_bets as ("), "does not run the CTE that holds it");
+  assert.match(q, /from renamed, \{\{ ref\('bronze_stg_wdts_reporting__t_game'\) \}\} as valid_game/);
+  assert.match(q, /valid_game\.game_id = renamed\.game_id/);
+});
+
+test("an uncorrelated subquery previews on its own", () => {
+  const sql = "select * from orders where id in (select order_id from payments where amount > 0)";
+  const [sub] = subqueries(sql);
+  assert.equal(subqueryQuery(sql, sub.start), "select order_id from payments where amount > 0");
+});
+
+test("a correlated subquery previews with the alias of each outer relation it reads", () => {
+  const sql = `with valid_bets as (
+    select o.* from orders o join customers c on c.id = o.customer_id
+    where exists (select 1 from payments p where p.order_id = o.id and p.customer_id = c.id)
+)
+select * from valid_bets`;
+  const [sub] = subqueries(sql);
+  const q = subqueryQuery(sql, sub.start);
+  assert.match(q, /from orders o,\s+customers c, payments p/);
+  assert.match(q, /p\.order_id = o\.id and p\.customer_id = c\.id/);
+});
+
+test("a subquery preview keeps a nested WITH, and a derived table's outer reads", () => {
+  const nested = `with outer_cte as (
+    with inner_cte as (select * from orders)
+    select * from inner_cte i where exists (select 1 from payments p where p.order_id = i.id)
+)
+select * from outer_cte`;
+  const [inner, exists] = subqueries(nested);
+  assert.ok(subqueryQuery(nested, inner.start).startsWith("with inner_cte as (select * from orders)"));
+  assert.match(subqueryQuery(nested, exists.start), /^with inner_cte as \(select \* from orders\)\nselect 1 from inner_cte i, payments p/);
+
+  const derived = `with x as (
+    select * from orders o, (select * from payments p where p.order_id = o.id) pay
+    where exists (select 1 from refunds r where r.id = pay.id)
+) select * from x`;
+  const [table, correlated] = subqueries(derived);
+  assert.equal(subqueryQuery(derived, table.start), "select * from orders o, payments p where p.order_id = o.id");
+  assert.match(subqueryQuery(derived, correlated.start), /^select 1 from orders o,\s+\(select \* from payments p where p\.order_id = o\.id\) pay,\s+refunds r/);
+});
+
+test("a subquery's own WITH is not hoisted twice", () => {
+  const sql = `with x as (
+    select * from orders o
+    where exists (with q as (select 1 id) select 1 from q where q.id = o.id)
+) select * from x`;
+  const [sub] = subqueries(sql);
+  const q = subqueryQuery(sql, sub.start);
+  assert.equal(q.match(/with q as/g)?.length, 1, "one WITH q");
+  assert.equal(q, "with q as (select 1 id) select 1 from orders o, q where q.id = o.id");
+
+  const derived = "select * from (with q as (select 1 id) select * from q) z";
+  const [table] = subqueries(derived);
+  assert.equal(subqueryQuery(derived, table.start), "with q as (select 1 id) select * from q");
 });
 
 test("compareCtes: changed, added, removed, and affected downstream", () => {

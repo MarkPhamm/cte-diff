@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { refLabel } from "./branch.ts";
-import { cteQuery } from "./cte.ts";
+import { cteQuery, subqueryQuery } from "./cte.ts";
 import { compile, debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
@@ -83,8 +83,10 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guardRun(() => preview(n.uri!, n.name))),
     vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guardRun(() => preview(n.left!, n.name))),
     vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guardRun(() => preview(n.right!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.previewSubquery", (n: CteNode) => guardRun(() => previewSubquery(n.uri!, n.start!))),
     vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name))),
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guardRun(() => preview(uri, name))),
+    vscode.commands.registerCommand("cteDiff.previewSubquery", (uri: vscode.Uri, start: number) => guardRun(() => previewSubquery(uri, start))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guardRun(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.compareCompiled", () => guardRun(compareCompiled)),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
@@ -167,6 +169,16 @@ async function preview(uri: vscode.Uri, name?: string): Promise<void> {
   const what = `${label(name)} (${path.basename(uri.path) || "untitled"})`;
   const result = await run(uri, `Preview: ${label(name)}`, what, sql, fileName(uri));
   if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit, result.meta);
+}
+
+/** Previews a subquery at `start`, with the outer query's relations so a correlated one resolves them. */
+async function previewSubquery(uri: vscode.Uri, start: number): Promise<void> {
+  remember(() => previewSubquery(uri, start));
+  const doc = await vscode.workspace.openTextDocument(uri);
+  const sql = subqueryQuery(doc.getText(), start);
+  const what = `subquery at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
+  const result = await run(uri, "Preview: subquery", what, sql, fileName(uri));
+  if (result) showRows("Preview: subquery", what, result.rows, result.limit, result.meta);
 }
 
 /** A file's name for the results' heading; a git: URI is a committed version, named by its branch when it has one. */

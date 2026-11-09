@@ -1,7 +1,7 @@
 /* CodeLens above each CTE (and the final select): Preview, and Compare sides when the file is one side of an open diff
- * and the CTE is on both sides. */
+ * and the CTE is on both sides. Each subquery gets a Preview too. */
 import * as vscode from "vscode";
-import { parse, sameName } from "./cte.ts";
+import { parse, sameName, subqueries } from "./cte.ts";
 
 /** Which side of an open diff editor `uri` is on, and the other side's URI. */
 export function diffOf(uri: vscode.Uri): { left: vscode.Uri; right: vscode.Uri } | undefined {
@@ -43,6 +43,11 @@ export class CteLens implements vscode.CodeLensProvider {
       if (diff && onBoth(name)) lenses.push(new vscode.CodeLens(range, { title: "⇄ Compare sides", command: "cteDiff.compare", arguments: args }));
     };
     for (const c of ctes) add(c.start, c.name);
+    // A correlated subquery needs the query around it to resolve what it reads; the command adds that context.
+    for (const s of subqueries(sql)) {
+      const range = new vscode.Range(doc.positionAt(s.start), doc.positionAt(s.start));
+      lenses.push(new vscode.CodeLens(range, { title: "▶ Preview subquery", command: "cteDiff.previewSubquery", arguments: [doc.uri, s.start] }));
+    }
     // The whole query: on the line after the last CTE, or at the top when there are none.
     const last = ctes.at(-1);
     const finalAt = last ? sql.slice(last.bodyEnd).search(/\S/) : -1;

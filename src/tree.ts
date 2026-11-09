@@ -1,8 +1,9 @@
-/* The CTE Diff sidebar: the CTEs of the SQL in the active editor. When that editor is one side of a diff, every CTE of
- * both sides, marked changed / new / removed / affected (unchanged, but reads one that changed). */
+/* The CTE Diff sidebar: the CTEs of the SQL in the active editor, each with its subqueries. When that editor is one
+ * side of a diff, every CTE of both sides, marked changed / new / removed / affected (unchanged, but reads one that
+ * changed). */
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { compareCtes, parse, sameName, type Status } from "./cte.ts";
+import { compareCtes, parse, sameName, subqueries, type Status } from "./cte.ts";
 import { diffOf } from "./lens.ts";
 
 export const SQL_LANGUAGES = ["sql", "jinja-sql", "snowflake-sql"];
@@ -17,6 +18,20 @@ export interface CteNode {
   uri?: vscode.Uri;
   /** The list's action row: compare both sides' compiled SQL. Not a CTE. */
   compiled?: boolean;
+  /** A subquery under its CTE (or the final query). */
+  subquery?: boolean;
+  /** The subquery's first offset, and the offset of its closing parenthesis. */
+  start?: number;
+  end?: number;
+  children?: CteNode[];
+}
+
+/** The subqueries of one CTE (`-1` is the final query), labelled by the line they start on. */
+function childNodes(sql: string, uri: vscode.Uri, cte: number, side?: "old" | "new"): CteNode[] {
+  const lineOf = (offset: number) => sql.slice(0, offset).split(/\r?\n/).length;
+  return subqueries(sql)
+    .filter((s) => s.cte === cte)
+    .map((s) => ({ name: `subquery at line ${lineOf(s.start)}${side ? ` (${side})` : ""}`, uri, subquery: true, start: s.start, end: s.close }));
 }
 
 const LOOK: Record<Status, { icon: string; color?: string; note: string; tip: string }> = {
@@ -48,6 +63,21 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
     if (diff) {
       const [l, r] = await Promise.all([diff.left, diff.right].map((u) => vscode.workspace.openTextDocument(u)));
       const statuses = compareCtes(l.getText(), r.getText());
+      const [leftSql, rightSql] = [l.getText(), r.getText()];
+      const leftCtes = parse(leftSql).ctes;
+      const rightCtes = parse(rightSql).ctes;
+      const childrenOf = (name: string | undefined, status: Status): CteNode[] => {
+        const i = name === undefined ? -1 : leftCtes.findIndex((c) => sameName(c.name, name));
+        const j = name === undefined ? -1 : rightCtes.findIndex((c) => sameName(c.name, name));
+        // A new CTE has no old side, a removed one no new side. A changed or affected one shows both sides, whose rows
+        // can differ; an unchanged one shows one side, so its subqueries don't all appear twice.
+        const old = status === "changed" || status === "affected" || status === "removed";
+        const now = status !== "removed";
+        return [
+          ...(old ? childNodes(leftSql, diff.left, i, "old") : []),
+          ...(now ? childNodes(rightSql, diff.right, j, "new") : []),
+        ];
+      };
       this.nodes = [
         { compiled: true },
         ...statuses.map(({ name, status }) => ({
@@ -55,6 +85,7 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
           status,
           left: status === "added" ? undefined : diff.left,
           right: status === "removed" ? undefined : diff.right,
+          children: childrenOf(name, status),
         })),
       ];
       this.shown = [diff.left.toString(), diff.right.toString()];
@@ -64,7 +95,11 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       const parts = (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${note(s)}`);
       this.describe(path.basename(diff.right.path), parts.length ? parts.join(" · ") : "No CTE changed.");
     } else if (SQL_LANGUAGES.includes(doc.languageId)) {
-      this.nodes = [...parse(doc.getText()).ctes.map((c) => ({ name: c.name, uri: doc.uri })), { uri: doc.uri }];
+      const sql = doc.getText();
+      this.nodes = [
+        ...parse(sql).ctes.map((c, i) => ({ name: c.name, uri: doc.uri, children: childNodes(sql, doc.uri, i) })),
+        { uri: doc.uri, children: childNodes(sql, doc.uri, -1) },
+      ];
       this.shown = [doc.uri.toString()];
       this.describe(path.basename(doc.uri.path), "Open the file in a diff to compare its CTEs.");
     } else {
@@ -88,7 +123,7 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
   }
 
   getChildren(node?: CteNode): CteNode[] {
-    return node ? [] : this.nodes;
+    return node ? (node.children ?? []) : this.nodes;
   }
 
   getTreeItem(node: CteNode): vscode.TreeItem {
@@ -97,6 +132,15 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       item.tooltip = "Diff what dbt renders for each side. Nothing runs on the warehouse.";
       item.contextValue = "compiled";
       item.command = { command: "cteDiff.compareCompiled", title: "Compare Compiled SQL" };
+      return item;
+    }
+    if (node.subquery) {
+      const item = new vscode.TreeItem(node.name ?? "subquery");
+      item.iconPath = new vscode.ThemeIcon("symbol-method");
+      item.contextValue = "subquery";
+      item.tooltip =
+        "Preview this subquery's rows. A correlated one runs with the outer tables it reads, so its references resolve.";
+      item.command = { command: "cteDiff.tree.reveal", title: "Go to Subquery", arguments: [node] };
       return item;
     }
     const item = new vscode.TreeItem(node.name ?? "(whole query)");
@@ -115,7 +159,7 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
   }
 }
 
-/** Selects the CTE's name (or the final select) in the editor showing it, diff sides included. */
+/** Selects the CTE's name (or the final select, or a subquery) in the editor showing it, diff sides included. */
 export async function reveal(node: CteNode): Promise<void> {
   const uri = node.right ?? node.uri ?? node.left;
   if (!uri) return;
@@ -123,6 +167,12 @@ export async function reveal(node: CteNode): Promise<void> {
     vscode.window.visibleTextEditors.find((e) => e.document.uri.toString() === uri.toString()) ??
     (await vscode.window.showTextDocument(uri, { preview: true }));
   const sql = editor.document.getText();
+  if (node.subquery && node.start !== undefined && node.end !== undefined) {
+    const range = new vscode.Range(editor.document.positionAt(node.start), editor.document.positionAt(node.end));
+    editor.selection = new vscode.Selection(range.start, range.end);
+    editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+    return;
+  }
   const ctes = parse(sql).ctes;
   const cte = node.name === undefined ? undefined : ctes.find((c) => sameName(c.name, node.name!));
   let start: number;

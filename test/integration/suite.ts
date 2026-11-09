@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
   assert.equal(tree.view?.message, "1 changed · 1 new · 1 removed · 1 reads a changed CTE");
   assert.match(String(tree.getTreeItem(nodes[5]).tooltip), /reads a CTE that changed/);
   const commands = await vscode.commands.getCommands(true);
-  for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
+  for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.previewSubquery", "cteDiff.tree.previewSubquery", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
     assert.ok(commands.includes(c), c);
   }
 
@@ -62,6 +62,27 @@ export async function run(): Promise<void> {
   await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ language: "sql", content: "with x as (select 1) select * from x" }));
   const single = await until(() => tree.getChildren().length === 2 && tree.getChildren(), "the sidebar to follow the editor");
   assert.deepEqual(single.map((n) => tree.getTreeItem(n).contextValue), ["single", "single"]);
+
+  // A subquery gets its own Preview lens, which carries the offset the command turns into a query.
+  const subDoc = await vscode.workspace.openTextDocument({
+    language: "sql",
+    content: "with x as (select 1 id) select * from x where exists (select 1 from y where y.id = x.id)",
+  });
+  await vscode.window.showTextDocument(subDoc);
+  const subLens = await until(async () => {
+    const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", subDoc.uri);
+    return l?.find((x) => x.command?.title === "▶ Preview subquery");
+  }, "a subquery lens");
+  assert.equal(subLens.command?.command, "cteDiff.previewSubquery");
+  assert.equal(typeof subLens.command?.arguments?.[1], "number");
+  // The sidebar lists it under the whole query, with a button to preview it.
+  const subs = await until(() => {
+    const whole = tree.getChildren().find((n) => n.name === undefined);
+    const found = whole ? tree.getChildren(whole) : [];
+    return found.length === 1 && found;
+  }, "the sidebar to list the subquery");
+  assert.equal(tree.getTreeItem(subs[0]).contextValue, "subquery");
+  assert.equal(tree.getTreeItem(subs[0]).command?.command, "cteDiff.tree.reveal");
 
   // Compare Two Files… lists the workspace's SQL files and opens the two picked in a diff, the first picked on the left.
   const ask = vscode.window.showQuickPick;
