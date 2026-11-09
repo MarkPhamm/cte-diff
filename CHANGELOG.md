@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **▶ Preview branch** above each `select` of a `union`, `union all`, `intersect`, `except` or `minus`, in a CTE, the final query or a subquery. It runs that one `select` with the CTEs it reads, so you can see which branch brings in a row. An `order by` or `limit` after the last branch sorts the whole set, so the last branch's preview leaves it out.
+
 ## 0.9.0
 
 - **▶ Preview subquery** above any subquery: an `exists`, `in`, scalar subquery or derived table. A correlated subquery runs with the outer relations it reads, so references such as `renamed.game_id` resolve as they do in the model.

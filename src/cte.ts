@@ -1,4 +1,4 @@
-/* Finds the top-level CTEs and the subqueries of a SQL (or un-rendered dbt Jinja SQL) query, and builds the query that
+/* Finds the top-level CTEs, the subqueries and the UNION branches of a SQL (or un-rendered dbt Jinja SQL) query, and builds the query that
  * selects one of them. No `vscode` import, so `node --test` runs this directly. */
 
 export interface Cte {
@@ -477,16 +477,18 @@ function previewPrefix(sql: string, ctes: Cte[], cteIndex: number, blocks: Block
   return `${leading}${leading && !leading.endsWith("\n") ? "\n" : ""}${withClause}`;
 }
 
-/** The query that previews the subquery at `at`, with the outer FROM relations it reads so correlation resolves. */
-export function subqueryQuery(sql: string, at: number): string {
-  const subs = subqueries(sql);
-  const line = sql.slice(0, Math.max(0, Math.min(at, sql.length))).split(/\r?\n/).length - 1;
-  const sub =
-    subs.find((s) => s.start === at) ??
-    subs
-      .filter((s) => sql.slice(0, s.start).split(/\r?\n/).length - 1 === line)
-      .sort((a, b) => Math.abs(a.start - at) - Math.abs(b.start - at))[0];
-  if (!sub) throw new Error("That subquery moved. Click ▶ Preview subquery again.");
+/** The item starting at `at`, or the nearest one on the same line: the text may have shifted since the lens was drawn. */
+function nearest<T extends { start: number }>(sql: string, items: T[], at: number): T | undefined {
+  const lineOf = (offset: number) => sql.slice(0, offset).split(/\r?\n/).length - 1;
+  const line = lineOf(Math.max(0, Math.min(at, sql.length)));
+  return (
+    items.find((s) => s.start === at) ??
+    items.filter((s) => lineOf(s.start) === line).sort((a, b) => Math.abs(a.start - at) - Math.abs(b.start - at))[0]
+  );
+}
+
+/** The query that previews `sub`, one of `subs`, with the outer FROM relations it reads so correlation resolves. */
+function blockQuery(sql: string, subs: Subquery[], sub: Subquery): string {
   const inner = sql.slice(sub.open + 1, sub.close).trim();
   const { ctes } = parse(sql);
   const blocks = queryBlocks(sql, subs);
@@ -494,6 +496,84 @@ export function subqueryQuery(sql: string, at: number): string {
   const outer = outerFromItems(sql, sub, blocks);
   const query = outer.length ? addFrom(inner, outer.join(",\n    ")) : inner;
   return `${previewPrefix(sql, ctes, sub.cte, blocks, target)}${query}`.trim();
+}
+
+/** The query that previews the subquery at `at`, with the outer FROM relations it reads so correlation resolves. */
+export function subqueryQuery(sql: string, at: number): string {
+  const subs = subqueries(sql);
+  const sub = nearest(sql, subs, at);
+  if (!sub) throw new Error("That subquery moved. Click ▶ Preview subquery again.");
+  return blockQuery(sql, subs, sub);
+}
+
+/** One SELECT of a UNION, INTERSECT, EXCEPT or MINUS, in a CTE body, the final query or a subquery. */
+export interface Branch {
+  /** Offset of its first word, and just past its last token. A trailing ORDER BY or LIMIT of the whole set is left out. */
+  start: number;
+  end: number;
+  /** Index of the top-level CTE holding it, or -1 for the query after the CTEs. */
+  cte: number;
+}
+
+const SET_OPS = new Set(["union", "intersect", "except", "minus"]);
+const SET_OP_MODIFIERS = new Set(["all", "distinct", "by", "name"]);
+const SET_TAIL = new Set(["order", "limit", "fetch", "offset"]);
+
+/** Every branch of every set operation, in source order. A branch in parentheses is left to its subquery preview. */
+export function branches(sql: string): Branch[] {
+  const { ctes } = parse(sql);
+  const out: Branch[] = [];
+  for (const block of queryBlocks(sql, subqueries(sql))) {
+    let from = block.start;
+    // A block's own WITH comes before its branches; the preview hoists it.
+    const own = parse(sql.slice(block.start, block.end));
+    if (own.ctes.length && /^\s*with\b/i.test(sql.slice(block.start, block.end))) from = block.start + own.ctes.at(-1)!.bodyEnd;
+    const toks = tokensInRange(sql, from, block.end);
+    const parts: { first: number; last: number }[] = [];
+    let first = -1;
+    let last = -1;
+    for (let i = 0; i < toks.length; i++) {
+      const { token, depth } = toks[i];
+      if (depth === 0 && token.kind === "word" && SET_OPS.has(token.text.toLowerCase())) {
+        if (first >= 0) parts.push({ first, last });
+        first = -1;
+        while (i + 1 < toks.length && toks[i + 1].depth === 0 && SET_OP_MODIFIERS.has(toks[i + 1].token.text.toLowerCase())) i++;
+        continue;
+      }
+      if (token.text === ";" || (first < 0 && token.kind === "jinja")) continue;
+      if (first < 0) first = i;
+      last = i;
+    }
+    if (first >= 0) parts.push({ first, last });
+    if (parts.length < 2) continue;
+    // ORDER BY / LIMIT after the last branch sorts the whole set, not that branch.
+    const tail = parts.at(-1)!;
+    for (let i = tail.first + 1; i <= tail.last; i++) {
+      const { token, depth } = toks[i];
+      if (depth === 0 && token.kind === "word" && SET_TAIL.has(token.text.toLowerCase())) {
+        tail.last = i - 1;
+        break;
+      }
+    }
+    for (const p of parts) {
+      if (toks[p.first].token.text === "(") continue;
+      const start = toks[p.first].token.start;
+      const end = toks[p.last].token.end;
+      let cte = -1;
+      for (let i = 0; i < ctes.length; i++) if (ctes[i].bodyStart < start && end <= ctes[i].bodyEnd) cte = i;
+      out.push({ start, end, cte });
+    }
+  }
+  return out.sort((a, b) => a.start - b.start);
+}
+
+/** The query that previews the set-operation branch at `at`: the CTEs it can read, then the branch on its own. */
+export function branchQuery(sql: string, at: number): string {
+  const branch = nearest(sql, branches(sql), at);
+  if (!branch) throw new Error("That branch moved. Click ▶ Preview branch again.");
+  // Treated as a subquery of the block holding it, so that block's WITH and outer relations come along.
+  const sub: Subquery = { start: branch.start, end: branch.end, open: branch.start - 1, close: branch.end, cte: branch.cte };
+  return blockQuery(sql, [...subqueries(sql), sub], sub);
 }
 
 /** How a CTE differs between two versions of a query. `affected`: same text, but it reads a CTE that changed. */

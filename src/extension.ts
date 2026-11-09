@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { refLabel } from "./branch.ts";
-import { cteQuery, subqueryQuery } from "./cte.ts";
+import { branchQuery, cteQuery, subqueryQuery } from "./cte.ts";
 import { compile, debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
@@ -87,6 +87,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name))),
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guardRun(() => preview(uri, name))),
     vscode.commands.registerCommand("cteDiff.previewSubquery", (uri: vscode.Uri, start: number) => guardRun(() => previewSubquery(uri, start))),
+    vscode.commands.registerCommand("cteDiff.previewBranch", (uri: vscode.Uri, start: number) => guardRun(() => previewBranch(uri, start))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guardRun(() => compare(uri, name))),
     vscode.commands.registerCommand("cteDiff.compareCompiled", () => guardRun(compareCompiled)),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
@@ -179,6 +180,16 @@ async function previewSubquery(uri: vscode.Uri, start: number): Promise<void> {
   const what = `subquery at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
   const result = await run(uri, "Preview: subquery", what, sql, fileName(uri));
   if (result) showRows("Preview: subquery", what, result.rows, result.limit, result.meta);
+}
+
+/** Previews one branch of a UNION (or INTERSECT, EXCEPT) at `start`, with the CTEs it reads. */
+async function previewBranch(uri: vscode.Uri, start: number): Promise<void> {
+  remember(() => previewBranch(uri, start));
+  const doc = await vscode.workspace.openTextDocument(uri);
+  const sql = branchQuery(doc.getText(), start);
+  const what = `branch at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
+  const result = await run(uri, "Preview: branch", what, sql, fileName(uri));
+  if (result) showRows("Preview: branch", what, result.rows, result.limit, result.meta);
 }
 
 /** A file's name for the results' heading; a git: URI is a committed version, named by its branch when it has one. */
