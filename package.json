@@ -75,6 +75,11 @@
         "category": "CTE Diff"
       },
       {
+        "command": "cteDiff.previewBranch",
+        "title": "Preview Union Branch",
+        "category": "CTE Diff"
+      },
+      {
         "command": "cteDiff.compare",
         "title": "Compare CTE on Both Sides",
         "category": "CTE Diff"
@@ -257,6 +262,10 @@
         },
         {
           "command": "cteDiff.previewSubquery",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.previewBranch",
           "when": "false"
         },
         {

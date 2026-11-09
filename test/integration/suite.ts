@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
   assert.equal(tree.view?.message, "1 changed · 1 new · 1 removed · 1 reads a changed CTE");
   assert.match(String(tree.getTreeItem(nodes[5]).tooltip), /reads a CTE that changed/);
   const commands = await vscode.commands.getCommands(true);
-  for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.previewSubquery", "cteDiff.tree.previewSubquery", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
+  for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.previewSubquery", "cteDiff.previewBranch", "cteDiff.tree.previewSubquery", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
     assert.ok(commands.includes(c), c);
   }
 
@@ -75,6 +75,15 @@ export async function run(): Promise<void> {
   }, "a subquery lens");
   assert.equal(subLens.command?.command, "cteDiff.previewSubquery");
   assert.equal(typeof subLens.command?.arguments?.[1], "number");
+  // Each branch of a UNION gets a Preview lens too.
+  const unionDoc = await vscode.workspace.openTextDocument({ language: "sql", content: "select 1 a\nunion all\nselect 2 a" });
+  const branchLenses = await until(async () => {
+    const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", unionDoc.uri);
+    const found = l?.filter((x) => x.command?.title === "▶ Preview branch");
+    return found?.length === 2 && found;
+  }, "a lens on each union branch");
+  assert.deepEqual(branchLenses.map((l) => [l.range.start.line, l.command?.command]), [[0, "cteDiff.previewBranch"], [2, "cteDiff.previewBranch"]]);
+  await vscode.window.showTextDocument(subDoc);
   // The sidebar lists it under the whole query, with a button to preview it.
   const subs = await until(() => {
     const whole = tree.getChildren().find((n) => n.name === undefined);

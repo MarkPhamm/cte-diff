@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareCtes, cteQuery, parse, subqueries, subqueryQuery } from "../src/cte.ts";
+import { branches, branchQuery, compareCtes, cteQuery, parse, subqueries, subqueryQuery } from "../src/cte.ts";
 
 const names = (sql: string) => parse(sql).ctes.map((c) => c.name);
 
@@ -169,6 +169,74 @@ test("a subquery's own WITH is not hoisted twice", () => {
   const derived = "select * from (with q as (select 1 id) select * from q) z";
   const [table] = subqueries(derived);
   assert.equal(subqueryQuery(derived, table.start), "with q as (select 1 id) select * from q");
+});
+
+const UNIONED = `with ea_entity_versions as (select * from {{ ref('ea') }}),
+eg_entity_versions as (select * from {{ ref('eg') }}),
+unified_boundaries as (
+    select __entity_key, cast(dbt_valid_from as timestamp_ntz) as valid_from
+    from ea_entity_versions
+    where dbt_valid_from is not null
+
+    union
+
+    select __entity_key, cast(dbt_valid_to as timestamp_ntz)
+    from ea_entity_versions
+    where dbt_valid_to is not null
+
+    UNION ALL
+
+    select __entity_key, cast(dbt_valid_from as timestamp_ntz)
+    from eg_entity_versions
+    where dbt_valid_from is not null
+    order by 2
+),
+later as (select * from unified_boundaries)
+select * from later
+`;
+
+test("finds each branch of a UNION, without the ORDER BY of the whole set", () => {
+  const found = branches(UNIONED);
+  assert.equal(found.length, 3);
+  assert.ok(found.every((b) => b.cte === 2));
+  assert.ok(UNIONED.slice(found[0].start, found[0].end).endsWith("where dbt_valid_from is not null"));
+  assert.ok(UNIONED.slice(found[2].start, found[2].end).endsWith("where dbt_valid_from is not null"), "order by 2 left out");
+  assert.deepEqual(branches("select 1 from a"), [], "a single select has no branches");
+});
+
+test("a branch previews with the CTEs before its own, not the ones after", () => {
+  const second = branches(UNIONED)[1];
+  const q = branchQuery(UNIONED, second.start);
+  assert.ok(q.startsWith("with ea_entity_versions as (select * from {{ ref('ea') }}),\neg_entity_versions as"));
+  assert.ok(!q.includes("unified_boundaries as ("), "does not run the CTE that holds it");
+  assert.ok(!q.includes("later"));
+  assert.ok(q.endsWith("select __entity_key, cast(dbt_valid_to as timestamp_ntz)\n    from ea_entity_versions\n    where dbt_valid_to is not null"));
+});
+
+test("branches in the final query, a nested WITH, a subquery, and other set operations", () => {
+  const final = "{{ config(materialized='table') }}\nselect 1 a from x union all by name select 2 a from y;";
+  const [a, b] = branches(final);
+  assert.equal(branchQuery(final, a.start), "{{ config(materialized='table') }}\nselect 1 a from x");
+  assert.equal(branchQuery(final, b.start), "{{ config(materialized='table') }}\nselect 2 a from y");
+
+  const nested = "with c as (with i as (select 1 v) select v from i except select 2) select * from c";
+  const [first] = branches(nested);
+  assert.equal(branchQuery(nested, first.start), "with i as (select 1 v)\nselect v from i");
+
+  const sub = "select * from t where id in (select id from a intersect select id from b) limit 5";
+  assert.deepEqual(branches(sub).map((x) => sub.slice(x.start, x.end)), ["select id from a", "select id from b"]);
+
+  const wrapped = "(select 1) union (select 2)";
+  assert.deepEqual(branches(wrapped), [], "a parenthesized branch is a subquery");
+
+  const window = "select row_number() over (order by x) from a union select 1 from b order by 1";
+  assert.equal(window.slice(branches(window)[1].start, branches(window)[1].end), "select 1 from b");
+});
+
+test("a correlated branch previews with the outer relation it reads", () => {
+  const sql = "select * from orders o where exists (select 1 from a where a.id = o.id union all select 1 from b where b.id = o.id)";
+  const [, second] = branches(sql);
+  assert.equal(branchQuery(sql, second.start), "select 1 from orders o, b where b.id = o.id");
 });
 
 test("compareCtes: changed, added, removed, and affected downstream", () => {
