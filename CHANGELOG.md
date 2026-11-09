@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Nested CTEs**: a CTE inside another CTE's `with` gets **▶ Preview** and, in a diff, **⇄ Compare sides**, like a top-level one. The preview keeps the CTE inside the one that holds it, so names resolve as they do in the model. The sidebar lists nested CTEs under their holder, marked changed / new / removed / affected; an inner CTE that reads a changed CTE from outside is marked affected. The Command Palette's pick lists them as `holder.inner`.
+- The sidebar's CTEs open to show what is under them. The subqueries listed in 0.9.0 couldn't be expanded.
 - **▶ Preview branch** above each `select` of a `union`, `union all`, `intersect`, `except` or `minus`, in a CTE, the final query or a subquery. It runs that one `select` with the CTEs it reads, so you can see which branch brings in a row. An `order by` or `limit` after the last branch sorts the whole set, so the last branch's preview leaves it out.
 
 ## 0.9.0

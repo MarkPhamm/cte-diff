@@ -63,6 +63,22 @@ export async function run(): Promise<void> {
   const single = await until(() => tree.getChildren().length === 2 && tree.getChildren(), "the sidebar to follow the editor");
   assert.deepEqual(single.map((n) => tree.getTreeItem(n).contextValue), ["single", "single"]);
 
+  // A CTE inside another CTE's WITH gets a Preview lens, with the names holding it, and shows under its holder.
+  const nestedDoc = await vscode.workspace.openTextDocument({
+    language: "sql",
+    content: "with h as (\n  with i as (select 1 id)\n  select * from i\n)\nselect * from h",
+  });
+  await vscode.window.showTextDocument(nestedDoc);
+  const nestedLens = await until(async () => {
+    const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", nestedDoc.uri);
+    return l?.find((x) => x.range.start.line === 1 && x.command?.title === "▶ Preview");
+  }, "a lens on the nested CTE");
+  assert.deepEqual(nestedLens.command?.arguments?.slice(1), ["i", ["h"]]);
+  const holder = await until(() => tree.getChildren().find((n) => n.name === "h" && n.children?.length), "the sidebar to list h");
+  assert.equal(tree.getTreeItem(holder).collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  const [inner] = tree.getChildren(holder);
+  assert.deepEqual([inner.name, inner.path, tree.getTreeItem(inner).contextValue], ["i", ["h"], "single"]);
+
   // A subquery gets its own Preview lens, which carries the offset the command turns into a query.
   const subDoc = await vscode.workspace.openTextDocument({
     language: "sql",

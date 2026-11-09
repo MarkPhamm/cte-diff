@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { branches, branchQuery, compareCtes, cteQuery, parse, subqueries, subqueryQuery } from "../src/cte.ts";
+import { branches, branchQuery, compareCtes, cteQuery, nestedCtes, parse, subqueries, subqueryQuery } from "../src/cte.ts";
 
 const names = (sql: string) => parse(sql).ctes.map((c) => c.name);
 
@@ -143,8 +143,8 @@ test("a subquery preview keeps a nested WITH, and a derived table's outer reads"
     select * from inner_cte i where exists (select 1 from payments p where p.order_id = i.id)
 )
 select * from outer_cte`;
-  const [inner, exists] = subqueries(nested);
-  assert.ok(subqueryQuery(nested, inner.start).startsWith("with inner_cte as (select * from orders)"));
+  const [exists] = subqueries(nested);
+  assert.equal(subqueries(nested).length, 1, "a nested CTE's body is not a subquery");
   assert.match(subqueryQuery(nested, exists.start), /^with inner_cte as \(select \* from orders\)\nselect 1 from inner_cte i, payments p/);
 
   const derived = `with x as (
@@ -237,6 +237,93 @@ test("a correlated branch previews with the outer relation it reads", () => {
   const sql = "select * from orders o where exists (select 1 from a where a.id = o.id union all select 1 from b where b.id = o.id)";
   const [, second] = branches(sql);
   assert.equal(branchQuery(sql, second.start), "select 1 from orders o, b where b.id = o.id");
+});
+
+const NESTED = `{{ config(materialized='table') }}
+with snapshots as (select * from {{ ref('snap') }}),
+entity_versions as (
+
+    with
+    entity_tuples as (
+        select * from snapshots
+    ),
+
+    ea_entity_versions as (
+        select * from entity_tuples where kind = 'ea'
+    ),
+
+    unified_boundaries as (
+        select * from ea_entity_versions
+    )
+
+    select * from unified_boundaries
+),
+later as (select * from entity_versions)
+select * from later
+`;
+
+test("finds CTEs inside another CTE's WITH, with the names holding them", () => {
+  assert.deepEqual(
+    nestedCtes(NESTED).map((c) => [c.path.join("."), c.name, NESTED.slice(c.start, c.end)]),
+    [
+      ["entity_versions", "entity_tuples", "entity_tuples"],
+      ["entity_versions", "ea_entity_versions", "ea_entity_versions"],
+      ["entity_versions", "unified_boundaries", "unified_boundaries"],
+    ],
+  );
+  assert.deepEqual(parse(NESTED).ctes.map((c) => c.name), ["snapshots", "entity_versions", "later"], "top level unchanged");
+  const deep = "with a as (with b as (with c as (select 1 x) select * from c) select * from b) select * from a";
+  assert.deepEqual(nestedCtes(deep).map((c) => [c.path, c.name]), [[["a"], "b"], [["a", "b"], "c"]]);
+});
+
+test("a nested CTE previews inside its holder, so names keep their scope", () => {
+  const q = cteQuery(NESTED, "EA_ENTITY_VERSIONS", ["entity_versions"]);
+  assert.ok(q.startsWith("{{ config(materialized='table') }}\nwith snapshots as"), "keeps the text before the WITH");
+  assert.ok(q.endsWith("select * from entity_tuples where kind = 'ea'\n    )\nselect * from ea_entity_versions)\nselect * from entity_versions"));
+  assert.ok(!q.includes("unified_boundaries"), "stops at the CTE");
+  assert.ok(!q.includes("later"));
+  const deep = "with a as (with b as (with c as (select 1 x), d as (select 2) select * from c) select * from b) select * from a";
+  assert.equal(cteQuery(deep, "c", ["a", "b"]), "with a as (with b as (with c as (select 1 x)\nselect * from c)\nselect * from b)\nselect * from a");
+  assert.throws(() => cteQuery(NESTED, "entity_tuples"), /No CTE named entity_tuples/);
+  assert.throws(() => cteQuery(NESTED, "nope", ["entity_versions"]), /No CTE named entity_versions\.nope/);
+});
+
+test("compareCtes lists nested CTEs under their holder", () => {
+  const right = NESTED.replace("where kind = 'ea'", "where kind = 'EA'");
+  const top = compareCtes(NESTED, right);
+  assert.deepEqual(top.map((s) => [s.name, s.status]), [
+    ["snapshots", "same"],
+    ["entity_versions", "changed"],
+    ["later", "affected"],
+    [undefined, "affected"],
+  ]);
+  assert.deepEqual(top[1].nested?.map((s) => [s.name, s.status]), [
+    ["entity_tuples", "same"],
+    ["ea_entity_versions", "changed"],
+    ["unified_boundaries", "affected"],
+  ]);
+
+  // A change above the holder reaches the inner CTEs that read it.
+  const outer = NESTED.replace("ref('snap')", "ref('snap_v2')");
+  assert.deepEqual(compareCtes(NESTED, outer)[1].nested?.map((s) => s.status), ["affected", "affected", "affected"]);
+
+  // A new holder's inner CTEs are new; a removed one's are removed.
+  const added = compareCtes("with x as (select 1) select * from x", "with x as (select 1), y as (with i as (select 2) select * from i) select * from y");
+  assert.deepEqual(added[1], { name: "y", status: "added", nested: [{ name: "i", status: "added" }] });
+  const removed = compareCtes("with y as (with i as (select 2) select * from i) select 1", "select 1");
+  assert.deepEqual(removed[0], { name: "y", status: "removed", nested: [{ name: "i", status: "removed" }] });
+});
+
+test("a union branch and a subquery inside a nested CTE still preview", () => {
+  const sql = `with h as (
+    with i as (select 1 id union all select 2 id),
+    j as (select * from i where exists (select 1 from t where t.id = i.id))
+    select * from j
+) select * from h`;
+  const [, second] = branches(sql);
+  assert.equal(branchQuery(sql, second.start), "select 2 id");
+  const [sub] = subqueries(sql);
+  assert.match(subqueryQuery(sql, sub.start), /select 1 from i, t where t\.id = i\.id$/);
 });
 
 test("compareCtes: changed, added, removed, and affected downstream", () => {

@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { refLabel } from "./branch.ts";
-import { branchQuery, cteQuery, subqueryQuery } from "./cte.ts";
+import { branchQuery, cteLabel, cteQuery, subqueryQuery } from "./cte.ts";
 import { compile, debug, findDbt, projectDirOf, show } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
@@ -80,15 +80,15 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
       lens.refresh(); // the other side's Compare lenses depend on this side's CTEs
     }),
     vscode.commands.registerCommand("cteDiff.tree.reveal", (n: CteNode) => guard(() => reveal(n))),
-    vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guardRun(() => preview(n.uri!, n.name))),
-    vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guardRun(() => preview(n.left!, n.name))),
-    vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guardRun(() => preview(n.right!, n.name))),
+    vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guardRun(() => preview(n.uri!, n.name, n.path))),
+    vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guardRun(() => preview(n.left!, n.name, n.path))),
+    vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guardRun(() => preview(n.right!, n.name, n.path))),
     vscode.commands.registerCommand("cteDiff.tree.previewSubquery", (n: CteNode) => guardRun(() => previewSubquery(n.uri!, n.start!))),
-    vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name))),
-    vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string) => guardRun(() => preview(uri, name))),
+    vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name, n.path))),
+    vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string, path?: string[]) => guardRun(() => preview(uri, name, path))),
     vscode.commands.registerCommand("cteDiff.previewSubquery", (uri: vscode.Uri, start: number) => guardRun(() => previewSubquery(uri, start))),
     vscode.commands.registerCommand("cteDiff.previewBranch", (uri: vscode.Uri, start: number) => guardRun(() => previewBranch(uri, start))),
-    vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string) => guardRun(() => compare(uri, name))),
+    vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string, path?: string[]) => guardRun(() => compare(uri, name, path))),
     vscode.commands.registerCommand("cteDiff.compareCompiled", () => guardRun(compareCompiled)),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
     vscode.commands.registerCommand("cteDiff.compareFiles", () => guard(() => files.compare())),
@@ -155,7 +155,7 @@ function offerDiffLens(context: vscode.ExtensionContext): void {
     });
 }
 
-const label = (name?: string) => name ?? "the whole query";
+const label = (name?: string, path: string[] = []) => (name === undefined ? "the whole query" : cteLabel(name, path));
 
 /** Remembers a run for Run Again, which shows in the results' title bar from the first run on. */
 function remember(f: () => Promise<void>): void {
@@ -163,13 +163,14 @@ function remember(f: () => Promise<void>): void {
   void vscode.commands.executeCommand("setContext", "cteDiff.ran", true);
 }
 
-async function preview(uri: vscode.Uri, name?: string): Promise<void> {
-  remember(() => preview(uri, name));
+/** Previews CTE `name`, inside the CTEs named by `path` when it is nested, or the whole query. */
+async function preview(uri: vscode.Uri, name?: string, within: string[] = []): Promise<void> {
+  remember(() => preview(uri, name, within));
   const doc = await vscode.workspace.openTextDocument(uri);
-  const sql = cteQuery(doc.getText(), name);
-  const what = `${label(name)} (${path.basename(uri.path) || "untitled"})`;
-  const result = await run(uri, `Preview: ${label(name)}`, what, sql, fileName(uri));
-  if (result) showRows(`Preview: ${label(name)}`, what, result.rows, result.limit, result.meta);
+  const sql = cteQuery(doc.getText(), name, within);
+  const what = `${label(name, within)} (${path.basename(uri.path) || "untitled"})`;
+  const result = await run(uri, `Preview: ${label(name, within)}`, what, sql, fileName(uri));
+  if (result) showRows(`Preview: ${label(name, within)}`, what, result.rows, result.limit, result.meta);
 }
 
 /** Previews a subquery at `start`, with the outer query's relations so a correlated one resolves them. */
@@ -196,23 +197,24 @@ async function previewBranch(uri: vscode.Uri, start: number): Promise<void> {
 const fileName = (uri: vscode.Uri) =>
   (path.basename(uri.path) || "untitled") + (uri.scheme === "git" ? ` (${refLabel(uri.query) ?? "git"})` : "");
 
-async function compare(uri: vscode.Uri, name?: string): Promise<void> {
+/** Compares CTE `name` (nested in the CTEs named by `within`), or the whole query, across the open diff's sides. */
+async function compare(uri: vscode.Uri, name?: string, within: string[] = []): Promise<void> {
   const diff = diffOf(uri);
   if (!diff) throw new Error("Open the two versions in a diff editor first.");
-  remember(() => compare(uri, name));
+  remember(() => compare(uri, name, within));
   const [left, right] = await Promise.all([diff.left, diff.right].map((u) => vscode.workspace.openTextDocument(u)));
   const side = (doc: vscode.TextDocument, which: string) => {
     try {
-      return cteQuery(doc.getText(), name);
+      return cteQuery(doc.getText(), name, within);
     } catch {
-      throw new Error(`The ${which} side has no CTE named ${name}.`);
+      throw new Error(`The ${which} side has no CTE named ${label(name, within)}.`);
     }
   };
   const sql = compareQuery(side(left, "left"), side(right, "right"));
-  const title = `Compare: ${label(name)}`;
+  const title = `Compare: ${label(name, within)}`;
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
-  const result = await run(diff.right, title, label(name), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
-  if (result) showComparison(title, label(name), readComparison(result.rows), result.limit, result.meta);
+  const result = await run(diff.right, title, label(name, within), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
+  if (result) showComparison(title, label(name, within), readComparison(result.rows), result.limit, result.meta);
 }
 
 /** The diff editor tab in front, if any. */
@@ -263,12 +265,14 @@ async function compareCompiled(): Promise<void> {
  * or previews the one side a new or removed CTE is on; elsewhere it previews. */
 async function pickCte(): Promise<void> {
   await tree.update();
-  const nodes = tree.getChildren();
+  // Nested CTEs follow their holder, named holder.inner; subqueries have their own command.
+  const flat = (list: CteNode[]): CteNode[] => list.flatMap((n) => (n.subquery || n.compiled ? [] : [n, ...flat(n.children ?? [])]));
+  const nodes = flat(tree.getChildren());
   if (!nodes.length) throw new Error("Open a SQL file first.");
   const inDiff = nodes.some((n) => n.status);
   const items = nodes.map((node) => {
     const item = tree.getTreeItem(node);
-    return { label: String(item.label), description: String(item.description ?? ""), iconPath: item.iconPath as vscode.ThemeIcon, node };
+    return { label: node.name === undefined ? String(item.label) : cteLabel(node.name, node.path), description: String(item.description ?? ""), iconPath: item.iconPath as vscode.ThemeIcon, node };
   });
   const picked = await vscode.window.showQuickPick(items, {
     title: inDiff ? "Compare a CTE on both sides" : "Preview a CTE",
@@ -277,9 +281,9 @@ async function pickCte(): Promise<void> {
   });
   if (!picked) return;
   const n = picked.node;
-  if (n.uri) await preview(n.uri, n.name);
-  else if (n.left && n.right) await compare(n.right, n.name);
-  else await preview((n.left ?? n.right)!, n.name);
+  if (n.uri) await preview(n.uri, n.name, n.path);
+  else if (n.left && n.right) await compare(n.right, n.name, n.path);
+  else await preview((n.left ?? n.right)!, n.name, n.path);
 }
 
 async function newComparison(): Promise<void> {
