@@ -1,9 +1,10 @@
-/* The CTE Diff sidebar: the CTEs of the SQL in the active editor, each with its subqueries. When that editor is one
+/* The CTE Diff sidebar: the CTEs of the SQL in the active editor, each with the CTEs of its own WITH and its
+ * subqueries. When that editor is one
  * side of a diff, every CTE of both sides, marked changed / new / removed / affected (unchanged, but reads one that
  * changed). */
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { compareCtes, parse, sameName, subqueries, type Status } from "./cte.ts";
+import { compareCtes, findCte, innerCtes, parse, sameName, subqueries, type Cte, type CteStatus, type Status } from "./cte.ts";
 import { diffOf } from "./lens.ts";
 
 export const SQL_LANGUAGES = ["sql", "jinja-sql", "snowflake-sql"];
@@ -11,6 +12,8 @@ export const SQL_LANGUAGES = ["sql", "jinja-sql", "snowflake-sql"];
 export interface CteNode {
   /** Undefined: the whole query. */
   name?: string;
+  /** Names of the CTEs holding a nested CTE, outermost first. */
+  path?: string[];
   status?: Status;
   /** Diff sides holding this CTE; a single file sets `uri` only. */
   left?: vscode.Uri;
@@ -32,6 +35,11 @@ function childNodes(sql: string, uri: vscode.Uri, cte: number, side?: "old" | "n
   return subqueries(sql)
     .filter((s) => s.cte === cte)
     .map((s) => ({ name: `subquery at line ${lineOf(s.start)}${side ? ` (${side})` : ""}`, uri, subquery: true, start: s.start, end: s.close }));
+}
+
+/** The CTEs of `holder`'s own WITH, each with its own nested ones under it. */
+function nestedNodes(sql: string, uri: vscode.Uri, holder: Cte, path: string[]): CteNode[] {
+  return innerCtes(sql, holder).map((c) => ({ name: c.name, path, uri, children: nestedNodes(sql, uri, c, [...path, c.name]) }));
 }
 
 const LOOK: Record<Status, { icon: string; color?: string; note: string; tip: string }> = {
@@ -78,16 +86,16 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
           ...(now ? childNodes(rightSql, diff.right, j, "new") : []),
         ];
       };
-      this.nodes = [
-        { compiled: true },
-        ...statuses.map(({ name, status }) => ({
-          name,
-          status,
-          left: status === "added" ? undefined : diff.left,
-          right: status === "removed" ? undefined : diff.right,
-          children: childrenOf(name, status),
-        })),
-      ];
+      // Nested CTEs go under their holder, before its subqueries, which stay with the top-level CTE.
+      const toNode = ({ name, status, nested }: CteStatus, path: string[]): CteNode => ({
+        name,
+        path,
+        status,
+        left: status === "added" ? undefined : diff.left,
+        right: status === "removed" ? undefined : diff.right,
+        children: [...(nested ?? []).map((n) => toNode(n, [...path, name!])), ...(path.length ? [] : childrenOf(name, status))],
+      });
+      this.nodes = [{ compiled: true }, ...statuses.map((s) => toNode(s, []))];
       this.shown = [diff.left.toString(), diff.right.toString()];
       const count = (s: Status) => statuses.filter((x) => x.status === s).length;
       // The notes are written for one CTE: "2 read a changed CTE".
@@ -97,7 +105,11 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
     } else if (SQL_LANGUAGES.includes(doc.languageId)) {
       const sql = doc.getText();
       this.nodes = [
-        ...parse(sql).ctes.map((c, i) => ({ name: c.name, uri: doc.uri, children: childNodes(sql, doc.uri, i) })),
+        ...parse(sql).ctes.map((c, i) => ({
+          name: c.name,
+          uri: doc.uri,
+          children: [...nestedNodes(sql, doc.uri, c, [c.name]), ...childNodes(sql, doc.uri, i)],
+        })),
         { uri: doc.uri, children: childNodes(sql, doc.uri, -1) },
       ];
       this.shown = [doc.uri.toString()];
@@ -143,7 +155,14 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       item.command = { command: "cteDiff.tree.reveal", title: "Go to Subquery", arguments: [node] };
       return item;
     }
-    const item = new vscode.TreeItem(node.name ?? "(whole query)");
+    // Open when it holds CTEs, so nested ones show; folded when it only has subqueries.
+    const kids = node.children ?? [];
+    const fold = !kids.length
+      ? vscode.TreeItemCollapsibleState.None
+      : kids.some((k) => !k.subquery)
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed;
+    const item = new vscode.TreeItem(node.name ?? "(whole query)", fold);
     if (node.status) {
       const look = LOOK[node.status];
       item.iconPath = new vscode.ThemeIcon(look.icon, look.color ? new vscode.ThemeColor(look.color) : undefined);
@@ -174,7 +193,7 @@ export async function reveal(node: CteNode): Promise<void> {
     return;
   }
   const ctes = parse(sql).ctes;
-  const cte = node.name === undefined ? undefined : ctes.find((c) => sameName(c.name, node.name!));
+  const cte = node.name === undefined ? undefined : findCte(sql, node.name, node.path)?.cte;
   let start: number;
   let end: number;
   if (cte) [start, end] = [cte.start, cte.end];

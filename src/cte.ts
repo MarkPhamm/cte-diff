@@ -1,4 +1,4 @@
-/* Finds the top-level CTEs, the subqueries and the UNION branches of a SQL (or un-rendered dbt Jinja SQL) query, and builds the query that
+/* Finds the CTEs (nested ones too), the subqueries and the UNION branches of a SQL (or un-rendered dbt Jinja SQL) query, and builds the query that
  * selects one of them. No `vscode` import, so `node --test` runs this directly. */
 
 export interface Cte {
@@ -120,13 +120,63 @@ export function parse(sql: string): Parsed {
   return { withStart, ctes };
 }
 
+/** The CTEs of `cte`'s own WITH, when its body starts with one, with offsets in `sql`. */
+export function innerCtes(sql: string, cte: Cte): Cte[] {
+  const from = cte.bodyStart + 1;
+  const own = parse(sql.slice(from, cte.bodyEnd - 1));
+  return own.ctes.map((c) => ({ name: c.name, start: c.start + from, end: c.end + from, bodyStart: c.bodyStart + from, bodyEnd: c.bodyEnd + from }));
+}
+
+/** A CTE defined in another CTE's own WITH. */
+export interface NestedCte extends Cte {
+  /** Names of the CTEs holding it, outermost first. */
+  path: string[];
+}
+
+/** Every CTE inside another CTE's WITH, at any depth, in source order. */
+export function nestedCtes(sql: string): NestedCte[] {
+  const out: NestedCte[] = [];
+  const walk = (holder: Cte, path: string[]) => {
+    for (const c of innerCtes(sql, holder)) {
+      out.push({ ...c, path });
+      walk(c, [...path, c.name]);
+    }
+  };
+  for (const c of parse(sql).ctes) walk(c, [c.name]);
+  return out;
+}
+
+/** The CTE `name` inside the CTEs named by `path` (outermost first; empty for a top-level CTE), and those holders. */
+export function findCte(sql: string, name: string, path: string[] = []): { cte: Cte; holders: Cte[] } | undefined {
+  let ctes = parse(sql).ctes;
+  const holders: Cte[] = [];
+  for (const p of path) {
+    const holder = ctes.find((c) => sameName(c.name, p));
+    if (!holder) return undefined;
+    holders.push(holder);
+    ctes = innerCtes(sql, holder);
+  }
+  const cte = ctes.find((c) => sameName(c.name, name));
+  return cte && { cte, holders };
+}
+
+/** How a CTE is named in messages: `holder.inner` for a nested one. */
+export const cteLabel = (name: string, path: string[] = []) => [...path, name].join(".");
+
 /** The query that selects CTE `name` (matched case-insensitively, as Snowflake does for unquoted names), or the
- * whole query when `name` is undefined. Text before the `with` (dbt `{{ config() }}`, `{% set %}`) is kept. */
-export function cteQuery(sql: string, name?: string): string {
+ * whole query when `name` is undefined. Text before the `with` (dbt `{{ config() }}`, `{% set %}`) is kept. A CTE
+ * nested in others' WITHs (`path`, outermost first) keeps that nesting: each holder selects the CTE inside it, so names
+ * resolve as they do in the model. */
+export function cteQuery(sql: string, name?: string, path: string[] = []): string {
   if (name === undefined) return sql.trim().replace(/;+$/, "").trimEnd();
-  const cte = parse(sql).ctes.find((c) => sameName(c.name, name));
-  if (!cte) throw new Error(`No CTE named ${name}`);
-  return `${sql.slice(0, cte.bodyEnd)}\nselect * from ${cte.name}`;
+  const found = findCte(sql, name, path);
+  if (!found) throw new Error(`No CTE named ${cteLabel(name, path)}`);
+  // shortcut: a holder with a column list, `h (a, b) as (...)`, renames the inner CTE's columns or fails on a count
+  // mismatch; rare in dbt models, revisit if someone hits it.
+  const names = [...found.holders, found.cte].map((c) => c.name);
+  let tail = "";
+  for (let i = names.length - 1; i > 0; i--) tail += `\nselect * from ${names[i]})`;
+  return `${sql.slice(0, found.cte.bodyEnd)}${tail}\nselect * from ${names[0]}`;
 }
 
 const norm = (s: string) => (s.startsWith('"') ? s : s.toUpperCase());
@@ -148,10 +198,10 @@ export interface Subquery {
   cte: number;
 }
 
-/** Every subquery, in source order. A top-level CTE's own body is not one: CTEs have their own preview. */
+/** Every subquery, in source order. A CTE's own body, nested ones' too, is not one: CTEs have their own preview. */
 export function subqueries(sql: string): Subquery[] {
   const { withStart, ctes } = parse(sql);
-  const bodies = new Set(ctes.map((c) => c.bodyStart));
+  const bodies = new Set([...ctes, ...nestedCtes(sql)].map((c) => c.bodyStart));
   const first = sql.search(/\S/);
   const out: Subquery[] = [];
   const stack: { open: number; first?: Token }[] = [];
@@ -337,10 +387,10 @@ interface Block {
   parent: number;
 }
 
-/** Every query block: each top-level CTE's body, the final query, and every subquery. */
+/** Every query block: each CTE's body (nested ones' too), the final query, and every subquery. */
 function queryBlocks(sql: string, subs: Subquery[]): Block[] {
   const { ctes } = parse(sql);
-  const blocks: Block[] = ctes.map((c) => ({ start: c.bodyStart + 1, end: c.bodyEnd - 1, parent: -1 }));
+  const blocks: Block[] = [...ctes, ...nestedCtes(sql)].map((c) => ({ start: c.bodyStart + 1, end: c.bodyEnd - 1, parent: -1 }));
   const last = ctes.at(-1);
   blocks.push({ start: last ? last.bodyEnd : 0, end: sql.length, parent: -1 });
   for (const s of subs) blocks.push({ start: s.open + 1, end: s.close, parent: -1 });
@@ -464,12 +514,17 @@ function previewPrefix(sql: string, ctes: Cte[], cteIndex: number, blocks: Block
   const chain: number[] = [];
   // The target's own WITH stays in the query; only the blocks around it are hoisted, so it can read their CTEs.
   for (let b = blocks[target].parent; b >= 0; b = blocks[b].parent) chain.unshift(b);
-  for (const b of chain) {
+  for (const [k, b] of chain.entries()) {
     const text = sql.slice(blocks[b].start, blocks[b].end);
     if (!/^\s*with\b/i.test(text)) continue;
     const p = parse(text);
     if (p.withStart < 0 || !p.ctes.length) continue;
-    const body = text.slice(p.withStart, p.ctes.at(-1)!.bodyEnd);
+    // Inside one of this WITH's CTEs, only the CTEs before that one are in scope.
+    const inner = blocks[chain[k + 1] ?? target].start - blocks[b].start;
+    const holder = p.ctes.findIndex((c) => c.bodyStart < inner && inner < c.bodyEnd);
+    const kept = holder < 0 ? p.ctes : p.ctes.slice(0, holder);
+    if (!kept.length) continue;
+    const body = text.slice(p.withStart, kept.at(-1)!.bodyEnd);
     recursive ||= /^\s*with\s+recursive\b/i.test(body);
     parts.push(stripWith(body));
   }
@@ -579,8 +634,17 @@ export function branchQuery(sql: string, at: number): string {
 /** How a CTE differs between two versions of a query. `affected`: same text, but it reads a CTE that changed. */
 export type Status = "added" | "removed" | "changed" | "affected" | "same";
 
-/** One entry per CTE (the right side's order, then CTEs only on the left), then the whole query (`name` undefined). */
-export function compareCtes(left: string, right: string): { name?: string; status: Status }[] {
+/** A CTE's status, with the CTEs of its own WITH under it. */
+export interface CteStatus {
+  /** Undefined: the whole query. */
+  name?: string;
+  status: Status;
+  nested?: CteStatus[];
+}
+
+/** One entry per CTE (the right side's order, then CTEs only on the left), then the whole query (`name` undefined).
+ * A CTE with its own WITH lists those CTEs' statuses under `nested`, the same way. */
+export function compareCtes(left: string, right: string): CteStatus[] {
   const l = parse(left).ctes;
   const r = parse(right).ctes;
   // A CTE's text from after its name to its closing parenthesis, whitespace collapsed; the final select after the last.
@@ -588,24 +652,36 @@ export function compareCtes(left: string, right: string): { name?: string; statu
     sql.slice(from, to).replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1").trim();
   const finalText = (sql: string, ctes: Cte[]) => text(sql, ctes.at(-1)?.bodyEnd ?? 0, sql.length).replace(/;$/, "");
   // Names (normalised) that a stretch of SQL reads.
-  const reads = (sql: string, from: number, to: number) => {
+  const reads = (from: number, to: number) => {
     const out = new Set<string>();
-    for (const t of tokens(sql)) if (t.start >= from && t.end <= to && (t.kind === "word" || t.kind === "quoted")) out.add(norm(t.text));
+    for (const t of tokens(right)) if (t.start >= from && t.end <= to && (t.kind === "word" || t.kind === "quoted")) out.add(norm(t.text));
     return out;
   };
-  const dirty = new Set<string>(); // changed, added, removed or affected: whatever reads them is affected
-  const out: { name?: string; status: Status }[] = [];
-  const removed = l.filter((c) => !r.some((x) => sameName(x.name, c.name)));
-  for (const c of removed) dirty.add(norm(c.name));
-  const statusOf = (changed: boolean, from: number, to: number): Status =>
-    changed ? "changed" : [...reads(right, from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
-  for (const c of r) {
-    const old = l.find((x) => sameName(x.name, c.name));
-    const status = old ? statusOf(text(left, old.end, old.bodyEnd) !== text(right, c.end, c.bodyEnd), c.end, c.bodyEnd) : "added";
-    if (status !== "same") dirty.add(norm(c.name));
-    out.push({ name: c.name, status });
-  }
-  for (const c of removed) out.push({ name: c.name, status: "removed" });
-  out.push({ status: statusOf(finalText(left, l) !== finalText(right, r), r.at(-1)?.bodyEnd ?? 0, right.length) });
+  const statusOf = (dirty: Set<string>, changed: boolean, from: number, to: number): Status =>
+    changed ? "changed" : [...reads(from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
+  // `dirty`: names, from outer WITHs too, that are changed, added, removed or affected; whatever reads them is affected.
+  const compareList = (l: Cte[], r: Cte[], dirty: Set<string>): CteStatus[] => {
+    const out: CteStatus[] = [];
+    const removed = l.filter((c) => !r.some((x) => sameName(x.name, c.name)));
+    for (const c of removed) dirty.add(norm(c.name));
+    for (const c of r) {
+      const old = l.find((x) => sameName(x.name, c.name));
+      const status = old ? statusOf(dirty, text(left, old.end, old.bodyEnd) !== text(right, c.end, c.bodyEnd), c.end, c.bodyEnd) : "added";
+      // Its own WITH sees the CTEs before it, not itself.
+      const nested = compareList(old ? innerCtes(left, old) : [], innerCtes(right, c), new Set(dirty));
+      // An inner CTE of the same name hides an outer one, so only its own status counts from here on.
+      if (status === "same") dirty.delete(norm(c.name));
+      else dirty.add(norm(c.name));
+      out.push(nested.length ? { name: c.name, status, nested } : { name: c.name, status });
+    }
+    for (const c of removed) {
+      const nested = compareList(innerCtes(left, c), [], new Set());
+      out.push(nested.length ? { name: c.name, status: "removed", nested } : { name: c.name, status: "removed" });
+    }
+    return out;
+  };
+  const dirty = new Set<string>();
+  const out = compareList(l, r, dirty);
+  out.push({ status: statusOf(dirty, finalText(left, l) !== finalText(right, r), r.at(-1)?.bodyEnd ?? 0, right.length) });
   return out;
 }
