@@ -70,6 +70,11 @@
         "category": "CTE Diff"
       },
       {
+        "command": "cteDiff.previewSubquery",
+        "title": "Preview Subquery",
+        "category": "CTE Diff"
+      },
+      {
         "command": "cteDiff.compare",
         "title": "Compare CTE on Both Sides",
         "category": "CTE Diff"
@@ -170,6 +175,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "cteDiff.tree.previewSubquery",
+        "title": "Preview Subquery",
+        "category": "CTE Diff",
+        "icon": "$(play)"
+      },
+      {
         "command": "cteDiff.tree.reveal",
         "title": "Go to CTE",
         "category": "CTE Diff"
@@ -245,6 +256,10 @@
           "when": "false"
         },
         {
+          "command": "cteDiff.previewSubquery",
+          "when": "false"
+        },
+        {
           "command": "cteDiff.compare",
           "when": "false"
         },
@@ -262,6 +277,10 @@
         },
         {
           "command": "cteDiff.tree.preview",
+          "when": "false"
+        },
+        {
+          "command": "cteDiff.tree.previewSubquery",
           "when": "false"
         },
         {
@@ -353,6 +372,11 @@
         {
           "command": "cteDiff.tree.preview",
           "when": "view == cteDiff.ctes && viewItem == single",
+          "group": "inline@1"
+        },
+        {
+          "command": "cteDiff.tree.previewSubquery",
+          "when": "view == cteDiff.ctes && viewItem == subquery",
           "group": "inline@1"
         },
         {

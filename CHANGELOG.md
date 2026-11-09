@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **▶ Preview subquery** above any subquery: an `exists`, `in`, scalar subquery or derived table. A correlated subquery runs with the outer relations it reads, so references such as `renamed.game_id` resolve as they do in the model.
+- The sidebar lists each CTE's subqueries under it, with **▶** to preview one. In a diff, a changed or affected CTE lists its old and new subqueries.
 - Sharing a link to the site shows a preview of the `order_payments` comparison.
 
 ## 0.8.2
