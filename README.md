@@ -78,6 +78,8 @@ Hover a CTE for **←** (preview the old side), **→** (preview the new side) a
 
 **▶ Preview subquery** above an `exists`, `in`, scalar or derived-table subquery shows its rows too. A correlated subquery, one that reads an outer alias such as `renamed.game_id`, runs with the outer relations it reads, so the reference resolves as it does in the model. The preview keeps the outer tables, not the outer query's join conditions or other filters, so with several outer tables it can show rows the full query would filter out.
 
+A CTE inside another CTE's `with` gets **▶ Preview** and **⇄ Compare sides** like any other, and the sidebar lists it under the CTE that holds it. Each `select` of a `union`, `intersect`, `except` or `minus` gets **▶ Preview branch**, to see which branch brings in a row.
+
 ### Compares a CTE on both sides
 
 <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-compare.gif" width="100%" alt="Compare sides on order_payments, whose SQL did not change: 3 changed totals, each old row above its new one">

@@ -148,4 +148,25 @@ export async function run(): Promise<void> {
   // ← on the New file moves it to Old and empties New.
   await vscode.commands.executeCommand("cteDiff.files.setOld", { kind: "file", uri: right });
   assert.deepEqual(await rows(), ["Old:new.sql", "New:pick a file…", "models:"]);
+
+  // In a diff, a nested CTE is listed under its holder with its own status, and both sides get Compare sides on it.
+  const [oldNested, newNested] = await Promise.all(
+    ["where id > 0", "where id > 1"].map((w) =>
+      vscode.workspace.openTextDocument({ language: "sql", content: `with h as (\n  with i as (select 1 id),\n  j as (select * from i ${w})\n  select * from j\n)\nselect * from h` }),
+    ),
+  );
+  await vscode.commands.executeCommand("vscode.diff", oldNested.uri, newNested.uri, "nested old ↔ new");
+  const h = await until(() => tree.getChildren().find((n) => n.name === "h" && n.status === "changed"), "the sidebar to list the nested diff");
+  assert.deepEqual(
+    tree.getChildren(h).map((n) => [n.name, n.path, n.status, tree.getTreeItem(n).contextValue]),
+    [
+      ["i", ["h"], "same", "left right"],
+      ["j", ["h"], "changed", "left right"],
+    ],
+  );
+  const nestedCompare = await until(async () => {
+    const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", oldNested.uri);
+    return l?.find((x) => x.range.start.line === 2 && x.command?.title === "⇄ Compare sides");
+  }, "Compare sides on the nested CTE");
+  assert.deepEqual(nestedCompare.command?.arguments?.slice(1), ["j", ["h"]]);
 }
