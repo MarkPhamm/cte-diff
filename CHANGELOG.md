@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- A preview's heading names the branch of the side it ran on, such as `orders.sql (qa)`, for a CTE as it already did for a subquery or a branch.
+
 ## 0.10.0
 
 - **Nested CTEs**: a CTE inside another CTE's `with` gets **▶ Preview** and, in a diff, **⇄ Compare sides**, like a top-level one. The preview keeps the CTE inside the one that holds it, so names resolve as they do in the model. The sidebar lists nested CTEs under their holder, marked changed / new / removed / affected; an inner CTE that reads a changed CTE from outside is marked affected. The Command Palette's pick lists them as `holder.inner`.

@@ -83,11 +83,11 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
     vscode.commands.registerCommand("cteDiff.tree.preview", (n: CteNode) => guardRun(() => preview(n.uri!, n.name, n.path))),
     vscode.commands.registerCommand("cteDiff.tree.previewLeft", (n: CteNode) => guardRun(() => preview(n.left!, n.name, n.path))),
     vscode.commands.registerCommand("cteDiff.tree.previewRight", (n: CteNode) => guardRun(() => preview(n.right!, n.name, n.path))),
-    vscode.commands.registerCommand("cteDiff.tree.previewSubquery", (n: CteNode) => guardRun(() => previewSubquery(n.uri!, n.start!))),
+    vscode.commands.registerCommand("cteDiff.tree.previewSubquery", (n: CteNode) => guardRun(() => previewAt(n.uri!, n.start!, "subquery", subqueryQuery))),
     vscode.commands.registerCommand("cteDiff.tree.compare", (n: CteNode) => guardRun(() => compare(n.right!, n.name, n.path))),
     vscode.commands.registerCommand("cteDiff.preview", (uri: vscode.Uri, name?: string, path?: string[]) => guardRun(() => preview(uri, name, path))),
-    vscode.commands.registerCommand("cteDiff.previewSubquery", (uri: vscode.Uri, start: number) => guardRun(() => previewSubquery(uri, start))),
-    vscode.commands.registerCommand("cteDiff.previewBranch", (uri: vscode.Uri, start: number) => guardRun(() => previewBranch(uri, start))),
+    vscode.commands.registerCommand("cteDiff.previewSubquery", (uri: vscode.Uri, start: number) => guardRun(() => previewAt(uri, start, "subquery", subqueryQuery))),
+    vscode.commands.registerCommand("cteDiff.previewBranch", (uri: vscode.Uri, start: number) => guardRun(() => previewAt(uri, start, "branch", branchQuery))),
     vscode.commands.registerCommand("cteDiff.compare", (uri: vscode.Uri, name?: string, path?: string[]) => guardRun(() => compare(uri, name, path))),
     vscode.commands.registerCommand("cteDiff.compareCompiled", () => guardRun(compareCompiled)),
     vscode.commands.registerCommand("cteDiff.newComparison", () => guard(newComparison)),
@@ -168,29 +168,19 @@ async function preview(uri: vscode.Uri, name?: string, within: string[] = []): P
   remember(() => preview(uri, name, within));
   const doc = await vscode.workspace.openTextDocument(uri);
   const sql = cteQuery(doc.getText(), name, within);
-  const what = `${label(name, within)} (${path.basename(uri.path) || "untitled"})`;
+  const what = `${label(name, within)} (${fileName(uri)})`;
   const result = await run(uri, `Preview: ${label(name, within)}`, what, sql, fileName(uri));
   if (result) showRows(`Preview: ${label(name, within)}`, what, result.rows, result.limit, result.meta);
 }
 
-/** Previews a subquery at `start`, with the outer query's relations so a correlated one resolves them. */
-async function previewSubquery(uri: vscode.Uri, start: number): Promise<void> {
-  remember(() => previewSubquery(uri, start));
+/** Previews the subquery or set-operation branch that starts at `start`; `build` turns it into a runnable query. */
+async function previewAt(uri: vscode.Uri, start: number, kind: "subquery" | "branch", build: (sql: string, at: number) => string): Promise<void> {
+  remember(() => previewAt(uri, start, kind, build));
   const doc = await vscode.workspace.openTextDocument(uri);
-  const sql = subqueryQuery(doc.getText(), start);
-  const what = `subquery at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
-  const result = await run(uri, "Preview: subquery", what, sql, fileName(uri));
-  if (result) showRows("Preview: subquery", what, result.rows, result.limit, result.meta);
-}
-
-/** Previews one branch of a UNION (or INTERSECT, EXCEPT) at `start`, with the CTEs it reads. */
-async function previewBranch(uri: vscode.Uri, start: number): Promise<void> {
-  remember(() => previewBranch(uri, start));
-  const doc = await vscode.workspace.openTextDocument(uri);
-  const sql = branchQuery(doc.getText(), start);
-  const what = `branch at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
-  const result = await run(uri, "Preview: branch", what, sql, fileName(uri));
-  if (result) showRows("Preview: branch", what, result.rows, result.limit, result.meta);
+  const sql = build(doc.getText(), start);
+  const what = `${kind} at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
+  const result = await run(uri, `Preview: ${kind}`, what, sql, fileName(uri));
+  if (result) showRows(`Preview: ${kind}`, what, result.rows, result.limit, result.meta);
 }
 
 /** A file's name for the results' heading; a git: URI is a committed version, named by its branch when it has one. */

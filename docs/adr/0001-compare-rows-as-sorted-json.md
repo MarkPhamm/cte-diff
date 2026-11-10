@@ -10,6 +10,11 @@ Every supported warehouse needs a function that turns `*` into JSON with sorted 
 - BigQuery has `to_json`.
 - Redshift has none. `OBJECT()` needs explicit key/value pairs and rejects dates. That is why Redshift waits until someone asks for it.
 
+## Update (0.8.0)
+
+- Redshift is supported without JSON: it runs `EXCEPT` on the rows themselves. Its columns match by position and there are no row counts. See [How the comparison works](../comparison.md).
+- BigQuery's `TO_JSON_STRING` keeps the row's column order, not sorted keys, so a reordered column list shows as a difference there.
+
 ## Considered options
 
 - **Compare by position.** It works on any warehouse, but a reordered column would show up as a change in every row.

@@ -22,6 +22,10 @@ Every SQL file also gets **▶ Preview** outside a diff. The last button preview
 
 Every subquery gets **▶ Preview subquery** too: an `exists`, `in`, scalar subquery or derived table. A correlated subquery runs with the outer relations it reads, so an outer alias such as `renamed.game_id` resolves as it does in the model. The preview shows the subquery's own select list, not the outer query's rows. It keeps the outer tables, not the outer query's join conditions or other filters, so with several outer tables it can show rows the full query would filter out.
 
+A CTE inside another CTE's `with` gets **▶ Preview** and, in a diff, **⇄ Compare sides**, like a top-level one. Its preview keeps it inside the CTE that holds it, so names resolve as they do in the model.
+
+Each `select` of a `union`, `union all`, `intersect`, `except` or `minus` gets **▶ Preview branch**, in a CTE, the final query or a subquery. It runs that one `select` with the CTEs it reads. An `order by` or `limit` after the last branch sorts the whole set, so the last branch's preview leaves it out.
+
 ## Compare the compiled SQL
 
 **Compare Compiled SQL** shows what dbt renders for each side as a diff of its own. When a diff is open it is the first row of the CTE Diff sidebar, and a button in that sidebar's title bar. It is also in the diff's title bar and the Command Palette. `dbt compile` resolves the Jinja, `ref`s, sources, macros and `var`s, so you see the SQL that would reach the warehouse, not the SQL as written. Nothing runs on the warehouse.
@@ -40,7 +44,7 @@ When that SQL is one side of a diff, it lists every CTE of both sides, marked:
 
 ![The CTE Diff sidebar opens on the diff and marks each CTE: changed, new, removed, or reads a changed CTE](assets/img/demo-marks.gif){ width="100%" }
 
-Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it. A CTE with subqueries expands to list them: click one to jump to it, or hover it for **▶** to preview its rows. In a diff, a changed or affected CTE lists its old and new subqueries; one that didn't change lists a single side.
+Hover a CTE for its buttons: **←** previews the left (old) side, **→** previews the right (new) side, and **⇄** compares both. Hover its name for what the mark means. Click a CTE to jump to it. A CTE lists the CTEs of its own `with` under it, each with its own mark. A CTE with subqueries expands to list them: click one to jump to it, or hover it for **▶** to preview its rows. In a diff, a changed or affected CTE lists its old and new subqueries; one that didn't change lists a single side.
 
 Below the CTEs, **Compare Files** opens any two SQL files of the workspace side by side. **Old** starts as the file you open; click **Old** or **New** to pick another, or hover a file in the list below and click **←** (use as old) or **→** (use as new). Then click **Open the diff**. A file's **⑂** compares it with a branch.
 

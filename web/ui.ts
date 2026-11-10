@@ -9,8 +9,8 @@ export type Side = "left" | "right";
 export type Act = "preview" | "compare";
 
 // The sidebar's marks and words for each status (src/tree.ts).
-export const MARK: Record<Status, string> = { changed: "~", added: "+", removed: "−", affected: "↓", same: "" };
-export const NOTE: Record<Status, string> = { changed: "changed", added: "new", removed: "removed", affected: "reads a changed CTE", same: "" };
+const MARK: Record<Status, string> = { changed: "~", added: "+", removed: "−", affected: "↓", same: "" };
+const NOTE: Record<Status, string> = { changed: "changed", added: "new", removed: "removed", affected: "reads a changed CTE", same: "" };
 
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 

@@ -1,6 +1,6 @@
 # How the comparison works
 
-For each side, the CTE becomes `select * from <cte>`, keeping the CTEs before it. Text before the `with`, such as `{{ config() }}`, is kept too. Both sides then run in one query, on BigQuery, DuckDB, Redshift or Snowflake, through `dbt show`, so Jinja renders as in a real run.
+For each side, the CTE becomes `select * from <cte>`, keeping the CTEs before it. A nested CTE stays inside the CTE that holds it, which then selects it. Text before the `with`, such as `{{ config() }}`, is kept too. Both sides then run in one query, on BigQuery, DuckDB, Redshift or Snowflake, through `dbt show`, so Jinja renders as in a real run.
 
 ```sql
 with __l as (select to_json(object_construct_keep_null(*)) as __row from (
