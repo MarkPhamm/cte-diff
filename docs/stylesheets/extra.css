@@ -169,6 +169,9 @@
 .md-typeset pre > code { background: var(--bp-sheet); border: 1px solid var(--bp-rule); border-radius: 8px; }
 .md-typeset table:not([class]) { font-size: .8rem; border-color: var(--bp-rule); }
 .md-typeset table:not([class]) th { background: var(--bp-ink-a03); }
+@media screen and (min-width: 45em) {
+  .md-typeset table:not([class]) td:first-child code { white-space: nowrap; } /* a setting's name stays whole */
+}
 
 /* screenshots, buttons, cards, embedded demo */
 .md-typeset img.shot { border-radius: 10px; border: 1px solid var(--bp-rule-strong); box-shadow: var(--bp-e2); }
