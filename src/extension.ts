@@ -288,11 +288,11 @@ async function setup(uri: vscode.Uri) {
   const projectDir = await projectFor(uri, config.get<string>("projectDir", ""));
   const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
   const dbt = findDbt(config.get<string>("dbtPath", ""), [projectDir, ...folders]);
-  return { dbt, projectDir, limit: config.get<number>("limit", 100), target: config.get<string>("target") || undefined, log: (l: string) => log.appendLine(l) };
+  return { dbt, projectDir, limit: config.get<number>("limit", 100), target: config.get<string>("target") || undefined, dbtArgs: config.get<string[]>("dbtArgs", []), log: (l: string) => log.appendLine(l) };
 }
 
 /** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled, failed (the panel says so) or
- * overtaken by a newer run. `meta` is the heading's line: the files, the target and the run time. */
+ * overtaken by a newer run. `meta` is the heading's line: the files, the target, cteDiff.dbtArgs and the run time. */
 async function run(uri: vscode.Uri, title: string, what: string, sql: string, files: string): Promise<{ rows: Row[]; limit: number; meta: string } | undefined> {
   const o = await setup(uri);
   const id = ++latest;
@@ -307,7 +307,8 @@ async function run(uri: vscode.Uri, title: string, what: string, sql: string, fi
         return show(sql, o, abort.signal);
       },
     );
-    const meta = `${files} · ${o.target ? `target ${o.target}` : "default target"} · ${((Date.now() - start) / 1000).toFixed(1)} s`;
+    const extra = o.dbtArgs.length ? ` · ${o.dbtArgs.join(" ")}` : "";
+    const meta = `${files} · ${o.target ? `target ${o.target}` : "default target"}${extra} · ${((Date.now() - start) / 1000).toFixed(1)} s`;
     return id === latest ? { rows, limit: o.limit, meta } : undefined;
   } catch (e) {
     if (id !== latest) return undefined;
@@ -328,6 +329,7 @@ async function checkSetup(): Promise<void> {
     ["dbt", o.dbt === "dbt" ? "dbt on PATH (set cteDiff.dbtPath if it isn't found)" : o.dbt],
     ["Project", o.projectDir],
     ["Target", o.target ?? "the profile's default (cteDiff.target)"],
+    ["Extra arguments", o.dbtArgs.join(" ") || "none (cteDiff.dbtArgs)"],
   ];
   const id = ++latest;
   showRunning("Check Setup", "Setup", "dbt debug");

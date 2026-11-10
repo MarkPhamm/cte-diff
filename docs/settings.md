@@ -5,7 +5,21 @@
 | `cteDiff.dbtPath` | empty | Path to `dbt`. Empty: the project's `.venv`, `~/.local/bin`, Homebrew, else `PATH`. |
 | `cteDiff.projectDir` | empty | The dbt project to run in. Empty: the project holding the file, else the one in the workspace. |
 | `cteDiff.target` | empty | The dbt target (`--target`). |
+| `cteDiff.dbtArgs` | empty | Extra arguments for every dbt run, such as `--vars`. |
 | `cteDiff.limit` | `100` | The most rows a preview fetches, and the most differing rows a comparison lists. |
+
+## dbt variables
+
+A model that reads `var()` gets its default value unless the run passes `--vars`, and dbt has no environment variable for it. When the default selects nothing, a preview is empty and a comparison reports no differences, with no error. Pass the value with `cteDiff.dbtArgs`, one argument per item:
+
+```json
+"cteDiff.dbtArgs": [
+  "--vars",
+  "{cob_date: 20271015}"
+]
+```
+
+The arguments follow every dbt command CTE Diff runs. The results heading and **Check Setup** show them. Set it in a workspace folder's settings to give each project its own.
 
 ## Buttons above a CTE in a diff
 

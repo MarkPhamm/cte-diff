@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **`cteDiff.dbtArgs`**: extra arguments for every dbt run, such as `["--vars", "{cob_date: 20271015}"]` for a model that reads `var()`. Without them dbt uses the `var()` default, which can return the wrong rows without an error. The results heading and **Check Setup** show them.
 - A preview's heading names the branch of the side it ran on, such as `orders.sql (qa)`, for a CTE as it already did for a subquery or a branch.
 
 ## 0.10.0
