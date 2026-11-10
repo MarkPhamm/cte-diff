@@ -445,6 +445,15 @@
           "default": "",
           "markdownDescription": "The dbt target (`--target`). Empty: the profile's default."
         },
+        "cteDiff.dbtArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "markdownDescription": "Extra arguments for every dbt run, one per item. A model that reads `var('cob_date')` needs `[\"--vars\", \"{cob_date: 20271015}\"]`: without it dbt uses the `var()` default, and the rows can be wrong without an error. Read on each run, so a change applies to the next one."
+        },
         "cteDiff.limit": {
           "type": "integer",
           "default": 100,

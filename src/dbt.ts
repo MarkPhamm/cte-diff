@@ -57,9 +57,12 @@ const envFor = (dir: string) => ({ ...projectEnv(dir), ...process.env, DBT_STATI
 
 const notFound = (dbt: string) => `dbt not found at "${dbt}". Set cteDiff.dbtPath to your dbt executable.`;
 
+/** The arguments every dbt command here ends with: `--target`, then the cteDiff.dbtArgs setting's, such as `--vars`. */
+const settingArgs = (o: Omit<ShowOptions, "limit">) => [...(o.target ? ["--target", o.target] : []), ...(o.dbtArgs ?? [])];
+
 /** `dbt debug` in the project: whether dbt finds the project, its profile and the warehouse, and the end of its output. */
 export function debug(o: Omit<ShowOptions, "limit">): Promise<{ ok: boolean; output: string }> {
-  const args = ["debug", ...(o.target ? ["--target", o.target] : [])];
+  const args = ["debug", ...settingArgs(o)];
   o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${args.join(" ")}`);
   return new Promise((resolve) => {
     execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
@@ -75,6 +78,8 @@ export interface ShowOptions {
   projectDir: string;
   limit: number;
   target?: string;
+  /** Appended to every dbt command, after `--target`. */
+  dbtArgs?: string[];
   log?: (line: string) => void;
 }
 
@@ -99,9 +104,8 @@ function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSig
 
 /** The rows of `sql`. */
 export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise<Row[]> {
-  const args = ["show", "-q", "--inline", sql, "--output", "json", "--limit", String(o.limit)];
-  if (o.target) args.push("--target", o.target);
-  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} show -q --inline <sql> --output json --limit ${o.limit}${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
+  const args = ["show", "-q", "--inline", sql, "--output", "json", "--limit", String(o.limit), ...settingArgs(o)];
+  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${["show -q --inline <sql> --output json --limit", o.limit, ...settingArgs(o)].join(" ")}\n${sql}\n`);
   // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
   return runDbt(args, o, signal).then(({ stdout, stderr, failed }) => {
     const rows = failed ? undefined : parseShow(stdout);
@@ -113,9 +117,8 @@ export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise
 /** The SQL dbt renders for `sql`: Jinja, refs, sources and macros resolved, with nothing run on the warehouse. It
  * parses the whole project, as show does, so the same failures apply. */
 export function compile(sql: string, o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<string> {
-  const args = ["compile", "--inline", sql, "--log-format", "json"];
-  if (o.target) args.push("--target", o.target);
-  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} compile --inline <sql> --log-format json${o.target ? ` --target ${o.target}` : ""}\n${sql}\n`);
+  const args = ["compile", "--inline", sql, "--log-format", "json", ...settingArgs(o)];
+  o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${["compile --inline <sql> --log-format json", ...settingArgs(o)].join(" ")}\n${sql}\n`);
   return runDbt(args, o, signal).then(({ stdout, stderr }) => {
     const compiled = parseCompiled(stdout);
     if (compiled !== undefined) return compiled;
