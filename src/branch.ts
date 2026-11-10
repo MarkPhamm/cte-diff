@@ -14,14 +14,19 @@ export function branchChoices(refs: Ref[], current?: string, last?: string): str
   return last && all.includes(last) ? [last, ...all.filter((n) => n !== last)] : all;
 }
 
-/** The ref a git: URI's query names, to show in place of "git"; undefined for HEAD, the index, or no ref. */
-export function refLabel(query: string): string | undefined {
-  let ref: unknown;
+/** The ref a git: URI's query names: a branch, tag or commit, HEAD, or "~" or "" for the index. */
+export function gitRef(query: string): string | undefined {
   try {
-    ref = JSON.parse(query).ref;
+    const ref = JSON.parse(query).ref;
+    return typeof ref === "string" ? ref : undefined;
   } catch {
     return undefined;
   }
-  if (typeof ref !== "string" || ["", "~", "HEAD"].includes(ref)) return undefined;
+}
+
+/** The ref a git: URI's query names, to show in place of "git"; undefined for HEAD, the index, or no ref. */
+export function refLabel(query: string): string | undefined {
+  const ref = gitRef(query);
+  if (ref === undefined || ["", "~", "HEAD"].includes(ref)) return undefined;
   return /^[0-9a-f]{40}$/.test(ref) ? ref.slice(0, 7) : ref;
 }
