@@ -90,13 +90,21 @@ let running: ChildProcess | undefined;
 function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; failed: boolean }> {
   running?.kill();
   return new Promise((resolve, reject) => {
-    const child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
-      if (running === child) running = undefined;
-      o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
-      if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));
-      if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") return reject(new Error(notFound(o.dbt)));
-      resolve({ stdout, stderr, failed: err !== null });
-    });
+    let child: ChildProcess;
+    try {
+      child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
+        if (running === child) running = undefined;
+        o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
+        if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));
+        if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") return reject(new Error(notFound(o.dbt)));
+        resolve({ stdout, stderr, failed: err !== null });
+      });
+    } catch (e) {
+      // Spawn throws, rather than calling back, when an argument (the SQL) is over the OS's limit.
+      if ((e as NodeJS.ErrnoException).code !== "E2BIG") throw e;
+      const kib = Math.round(Math.max(...args.map((a) => Buffer.byteLength(a))) / 1024);
+      return reject(new Error(`dbt could not start: the query is ${kib} KiB, over the operating system's limit on one command-line argument (128 KiB on Linux).`));
+    }
     running = child;
     signal?.addEventListener("abort", () => child.kill());
   });
@@ -106,7 +114,8 @@ function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSig
 export function show(sql: string, o: ShowOptions, signal?: AbortSignal): Promise<Row[]> {
   const args = ["show", "-q", "--inline", sql, "--output", "json", "--limit", String(o.limit), ...settingArgs(o)];
   o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${["show -q --inline <sql> --output json --limit", o.limit, ...settingArgs(o)].join(" ")}\n${sql}\n`);
-  // shortcut: the SQL goes on the command line, which Windows caps at ~32K characters; use a temp file if that bites.
+  // shortcut: the SQL is one command-line argument, which Linux caps at 128 KiB and Windows at ~32K characters for the
+  // whole command line; run it from a temp model file if models that big are common.
   return runDbt(args, o, signal).then(({ stdout, stderr, failed }) => {
     const rows = failed ? undefined : parseShow(stdout);
     if (rows) return rows;

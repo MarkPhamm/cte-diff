@@ -4,6 +4,7 @@
 
 - **`cteDiff.dbtArgs`**: extra arguments for every dbt run, such as `["--vars", "{cob_date: 20271015}"]` for a model that reads `var()`. Without them dbt uses the `var()` default, which can return the wrong rows without an error. The results heading and **Check Setup** show them.
 - A preview's heading names the branch of the side it ran on, such as `orders.sql (qa)`, for a CTE as it already did for a subquery or a branch.
+- **⇄ Compare sides** no longer fails with `spawn E2BIG` on large models on Linux: the query it sends to dbt holds each side's SQL once instead of four times. A query still too long for the command line now says how large it is.
 
 ## 0.10.0
 
