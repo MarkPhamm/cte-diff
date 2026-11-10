@@ -2,7 +2,7 @@
   "name": "cte-diff",
   "displayName": "CTE Diff for dbt",
   "description": "Preview any CTE's rows, and compare the same CTE on both sides of a diff, straight from the editor. Runs through dbt show, so Jinja, refs and your warehouse profile just work.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "MarkPhamm",
   "author": "Minh (Mark) Pham",
   "license": "Apache-2.0",
