@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, test } from "node:test";
-import { inCopy } from "../src/checkout.ts";
+import { compileAt, inCopy, profileName } from "../src/checkout.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach((r) => fs.rmSync(r, { recursive: true, force: true })));
@@ -34,7 +34,7 @@ function repo() {
   const side = (ref: string, scheme = "git") => ({ scheme, query: JSON.stringify({ path: file, ref }), fsPath: file });
   const copy = (ref: string, scheme?: string) =>
     inCopy(side(ref, scheme), { dbt: "dbt", projectDir: proj }, async (dir) => ({ dir, macro: fs.readFileSync(path.join(dir, "macros", "cents.sql"), "utf8") }));
-  return { proj, write, git, copy };
+  return { root, proj, write, git, side, copy };
 }
 
 test("inCopy copies nothing when the project differs from the ref in the file itself or not at all", async () => {
@@ -89,4 +89,26 @@ test("inCopy removes the copy when the run fails", async () => {
   };
   await assert.rejects(inCopy({ scheme: "git", query: JSON.stringify({ ref: "qa" }), fsPath: path.join(proj, "x.sql") }, { dbt: "dbt", projectDir: proj }, fail), /dbt failed/);
   assert.ok(dir && !fs.existsSync(dir));
+});
+
+test("profileName reads a plain profile: line, not Jinja or a nested key", () => {
+  assert.equal(profileName("name: shop\nprofile: 'shop_dev'  # local\n"), "shop_dev");
+  assert.equal(profileName(`name: shop\nprofile: "{{ env_var('P') }}"\n`), undefined);
+  assert.equal(profileName("name: shop\nvars:\n  profile: x\n"), undefined);
+});
+
+test("compileAt runs dbt in the copy with the open project's profile, not one the ref's dbt_project.yml names", async () => {
+  const { root, proj, write, git, side } = repo();
+  write("dbt_project.yml", "name: p\nprofile: prod\n");
+  git("commit", "-qam", "prod");
+  git("branch", "-f", "qa");
+  write("dbt_project.yml", "name: p\nprofile: dev\n");
+  // A fake dbt that prints its arguments and folder as the compiled SQL.
+  const dbt = path.join(root, "dbt");
+  const script = "console.log(JSON.stringify({ data: { compiled: JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) } }));";
+  fs.writeFileSync(dbt, `#!${process.execPath}\n${script}\n`, { mode: 0o755 });
+  const compiled = await compileAt(side("qa"), "select 1", { dbt, projectDir: proj, dbtArgs: ["--vars", "{x: 1}"] });
+  const { args, cwd } = JSON.parse(compiled ?? "{}");
+  assert.deepEqual(args.slice(-4), ["--profile", "dev", "--vars", "{x: 1}"]);
+  assert.match(cwd, /cte-diff-\w+[\\/]tree[\\/]proj$/);
 });

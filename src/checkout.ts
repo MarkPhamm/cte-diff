@@ -60,11 +60,23 @@ export async function inCopy<T>(uri: Side, o: Options, f: (projectDir: string) =
   }
 }
 
+/** The profile a dbt_project.yml's `profile:` line names, when it is a plain name rather than Jinja. */
+export const profileName = (yml: string) => yml.match(/^profile:\s*["']?([\w.-]+)["']?\s*(?:#.*)?$/m)?.[1];
+
 /** The SQL dbt compiles for `sql` on the git: side at `uri`, in a copy of the project as that side has it (inCopy);
  * undefined when the open project serves. The open project's .env, profile and target apply, so it reads the same
- * relations as the other side. */
+ * relations as the other side, and a ref's dbt_project.yml can't switch it to another profile, such as prod. */
 export const compileAt = (uri: Side, sql: string, o: Options, signal?: AbortSignal): Promise<string | undefined> =>
-  inCopy(uri, o, (dir) => compile(sql, { ...o, projectDir: dir, profileDir: o.projectDir }, signal), signal);
+  inCopy(
+    uri,
+    o,
+    (dir) => {
+      const profile = profileName(fs.readFileSync(path.join(o.projectDir, "dbt_project.yml"), "utf8"));
+      const dbtArgs = [...(profile ? ["--profile", profile] : []), ...(o.dbtArgs ?? [])];
+      return compile(sql, { ...o, projectDir: dir, profileDir: o.projectDir, dbtArgs }, signal);
+    },
+    signal,
+  );
 
 /** `sql` for the open project to run as the side at `uri`: as is, or compiled with that side's macros (compileAt) in a
  * raw block, so dbt doesn't render it again. */
