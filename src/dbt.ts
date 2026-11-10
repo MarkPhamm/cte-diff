@@ -52,8 +52,18 @@ function projectEnv(dir: string): Record<string, string> {
 
 /** The environment dbt runs in: the project's .env fills in what VS Code's environment lacks. DBT_STATIC_ANALYSIS: dbt
  * Fusion would otherwise type-check the SQL first, which fails on tables outside the project and adds time; dbt-core
- * ignores it. dbt-core colours its logs unless DBT_USE_COLORS is off, and the panel would show the escape codes. */
-const envFor = (dir: string) => ({ ...projectEnv(dir), ...process.env, DBT_STATIC_ANALYSIS: "off", NO_COLOR: "1", DBT_USE_COLORS: "false" });
+ * ignores it. dbt-core colours its logs unless DBT_USE_COLORS is off, and the panel would show the escape codes. When
+ * `dir` is a copy of the open project `home`, home's .env applies, and home's profiles.yml (git often ignores it) or
+ * ~/.dbt's, never one the copy's commit holds: that could send the user's credentials to another host. A
+ * DBT_PROFILES_DIR the user set still wins. */
+export const envFor = (dir: string, home = dir) => ({
+  ...(home !== dir ? { DBT_PROFILES_DIR: fs.existsSync(path.join(home, "profiles.yml")) ? home : path.join(os.homedir(), ".dbt") } : {}),
+  ...projectEnv(home),
+  ...process.env,
+  DBT_STATIC_ANALYSIS: "off",
+  NO_COLOR: "1",
+  DBT_USE_COLORS: "false",
+});
 
 const notFound = (dbt: string) => `dbt not found at "${dbt}". Set cteDiff.dbtPath to your dbt executable.`;
 
@@ -80,6 +90,8 @@ export interface ShowOptions {
   target?: string;
   /** Appended to every dbt command, after `--target`. */
   dbtArgs?: string[];
+  /** The open project, when projectDir is a copy of it as another commit has it: its .env and profiles.yml apply. */
+  profileDir?: string;
   log?: (line: string) => void;
 }
 
@@ -88,11 +100,12 @@ let running: ChildProcess | undefined;
 /** dbt's output for `args`, run in the project. A new call kills the one still running: dbt runs in one project share
  * target/, and the user has moved on anyway. */
 function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; failed: boolean }> {
+  if (signal?.aborted) return Promise.reject(new Error("Cancelled")); // before it kills a newer run's dbt
   running?.kill();
   return new Promise((resolve, reject) => {
     let child: ChildProcess;
     try {
-      child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
+      child = execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir, o.profileDir), maxBuffer: 256 * 1024 * 1024 }, (err, stdout, stderr) => {
         if (running === child) running = undefined;
         o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
         if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));

@@ -5,6 +5,7 @@
 - **`cteDiff.dbtArgs`**: extra arguments for every dbt run, such as `["--vars", "{cob_date: 20271015}"]` for a model that reads `var()`. Without them dbt uses the `var()` default, which can return the wrong rows without an error. The results heading and **Check Setup** show them.
 - A preview's heading names the branch of the side it ran on, such as `orders.sql (qa)`, for a CTE as it already did for a subquery or a branch.
 - **⇄ Compare sides** no longer fails with `spawn E2BIG` on large models on Linux: the query it sends to dbt holds each side's SQL once instead of four times. A query still too long for the command line now says how large it is.
+- The old side of a diff now uses its own macros. When a macro or another project file differs from the branch, commit or staged version on the left, **▶ Preview**, **⇄ Compare sides** and **Compare Compiled SQL** compile that side in a temporary copy of the project as it was there, so a macro-only change shows up. Before, both sides used your working tree's macros. That side takes a few seconds more, as dbt parses the copy in full.
 
 ## 0.10.0
 

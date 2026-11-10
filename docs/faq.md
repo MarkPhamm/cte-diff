@@ -30,6 +30,8 @@ It runs in the project holding the SQL file: the nearest folder up with a `dbt_p
 
 No. Both sides run on your one dbt target, so `ref('stg_orders')` reads your target's `stg_orders` on both sides. The comparison shows what the model's own SQL changes, on the same upstream data, not what another environment such as QA holds.
 
+The left side does use the branch's macros. When anything in the dbt project other than the model differs from the branch, such as a macro, CTE Diff copies the project as the branch has it to a temporary folder, compiles the left side there with your profile, `.env` and installed packages, and runs the result on your target. The copy is deleted after the run. A git diff from Source Control works the same way, with the staged or committed version on the left.
+
 ### What does a run cost?
 
 One query per click, on your warehouse. A comparison computes the CTE on both sides in full, so it scans what the CTE scans, twice. `cteDiff.limit` caps the rows returned, not the rows scanned. A new run cancels the one still going, and **Cancel** on the progress notification stops it.

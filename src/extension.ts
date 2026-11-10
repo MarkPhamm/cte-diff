@@ -1,8 +1,9 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { refLabel } from "./branch.ts";
+import { compileAt, sideSql } from "./checkout.ts";
 import { branchQuery, cteLabel, cteQuery, subqueryQuery } from "./cte.ts";
-import { compile, debug, findDbt, projectDirOf, show } from "./dbt.ts";
+import { compile, debug, findDbt, projectDirOf, show, type ShowOptions } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
 import { results, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
@@ -12,6 +13,7 @@ import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 let log: vscode.OutputChannel;
 let picked: string | undefined; // the project chosen for files outside any dbt project, e.g. pasted SQL
 let latest = 0;
+let current: AbortController | undefined; // the run in progress
 let again: (() => Promise<void>) | undefined; // the last preview or compare, for Run Again
 let tree: CteTree;
 
@@ -169,7 +171,7 @@ async function preview(uri: vscode.Uri, name?: string, within: string[] = []): P
   const doc = await vscode.workspace.openTextDocument(uri);
   const sql = cteQuery(doc.getText(), name, within);
   const what = `${label(name, within)} (${fileName(uri)})`;
-  const result = await run(uri, `Preview: ${label(name, within)}`, what, sql, fileName(uri));
+  const result = await run(uri, `Preview: ${label(name, within)}`, what, (o, signal) => sideSql(uri, sql, o, signal), fileName(uri));
   if (result) showRows(`Preview: ${label(name, within)}`, what, result.rows, result.limit, result.meta);
 }
 
@@ -179,7 +181,7 @@ async function previewAt(uri: vscode.Uri, start: number, kind: "subquery" | "bra
   const doc = await vscode.workspace.openTextDocument(uri);
   const sql = build(doc.getText(), start);
   const what = `${kind} at line ${doc.positionAt(start).line + 1} (${fileName(uri)})`;
-  const result = await run(uri, `Preview: ${kind}`, what, sql, fileName(uri));
+  const result = await run(uri, `Preview: ${kind}`, what, (o, signal) => sideSql(uri, sql, o, signal), fileName(uri));
   if (result) showRows(`Preview: ${kind}`, what, result.rows, result.limit, result.meta);
 }
 
@@ -200,7 +202,8 @@ async function compare(uri: vscode.Uri, name?: string, within: string[] = []): P
       throw new Error(`The ${which} side has no CTE named ${label(name, within)}.`);
     }
   };
-  const sql = compareQuery(side(left, "left"), side(right, "right"));
+  const [l, r] = [side(left, "left"), side(right, "right")];
+  const sql = async (o: ShowOptions, signal: AbortSignal) => compareQuery(await sideSql(diff.left, l, o, signal), await sideSql(diff.right, r, o, signal));
   const title = `Compare: ${label(name, within)}`;
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
   const result = await run(diff.right, title, label(name, within), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
@@ -228,11 +231,14 @@ async function compareCompiled(): Promise<void> {
     const sides = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: "CTE Diff: compiling both sides", cancellable: true },
       async (_, token) => {
-        const abort = new AbortController();
-        token.onCancellationRequested(() => abort.abort());
+        const signal = nextRun(token);
+        const side = async (uri: vscode.Uri, doc: vscode.TextDocument) => {
+          const sql = cteQuery(doc.getText());
+          return (await compileAt(uri, sql, o, signal)) ?? compile(sql, o, signal);
+        };
         // One at a time: dbt runs in one project share target/.
-        const leftSql = await compile(cteQuery(leftDoc.getText()), o, abort.signal);
-        const rightSql = await compile(cteQuery(rightDoc.getText()), o, abort.signal);
+        const leftSql = await side(input.original, leftDoc);
+        const rightSql = await side(input.modified, rightDoc);
         return [leftSql, rightSql] as const;
       },
     );
@@ -291,9 +297,25 @@ async function setup(uri: vscode.Uri) {
   return { dbt, projectDir, limit: config.get<number>("limit", 100), target: config.get<string>("target") || undefined, dbtArgs: config.get<string[]>("dbtArgs", []), log: (l: string) => log.appendLine(l) };
 }
 
-/** Runs `sql` with dbt show, with a cancellable notification. Undefined when cancelled, failed (the panel says so) or
- * overtaken by a newer run. `meta` is the heading's line: the files, the target, cteDiff.dbtArgs and the run time. */
-async function run(uri: vscode.Uri, title: string, what: string, sql: string, files: string): Promise<{ rows: Row[]; limit: number; meta: string } | undefined> {
+/** A signal that stops a run on Cancel, or when a newer run starts: dbt runs one at a time, and a run can take several
+ * steps. */
+function nextRun(token: vscode.CancellationToken): AbortSignal {
+  current?.abort();
+  const next = (current = new AbortController());
+  token.onCancellationRequested(() => next.abort());
+  return next.signal;
+}
+
+/** Runs the SQL that `sql` builds with dbt show, with a cancellable notification. Undefined when cancelled, failed (the
+ * panel says so) or overtaken by a newer run. `meta` is the heading's line: the files, the target, cteDiff.dbtArgs and
+ * the run time. */
+async function run(
+  uri: vscode.Uri,
+  title: string,
+  what: string,
+  sql: (o: ShowOptions, signal: AbortSignal) => Promise<string>,
+  files: string,
+): Promise<{ rows: Row[]; limit: number; meta: string } | undefined> {
   const o = await setup(uri);
   const id = ++latest;
   const start = Date.now();
@@ -301,10 +323,9 @@ async function run(uri: vscode.Uri, title: string, what: string, sql: string, fi
   try {
     const rows = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: `CTE Diff: running dbt show for ${what}`, cancellable: true },
-      (_, token) => {
-        const abort = new AbortController();
-        token.onCancellationRequested(() => abort.abort());
-        return show(sql, o, abort.signal);
+      async (_, token) => {
+        const signal = nextRun(token);
+        return show(await sql(o, signal), o, signal);
       },
     );
     const extra = o.dbtArgs.length ? ` · ${o.dbtArgs.join(" ")}` : "";

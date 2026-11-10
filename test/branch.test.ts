@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { branchChoices, refLabel } from "../src/branch.ts";
+import { branchChoices, gitRef, refLabel } from "../src/branch.ts";
 
 const refs = [
   { type: 0, name: "main" },
@@ -30,4 +30,9 @@ test("refLabel names a branch or a short commit, not HEAD or the index", () => {
   assert.equal(refLabel(q("0123456789abcdef0123456789abcdef01234567")), "0123456");
   for (const ref of ["", "~", "HEAD"]) assert.equal(refLabel(q(ref)), undefined);
   assert.equal(refLabel("not json"), undefined);
+});
+
+test("gitRef reads any ref, the index included", () => {
+  for (const ref of ["qa", "HEAD", "~", ""]) assert.equal(gitRef(JSON.stringify({ ref })), ref);
+  for (const query of ["not json", "null", JSON.stringify({ path: "/p/orders.sql" })]) assert.equal(gitRef(query), undefined);
 });

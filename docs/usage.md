@@ -30,7 +30,7 @@ Each `select` of a `union`, `union all`, `intersect`, `except` or `minus` gets *
 
 **Compare Compiled SQL** shows what dbt renders for each side as a diff of its own. When a diff is open it is the first row of the CTE Diff sidebar, and a button in that sidebar's title bar. It is also in the diff's title bar and the Command Palette. `dbt compile` resolves the Jinja, `ref`s, sources, macros and `var`s, so you see the SQL that would reach the warehouse, not the SQL as written. Nothing runs on the warehouse.
 
-After **Compare with Branch**, the left side is the branch's compiled SQL and the right is your working tree's, so you can see exactly what the branch's Jinja became next to yours.
+After **Compare with Branch**, the left side is the branch's compiled SQL and the right is your working tree's, so you can see exactly what the branch's Jinja became next to yours. Each side compiles with its own macros, so a change to a macro alone shows up too.
 
 ## The sidebar
 
