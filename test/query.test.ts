@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseCompiled, parseShow, readComparison, unsupported, type Comparison, type Row } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseCompiled, parseShow, readComparison, SUPPORTED, unsupported, type Comparison, type Row } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
-  assert.match(q, /select \* from a -- trailing comment\n\) AS __t\)/, "a trailing comment can't swallow the closing parens");
+  assert.match(forAdapter(q, "duckdb"), /select \* from a -- trailing comment\n\) AS __t\)/, "a trailing comment can't swallow the closing parens");
   assert.match(q, /__only_l as \(select __row from __l except select __row from __r\)/);
   assert.match(q, /__only_r as \(select __row from __r except select __row from __l\)/);
 });
@@ -15,7 +15,7 @@ test("compareQuery picks each adapter's SQL", () => {
   const duckdb = forAdapter(q, "duckdb");
   const bigquery = forAdapter(q, "bigquery");
   const redshift = forAdapter(q, "redshift");
-  assert.doesNotMatch(snowflake + duckdb + bigquery + redshift, /{%/);
+  assert.doesNotMatch(snowflake + duckdb + bigquery + redshift, /{%|{{/);
   assert.match(snowflake, /to_json\(object_construct_keep_null\(\*\)\)/);
   assert.match(snowflake, /to_json\(object_construct\(/);
   assert.doesNotMatch(snowflake, /json_each|json_object/);
@@ -30,6 +30,14 @@ test("compareQuery picks each adapter's SQL", () => {
   assert.match(redshift, /select \* from __l except select \* from __r/);
   assert.match(redshift, /'left' as __side/);
   assert.doesNotMatch(redshift, /__row|counts|TO_JSON_STRING/);
+});
+
+test("compareQuery writes each side once, and each adapter's query reads it", () => {
+  // dbt gets the query as one command-line argument, which Linux caps at 128 KiB.
+  const q = compareQuery("select 'old side' x", "select 'new side' x");
+  const count = (sql: string) => ["'old side'", "'new side'"].map((s) => sql.split(s).length - 1);
+  assert.deepEqual(count(q), [1, 1]);
+  for (const t of SUPPORTED) assert.deepEqual(count(forAdapter(q, t)), [1, 1], t);
 });
 
 test("compareQuery raises a plain error on a warehouse it has no SQL for", () => {

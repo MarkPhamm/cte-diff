@@ -40,3 +40,9 @@ test("show, compile and debug end with --target and cteDiff.dbtArgs", async () =
     fs.rmSync(dir, { recursive: true });
   }
 });
+
+test("show gives the query's size when it is too long for the command line", async () => {
+  // 2 MiB: over Linux's 128 KiB for one argument and macOS's 1 MiB for all of them.
+  const sql = "x".repeat(2048 * 1024);
+  await assert.rejects(show(sql, { dbt: process.execPath, projectDir: import.meta.dirname, limit: 1 }), /the query is 2048 KiB/);
+});

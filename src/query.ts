@@ -14,15 +14,23 @@ const byAdapter = (sql: Record<Adapter, string>) =>
   SUPPORTED.map((t, i) => `{% ${i ? "elif" : "if"} target.type == '${t}' %}${sql[t]}`).join("") +
   `{% else %}{{ exceptions.raise_compiler_error("${UNSUPPORTED} " ~ target.type) }}{% endif %}`;
 
-/** `sql` as dbt renders it for one adapter: each byAdapter block becomes that adapter's branch, else its else branch.
- * Other Jinja stays. */
-export const forAdapter = (sql: string, type: string) =>
-  sql.replace(/{% if target\.type == '\w+' %}.*?{% endif %}/gs, (block) => {
-    // ["", type, sql, type, sql, undefined (the else), sql]
-    const parts = block.slice(0, -"{% endif %}".length).split(/{% (?:el)?if target\.type == '(\w+)' %}|{% else %}/);
-    for (let i = 1; i < parts.length; i += 2) if (parts[i] === type || parts[i] === undefined) return parts[i + 1];
-    return "";
-  });
+/** `sql` as dbt renders it for one adapter: each byAdapter block becomes that adapter's branch, else its else branch,
+ * and compareQuery's sides go back where it prints them. Other Jinja stays. */
+export const forAdapter = (sql: string, type: string): string => {
+  const sides: Record<string, string> = {};
+  return sql
+    .replace(/{% set (__cte_diff_\w+) %}(.*?){% endset %}/gs, (_, name: string, side: string) => {
+      sides[name] = side;
+      return "";
+    })
+    .replace(/{% if target\.type == '\w+' %}.*?{% endif %}/gs, (block) => {
+      // ["", type, sql, type, sql, undefined (the else), sql]
+      const parts = block.slice(0, -"{% endif %}".length).split(/{% (?:el)?if target\.type == '(\w+)' %}|{% else %}/);
+      for (let i = 1; i < parts.length; i += 2) if (parts[i] === type || parts[i] === undefined) return parts[i + 1];
+      return "";
+    })
+    .replace(/{{ (__cte_diff_\w+) }}/g, (_, name: string) => forAdapter(sides[name], type));
+};
 
 /** The warehouse a dbt error names when a comparison has no SQL for it; undefined for any other error. */
 export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPORTED} (\\w+)`))?.[1];
@@ -81,13 +89,20 @@ __only_r as (select * from __r except select * from __l)
 select 'left' as __side, * from __only_l
 union all select 'right' as __side, * from __only_r`;
 
+/** The comparison of `left` and `right` on whichever warehouse dbt runs it. Each side is written once, in a Jinja set
+ * block that every adapter's SQL prints: dbt gets the query as one command-line argument, which Linux caps at 128 KiB. */
 export function compareQuery(left: string, right: string): string {
-  return byAdapter({
-    bigquery: jsonCompare(left, right, "bigquery"),
-    duckdb: jsonCompare(left, right, "duckdb"),
-    redshift: rawCompare(left, right),
-    snowflake: jsonCompare(left, right, "snowflake"),
-  });
+  const l = "{{ __cte_diff_left }}";
+  const r = "{{ __cte_diff_right }}";
+  return (
+    `{% set __cte_diff_left %}${left}{% endset %}{% set __cte_diff_right %}${right}{% endset %}` +
+    byAdapter({
+      bigquery: jsonCompare(l, r, "bigquery"),
+      duckdb: jsonCompare(l, r, "duckdb"),
+      redshift: rawCompare(l, r),
+      snowflake: jsonCompare(l, r, "snowflake"),
+    })
+  );
 }
 
 export interface Counts {
