@@ -57,8 +57,8 @@ test("comparisonHtml says when both sides match", () => {
   assert.doesNotMatch(html, /<table/);
 });
 
-test("a table comes with a filter box; no rows, no box", () => {
-  assert.match(rowsHtml("x", [{ id: 1 }], 100), /<input class="filter" type="search"[^>]*>[\s\S]*<div class="scroll">/);
+test("a table comes with its toolbar; no rows, no toolbar", () => {
+  assert.match(rowsHtml("x", [{ id: 1 }], 100), /<input class="filter" type="search"[^>]*>[\s\S]*Copy Markdown[\s\S]*Save CSV[\s\S]*Save JSON[\s\S]*<div class="scroll" tabindex="0">/);
   assert.doesNotMatch(rowsHtml("x", [], 100), /filter/);
   // Columns lists each column with its cell index; cell 0 is the row number.
   assert.match(rowsHtml("x", [{ id: 1, name: "a" }], 100), /<summary>Columns<\/summary><div class="menu"><label><input type="checkbox" checked value="1">id<\/label><label><input type="checkbox" checked value="2">name<\/label>/);

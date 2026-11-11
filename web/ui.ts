@@ -3,7 +3,7 @@
 /* What the landing page's live demo (web/demo.ts) and playground (web/playground.ts) both draw: coloured SQL, a line
  * diff, where the extension puts its buttons, the sidebar's list, and the results panel. */
 import { parse, type Status } from "../src/cte.ts";
-import { attach } from "../src/grid.ts";
+import { attach, type Host } from "../src/grid.ts";
 import { RESULTS_CSS } from "../src/results.ts";
 
 export type Side = "left" | "right";
@@ -105,12 +105,24 @@ const MOTION = `@media (prefers-reduced-motion: no-preference) {
 .sql b { font-weight: 600; } .sql u { text-decoration: none; color: var(--vscode-descriptionForeground); }
 .sql s { text-decoration: none; color: var(--vscode-editorWarning-foreground); } .sql em { color: var(--vscode-descriptionForeground); }`;
 
+/** Copy and save in the browser: the clipboard, and a download. */
+const browser: Host = {
+  copy: (text) => void navigator.clipboard.writeText(text),
+  save: (name, text) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+};
+
 /** The results view inside `host` (a shadow root keeps the extension's CSS to itself). */
 export function resultsPanel(host: HTMLElement): (html: string) => void {
   const shadow = host.attachShadow({ mode: "open" });
   return (html) => {
     shadow.innerHTML = `<style>${RESULTS_CSS}${MOTION}</style>${html}`;
     shadow.querySelectorAll<HTMLElement>("tbody tr").forEach((tr, i) => tr.style.setProperty("--i", String(i)));
-    attach(shadow);
+    attach(shadow, browser);
   };
 }
