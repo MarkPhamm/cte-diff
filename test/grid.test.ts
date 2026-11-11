@@ -87,3 +87,17 @@ test("fileName takes the CTE's name from the heading", () => {
   assert.equal(fileName("the whole query (a b.sql)", false, "csv"), "the_whole_query.csv");
   assert.equal(fileName("…", false, "csv"), "results.csv");
 });
+
+test("csv and tsv keep text that starts like a formula as text; numbers and json are untouched", () => {
+  const g: Grid = {
+    cols: ["note", "n"],
+    rows: [
+      [{ text: '=HYPERLINK("http://x","y")', kind: "text" }, { text: "-22", kind: "num" }],
+      [{ text: "@SUM(A1)", kind: "text" }, { text: "1", kind: "num" }],
+      [{ text: "+1 555", kind: "text" }, { text: "2", kind: "num" }],
+    ],
+  };
+  assert.equal(csv(g), `note,n\r\n"'=HYPERLINK(""http://x"",""y"")",-22\r\n'@SUM(A1),1\r\n'+1 555,2\r\n`);
+  assert.equal(tsv(g, false).split("\n")[0], `'=HYPERLINK("http://x","y")\t-22`);
+  assert.equal(JSON.parse(json(g))[0].note, '=HYPERLINK("http://x","y")');
+});

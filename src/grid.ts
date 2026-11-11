@@ -67,8 +67,11 @@ export interface Host {
   save(name: string, text: string): void;
 }
 
-// NULL and a missing column are empty in CSV and TSV, as spreadsheets read them.
-const plain = (c: Cell) => (c.kind === "null" || c.kind === "absent" ? "" : c.text);
+/** A cell for CSV and TSV, which end up in spreadsheets. NULL and a missing column are empty. Text that a spreadsheet
+ * would run as a formula (`=`, `+`, `-`, `@`, a tab or a return first) gets a leading `'`, so it stays text (OWASP's
+ * CSV injection advice); numbers stay as they are. */
+const plain = (c: Cell) =>
+  c.kind === "null" || c.kind === "absent" ? "" : c.kind === "text" && /^[=+\-@\t\r]/.test(c.text) ? `'${c.text}` : c.text;
 const csvField = (s: string) => (/[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 const oneLine = (s: string) => s.replace(/[\t\r\n]+/g, " ");
 

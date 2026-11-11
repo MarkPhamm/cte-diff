@@ -5,7 +5,7 @@
 - **Sort the results**: click a column header to sort the rows by it, ascending, then descending, then back to dbt's order. A click on a second header sorts by it, and the first breaks ties. No `ORDER BY` and no rerun: the sort acts on the rows already fetched. In a comparison, each changed row's old and new versions stay together.
 - **Filter the results**: the box above the table keeps the rows with a cell that contains what you type, and says how many are left. In a comparison, a changed row stays when either version matches.
 - **Hide columns**: **Columns**, beside the filter, lists the columns with a box to hide each, for a wide CTE where the columns you care about are off screen.
-- **Copy and save the results**: click a cell, Shift-click for a block, or click a row's number for the row; Cmd/Ctrl-C copies it, ready to paste into a spreadsheet. **Copy Markdown** puts the selection, or every row shown, on the clipboard as a table for a pull request. **Save CSV** and **Save JSON** save the rows shown.
+- **Copy and save the results**: click a cell, Shift-click for a block, or click a row's number for the row; Cmd/Ctrl-C copies it, ready to paste into a spreadsheet. **Copy Markdown** puts the selection, or every row shown, on the clipboard as a table for a pull request. **Save CSV** and **Save JSON** save the rows shown. In CSV and copied cells, text that starts like a spreadsheet formula (`=`, `+`, `-`, `@`) gets a leading `'`, so opening or pasting it can't run a formula.
 
 ## 0.11.0
 
