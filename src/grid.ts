@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-/* What the results view does with the rows it holds: sort them by column. Works on the table src/results.ts draws, in
+/* What the results view does with the rows it holds: sort them by column, filter them. Works on the table src/results.ts draws, in
  * place. No `vscode` or `node:` import: the extension's webview (src/view.ts) and the docs site (web/ui.ts) attach it. */
 
 /** One column's sort; a list's last entry sorts first, the earlier ones break ties. */
@@ -42,9 +42,16 @@ export function order(rows: Key[][], sorts: Sort[]): number[] {
     });
 }
 
+/** Whether a row whose cells read `texts` passes `filter`: some cell contains it, case aside. An empty filter passes all. */
+export function matches(texts: string[], filter: string): boolean {
+  const f = filter.trim().toLowerCase();
+  return !f || texts.some((t) => t.toLowerCase().includes(f));
+}
+
 /** Wires the view's table under `root`, if it has one: a click (or Enter) on a column header sorts by it. In a
  * comparison, a changed row's old and new versions (`data-pair`) move together, sorted by the new one (by the old one
- * in a column only the old side has), and each group keeps its own rows. */
+ * in a column only the old side has), and each group keeps its own rows. The filter box keeps the rows with a cell
+ * that contains its text; a pair stays when either version matches, and a group with no match hides. */
 export function attach(root: ParentNode): void {
   const table = root.querySelector<HTMLTableElement>(".scroll table");
   if (!table) return;
@@ -81,6 +88,26 @@ export function attach(root: ParentNode): void {
       for (const i of order(keys, sorts)) tbody.append(...units[i]);
     }
   }
+
+  const filter = root.querySelector<HTMLInputElement>(".tools .filter");
+  const shown = root.querySelector(".tools .shown");
+  filter?.addEventListener("input", () => {
+    let kept = 0;
+    let total = 0;
+    for (const { tbody, units } of bodies) {
+      let any = false;
+      for (const u of units) {
+        // Not the first cell: a row number or −/+ would match a digit or a sign.
+        const keep = matches(u.flatMap((tr) => [...tr.cells].slice(1).map((td) => td.textContent ?? "")), filter.value);
+        for (const tr of u) tr.hidden = !keep;
+        any ||= keep;
+        kept += Number(keep);
+        total++;
+      }
+      tbody.hidden = !any;
+    }
+    if (shown) shown.textContent = filter.value.trim() ? `${kept} of ${total} rows` : "";
+  });
 
   heads.forEach((th, c) => {
     if (!c) return; // the row-number or side column

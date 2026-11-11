@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, nextSorts, order, type Key } from "../src/grid.ts";
+import { compareText, matches, nextSorts, order, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -35,4 +35,12 @@ test("order breaks ties with the earlier sorts, then keeps the original order", 
   // Sorted by date, ties by key: the earlier sort is the tie-breaker.
   assert.deepEqual(order(rows, [{ col: 0, desc: false }, { col: 1, desc: false }]), [2, 3, 1, 0]);
   assert.deepEqual(order(rows, []), [0, 1, 2, 3]);
+});
+
+test("a row passes the filter when a cell contains it, case aside", () => {
+  assert.ok(matches(["11", "Ada", "2024-01-04"], "ada"));
+  assert.ok(matches(["11", "Ada", "2024-01-04"], " 2024-01 "));
+  assert.ok(!matches(["11", "Ada"], "grace"));
+  assert.ok(matches(["11", "NULL"], "null"), "NULL reads as it shows");
+  assert.ok(matches(["11"], "  "), "an empty filter passes every row");
 });
