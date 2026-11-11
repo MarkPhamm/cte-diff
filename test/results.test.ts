@@ -45,6 +45,9 @@ test("comparisonHtml lists a changed row as a pair with its changed cell marked"
     100,
   );
   assert.match(html, /The sides differ: 1 changed row\./);
+  // The key that pairs the rows starts pinned.
+  assert.match(html, /data-pin value="1" checked>pin/);
+  assert.doesNotMatch(html, /data-pin value="2" checked/);
   assert.match(html, /matched on customer_id/);
   // data-pair keeps the two versions together when the view is sorted.
   assert.match(html, /<tr class="l" data-pair="0"><td class="side">−<\/td><td class="num">1<\/td><td class="chg num">120<\/td><\/tr>/);
@@ -61,7 +64,7 @@ test("a table comes with its toolbar; no rows, no toolbar", () => {
   assert.match(rowsHtml("x", [{ id: 1 }], 100), /<input class="filter" type="search"[^>]*>[\s\S]*Copy Markdown[\s\S]*Save CSV[\s\S]*Save JSON[\s\S]*<div class="scroll" tabindex="0">/);
   assert.doesNotMatch(rowsHtml("x", [], 100), /filter/);
   // Columns lists each column with its cell index; cell 0 is the row number.
-  assert.match(rowsHtml("x", [{ id: 1, name: "a" }], 100), /<summary>Columns<\/summary><div class="menu"><label><input type="checkbox" checked value="1">id<\/label><label><input type="checkbox" checked value="2">name<\/label>/);
+  assert.match(rowsHtml("x", [{ id: 1, name: "a" }], 100), /<summary>Columns<\/summary><div class="menu"><label><input type="checkbox" checked value="1">id<\/label><label[^>]*><input type="checkbox" data-pin value="1">pin<\/label><label><input type="checkbox" checked value="2">name<\/label>/);
 });
 
 test("a column header sorts; the row-number column doesn't", () => {

@@ -26,12 +26,18 @@ function columns(rows: Row[]): string[] {
 }
 
 /** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
- * clicked; the toolbar above filters them, hides columns, copies and saves (src/grid.ts). */
-function table(rows: Row[], cols: string[], first: string, body: string): string {
+ * clicked; the toolbar above filters them, hides and pins columns, copies and saves (src/grid.ts). `pins` start pinned. */
+function table(rows: Row[], cols: string[], first: string, body: string, pins: string[] = []): string {
   const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
   const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
   // The column picker's boxes carry the column's cell index (the row number or −/+ is cell 0).
-  const picker = cols.map((c, i) => `<label><input type="checkbox" checked value="${i + 1}">${esc(c)}</label>`).join("");
+  const picker = cols
+    .map(
+      (c, i) =>
+        `<label><input type="checkbox" checked value="${i + 1}">${esc(c)}</label>` +
+        `<label class="muted" title="Keep ${esc(c)} in view when scrolling sideways"><input type="checkbox" data-pin value="${i + 1}"${pins.includes(c) ? " checked" : ""}>pin</label>`,
+    )
+    .join("");
   const tools = `<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><details class="cols"><summary>Columns</summary><div class="menu">${picker}</div></details><span class="shown muted" aria-live="polite"></span>` +
     '<button type="button" data-copy="md" title="The selected cells, or every row shown, as a Markdown table">Copy Markdown</button>' +
     '<button type="button" data-save="csv" title="Every row shown, as a CSV file">Save CSV</button>' +
@@ -136,6 +142,7 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
       ) +
         group(`Only on the left (old): ${n(p.left.length)}`, p.left.map((r) => row("l", r)).join("")) +
         group(`Only on the right (new): ${n(p.right.length)}`, p.right.map((r) => row("r", r)).join("")),
+      p.key, // pinned, so a wide row still shows which row it is
     );
   }
   return body;
@@ -175,7 +182,7 @@ th { position: sticky; top: 0; z-index: 1; background: var(--vscode-editorGroupH
 .tools button:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
 .tools [data-copy] { margin-left: auto; }
 .cols summary::-webkit-details-marker { display: none; }
-.cols .menu { position: absolute; z-index: 3; top: calc(100% + 4px); left: 0; min-width: 180px; max-height: 260px; overflow: auto; padding: 4px 0;
+.cols .menu { display: grid; grid-template-columns: 1fr auto; position: absolute; z-index: 3; top: calc(100% + 4px); left: 0; min-width: 180px; max-height: 260px; overflow: auto; padding: 4px 0;
   background: var(--vscode-menu-background, var(--vscode-sideBar-background)); color: var(--vscode-menu-foreground, inherit);
   border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border)); box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, .16)); }
 .cols label { display: flex; align-items: center; gap: 6px; padding: 2px 10px; white-space: nowrap; font-family: var(--vscode-editor-font-family); }
@@ -197,6 +204,18 @@ tr.l .side { color: var(--vscode-gitDecoration-deletedResourceForeground); }
 tr.r .side { color: var(--vscode-gitDecoration-addedResourceForeground); }
 tr.l .chg { background: var(--vscode-diffEditor-removedTextBackground); }
 tr.r .chg { background: var(--vscode-diffEditor-insertedTextBackground); }
+.scroll td:not([colspan]) { max-width: 40ch; overflow: hidden; text-overflow: ellipsis; }
+dialog { max-width: min(860px, 92vw); max-height: 84vh; padding: 8px 14px 12px; color: var(--vscode-foreground);
+  background: var(--vscode-panel-background, var(--vscode-editor-background, Canvas));
+  border: 1px solid var(--vscode-panel-border); box-shadow: 0 4px 16px var(--vscode-widget-shadow, rgba(0, 0, 0, .25)); }
+dialog::backdrop { background: rgba(0, 0, 0, .3); }
+dialog header { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+dialog header h2 { margin: 0; }
+dialog header button { margin-left: auto; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; font-size: 1.2em; }
+.detail th { position: static; background: none; padding-left: 0; vertical-align: top; }
+.detail td { white-space: pre-wrap; word-break: break-word; vertical-align: top; }
+.detail td.old.chg { background: var(--vscode-diffEditor-removedTextBackground); }
+.detail td.new.chg { background: var(--vscode-diffEditor-insertedTextBackground); }
 .scroll:focus { outline: none; }
 .scroll:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
 .scroll td.sel { background: var(--vscode-editor-selectionBackground, rgba(0, 95, 184, .18)); }
