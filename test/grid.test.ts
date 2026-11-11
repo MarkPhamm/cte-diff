@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, order, tsv, type Grid, type Key } from "../src/grid.ts";
+import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, order, pinRule, pretty, tsv, type Grid, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -100,4 +100,19 @@ test("csv and tsv keep text that starts like a formula as text; numbers and json
   assert.equal(csv(g), `note,n\r\n"'=HYPERLINK(""http://x"",""y"")",-22\r\n'@SUM(A1),1\r\n'+1 555,2\r\n`);
   assert.equal(tsv(g, false).split("\n")[0], `'=HYPERLINK("http://x","y")\t-22`);
   assert.equal(JSON.parse(json(g))[0].note, '=HYPERLINK("http://x","y")');
+});
+
+test("pinRule keeps each pinned column at its offset, its header above the cells", () => {
+  const css = pinRule([{ col: 0, left: 0 }, { col: 2, left: 31.5 }]);
+  assert.match(css, /\.scroll :where\(tr > :nth-child\(1\)\) \{ position: sticky; left: 0px;/);
+  assert.match(css, /\.scroll :where\(tr > :nth-child\(3\)\) \{ position: sticky; left: 31\.5px;/);
+  assert.match(css, /\.scroll th:nth-child\(3\) \{ z-index: 2;/);
+  assert.equal(pinRule([]), "");
+});
+
+test("pretty lays out a JSON object or array and leaves anything else alone", () => {
+  assert.equal(pretty('{"a":1,"b":[2]}'), '{\n  "a": 1,\n  "b": [\n    2\n  ]\n}');
+  assert.equal(pretty("[1]"), "[\n  1\n]");
+  assert.equal(pretty("{not json"), "{not json");
+  assert.equal(pretty("Ada"), "Ada");
 });

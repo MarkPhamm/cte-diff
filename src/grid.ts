@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
-/* What the results view does with the rows it holds: sort them by column, filter them, hide columns, copy and save them. Works on the table src/results.ts draws, in
+/* What the results view does with the rows it holds: sort them by column, filter them, hide and pin columns, copy and
+ * save them, open one in full. Works on the table src/results.ts draws, in
  * place. No `vscode` or `node:` import: the extension's webview (src/view.ts) and the docs site (web/ui.ts) attach it. */
 
 /** One column's sort; a list's last entry sorts first, the earlier ones break ties. */
@@ -111,13 +112,38 @@ export function fileName(heading: string, comparison: boolean, ext: string): str
 export const hideRule = (cols: number[]): string =>
   cols.length ? `${cols.map((c) => `.scroll tr > :nth-child(${c + 1})`).join(", ")} { display: none; }` : "";
 
+/** CSS that keeps the columns at cell indexes `pins` in view when the table scrolls sideways, each `left` px from the
+ * edge. `:where` keeps it weaker than a cell's own background (a change, a selection, a group's label). */
+export function pinRule(pins: { col: number; left: number }[]): string {
+  return pins
+    .map(({ col, left }) => {
+      const at = `:nth-child(${col + 1})`;
+      return (
+        `.scroll :where(tr > ${at}) { position: sticky; left: ${left}px; z-index: 1; background-color: var(--vscode-panel-background, var(--vscode-editor-background, Canvas)); }\n` +
+        `.scroll th${at} { z-index: 2; background-color: var(--vscode-editorGroupHeader-tabsBackground); }`
+      );
+    })
+    .join("\n");
+}
+
+/** `text` laid out on lines when it is a JSON object or array, as a struct or variant column comes back; else as is. */
+export function pretty(text: string): string {
+  if (!/^\s*[[{]/.test(text)) return text;
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
+}
+
 /** Wires the view's table under `root`, if it has one: a click (or Enter) on a column header sorts by it. In a
  * comparison, a changed row's old and new versions (`data-pair`) move together, sorted by the new one (by the old one
  * in a column only the old side has), and each group keeps its own rows. The filter box keeps the rows with a cell
  * that contains its text, in the columns shown; a pair stays when either version matches, and a group with no match
  * hides. Columns lists the columns with a box to hide each. A click selects a cell, Shift-click a block, a click on
  * the row number or −/+ a row; Cmd/Ctrl-C copies the selection. The toolbar copies Markdown and saves CSV or JSON
- * through `host`. */
+ * through `host`. Columns also pins columns; the first (row number or −/+) always stays. A double click opens the row,
+ * or a changed row's two versions, in full; hovering a cut-off value shows it. */
 export function attach(root: Document | ShadowRoot, host: Host): void {
   const table = root.querySelector<HTMLTableElement>(".scroll table");
   if (!table) return;
@@ -208,19 +234,44 @@ export function attach(root: Document | ShadowRoot, host: Host): void {
   }
   filter?.addEventListener("input", refilter);
 
+  const doc = table.ownerDocument;
+  const pins = new Set([0, ...[...root.querySelectorAll<HTMLInputElement>(".cols [data-pin]:checked")].map((b) => Number(b.value))]);
+  const pinStyle = doc.createElement("style");
+  table.after(pinStyle);
+  /** Lays the pinned columns side by side from the left edge, at their current widths. */
+  function repin(): void {
+    let left = 0;
+    const at = [...pins].filter((c) => !hidden.has(c)).sort((a, b) => a - b).map((col) => {
+      const pin = { col, left };
+      left += heads[col].getBoundingClientRect().width;
+      return pin;
+    });
+    pinStyle.textContent = pinRule(at);
+  }
+  repin();
+  new ResizeObserver(repin).observe(table);
+
   const picker = root.querySelector<HTMLDetailsElement>(".tools .cols");
   if (picker) {
-    const style = table.ownerDocument.createElement("style");
+    const style = doc.createElement("style");
     table.after(style);
     const summary = picker.querySelector("summary")!;
     picker.addEventListener("change", (e) => {
       const box = e.target as HTMLInputElement;
-      if (box.checked) hidden.delete(Number(box.value));
-      else hidden.add(Number(box.value));
+      const col = Number(box.value);
+      if (box.dataset.pin !== undefined) {
+        if (box.checked) pins.add(col);
+        else pins.delete(col);
+        repin();
+        return;
+      }
+      if (box.checked) hidden.delete(col);
+      else hidden.add(col);
       select();
       style.textContent = hideRule([...hidden]);
       summary.textContent = hidden.size ? `Columns (${hidden.size} hidden)` : "Columns";
       refilter();
+      repin();
     });
     // The menu closes on Escape or a click elsewhere in the view.
     picker.addEventListener("keydown", (e) => {
@@ -261,6 +312,70 @@ export function attach(root: Document | ShadowRoot, host: Host): void {
     e.clipboardData?.setData("text/plain", tsv(gridOf(block.rows, block.cols, false), false));
     e.preventDefault();
   });
+
+  // A value cut off at the column's width shows in full on hover.
+  table.addEventListener("mouseover", (e) => {
+    const td = (e.target as Element).closest("td");
+    if (td && !td.title && td.scrollWidth > td.clientWidth) td.title = td.textContent ?? "";
+  });
+
+  table.addEventListener("dblclick", (e) => {
+    const tr = (e.target as Element).closest("tr");
+    const unit = bodies.flatMap((b) => b.units).find((u) => tr && u.includes(tr as HTMLTableRowElement));
+    if (unit) detail(unit);
+  });
+  /** A dialog with every column of `unit` (hidden ones too): one value per column, or old and new side by side. */
+  function detail(unit: HTMLTableRowElement[]): void {
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, cls = "") => {
+      const x = doc.createElement(tag);
+      x.className = cls;
+      if (text !== undefined) x.textContent = text;
+      return x;
+    };
+    const first = unit[0];
+    const title = !comparison
+      ? `Row ${first.cells[0].textContent}`
+      : unit.length > 1
+        ? "Changed row"
+        : first.classList.contains("l")
+          ? "Only on the left (old)"
+          : "Only on the right (new)";
+    const dialog = el("dialog");
+    const close = el("button", "×");
+    close.type = "button";
+    close.title = "Close";
+    close.setAttribute("aria-label", "Close");
+    close.addEventListener("click", () => dialog.close());
+    const header = el("header");
+    header.append(el("h2", title), close);
+    const t = el("table", undefined, "detail");
+    if (unit.length > 1) {
+      const head = el("tr");
+      head.append(el("th"), el("th", "old (−)"), el("th", "new (+)"));
+      t.append(head);
+    }
+    heads.forEach((th, c) => {
+      if (!c) return;
+      const tr = el("tr");
+      tr.append(el("th", th.textContent ?? ""));
+      unit.forEach((row, i) => {
+        const td = row.cells[c];
+        const kind = cellOf(td).kind;
+        const changed = td.classList.contains("chg") ? ` chg ${i ? "new" : "old"}` : "";
+        tr.append(el("td", kind === "absent" ? "" : pretty(td.textContent ?? ""), `${kind === "text" ? "" : kind}${changed}`.trim()));
+      });
+      t.append(tr);
+    });
+    dialog.append(header, t);
+    (root instanceof Document ? root.body : root).append(dialog);
+    dialog.addEventListener("close", () => dialog.remove());
+    // A click on the backdrop, outside the dialog's box, closes it.
+    dialog.addEventListener("click", (e) => {
+      const r = dialog.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
+    });
+    dialog.showModal();
+  }
 
   const heading = root.querySelector("h2")?.textContent ?? "";
   root.querySelector(".tools")?.addEventListener("click", (e) => {

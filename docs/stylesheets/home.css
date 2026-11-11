@@ -145,7 +145,7 @@
   --vscode-font-family: var(--bp-sans); --vscode-font-size: 13px; --vscode-foreground: var(--bp-ink);
   --vscode-editor-font-family: var(--bp-mono); --vscode-editor-font-size: 12px; --vscode-panel-border: var(--bp-rule);
   --vscode-editorGroupHeader-tabsBackground: var(--bp-paper); --vscode-descriptionForeground: var(--bp-ink-3);
-  --vscode-badge-background: var(--bp-ink-a05); --vscode-badge-foreground: var(--bp-ink); --vscode-sideBar-background: var(--bp-paper);
+  --vscode-badge-background: var(--bp-ink-a05); --vscode-badge-foreground: var(--bp-ink); --vscode-sideBar-background: var(--bp-paper); --vscode-panel-background: var(--bp-sheet);
   --vscode-diffEditor-removedTextBackground: var(--cd-removed-mark); --vscode-diffEditor-insertedTextBackground: var(--cd-added-mark);
   --vscode-gitDecoration-deletedResourceForeground: var(--cd-removed); --vscode-gitDecoration-addedResourceForeground: var(--cd-added);
   --vscode-testing-iconPassed: var(--cd-added); --vscode-errorForeground: var(--cd-removed); --vscode-editorWarning-foreground: var(--cd-changed);
