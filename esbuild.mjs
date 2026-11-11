@@ -17,7 +17,11 @@ const common = {
 const builds = site
   ? // The docs site's playground and live demo: the parser and the results view, bundled for the browser.
     ["playground", "demo"].map((name) => ({ entryPoints: [`web/${name}.ts`], outfile: `docs/javascripts/${name}.js`, bundle: true, platform: "browser", format: "iife", target: "es2020", minify: true, logLevel: "info" }))
-  : [{ ...common, entryPoints: ["src/extension.ts"], outfile: "out/extension.js" }];
+  : [
+      { ...common, entryPoints: ["src/extension.ts"], outfile: "out/extension.js" },
+      // The results view's script, run in the webview.
+      { ...common, entryPoints: ["src/view.ts"], outfile: "out/view.js", platform: "browser", format: "iife", target: "es2020" },
+    ];
 if (!production && !site) builds.push({ ...common, entryPoints: ["test/integration/suite.ts"], outfile: "out/test/suite.js" });
 
 if (watch) {

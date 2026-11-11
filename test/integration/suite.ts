@@ -1,5 +1,6 @@
 // Runs inside VS Code (see run.mjs): a diff of old.sql and new.sql gets CodeLens on both sides and fills the sidebar.
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FilesTree } from "../../src/files.ts";
@@ -22,6 +23,8 @@ export async function run(): Promise<void> {
   const ext = vscode.extensions.getExtension("MarkPhamm.cte-diff")!;
   await vscode.commands.executeCommand("vscode.diff", left, right, "old ↔ new");
   const { tree, files } = (await ext.activate()) as { tree: CteTree; files: FilesTree };
+  // The results view's sort script, which src/panel.ts loads from out/.
+  assert.ok(fs.existsSync(path.join(ext.extensionPath, "out", "view.js")), "out/view.js is built");
 
   const lenses = await until(async () => {
     const l = await vscode.commands.executeCommand<vscode.CodeLens[]>("vscode.executeCodeLensProvider", left);

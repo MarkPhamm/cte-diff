@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0
+
+- **Sort the results**: click a column header to sort the rows by it, ascending, then descending, then back to dbt's order. A click on a second header sorts by it, and the first breaks ties. No `ORDER BY` and no rerun: the sort acts on the rows already fetched. In a comparison, each changed row's old and new versions stay together.
+
 ## 0.11.0
 
 - **`cteDiff.dbtArgs`**: extra arguments for every dbt run, such as `["--vars", "{cob_date: 20271015}"]` for a model that reads `var()`. Without them dbt uses the `var()` default, which can return the wrong rows without an error. The results heading and **Check Setup** show them.

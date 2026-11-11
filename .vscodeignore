@@ -1,5 +1,6 @@
 **
 !out/extension.js
+!out/view.js
 !media/icon.png
 !package.json
 !README.md

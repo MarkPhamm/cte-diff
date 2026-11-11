@@ -60,6 +60,7 @@ Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal. U
 - A comparison shows each side's row count and how many rows are only on the left or only on the right. Then it lists those rows, marked **−** (left, old) and **+** (right, new).
 - A row that changed is listed as a pair: its old version above its new one, with the cells that changed highlighted. Rows pair up by their id columns: those named `id`, or ending in `_id`, `_key`, `_pk` or `_sk`, when each id is unique on both sides. Rows with no partner are listed after the pairs.
 - When the two sides have different columns, it says which.
+- Click a column header to sort the rows by it: ascending, then descending, then back to dbt's order. Click another header to sort by that one, with the earlier one breaking ties. Nothing reruns: the sort acts on the rows already fetched, up to `cteDiff.limit`. In a comparison, a changed row's old and new versions move together, and each group keeps its own rows.
 
 A preview of `payments`, the CTE that changed:
 

@@ -46,14 +46,21 @@ test("comparisonHtml lists a changed row as a pair with its changed cell marked"
   );
   assert.match(html, /The sides differ: 1 changed row\./);
   assert.match(html, /matched on customer_id/);
-  assert.match(html, /<tr class="l"><td class="side">−<\/td><td class="num">1<\/td><td class="chg num">120<\/td><\/tr>/);
-  assert.match(html, /<tr class="r"><td class="side">\+<\/td><td class="num">1<\/td><td class="chg num">160<\/td><\/tr>/);
+  // data-pair keeps the two versions together when the view is sorted.
+  assert.match(html, /<tr class="l" data-pair="0"><td class="side">−<\/td><td class="num">1<\/td><td class="chg num">120<\/td><\/tr>/);
+  assert.match(html, /<tr class="r" data-pair="0"><td class="side">\+<\/td><td class="num">1<\/td><td class="chg num">160<\/td><\/tr>/);
 });
 
 test("comparisonHtml says when both sides match", () => {
   const html = comparisonHtml("a", { counts: { left: 2, right: 2, only_left: 0, only_right: 0 }, rows: [] }, 100);
   assert.match(html, /Both sides return the same rows/);
   assert.doesNotMatch(html, /<table/);
+});
+
+test("a column header sorts; the row-number column doesn't", () => {
+  const html = rowsHtml("x", [{ id: 1, name: "a" }], 100);
+  assert.match(html, /<th class="idx"><\/th><th tabindex="0" title="Sort" class="num">id<\/th><th tabindex="0" title="Sort">name<\/th>/);
+  assert.match(rowsHtml("x", [{ id: 1 }, { id: 2 }], 2), /The first 2 rows; sorting acts on these\./);
 });
 
 test("rowsHtml escapes values and marks NULLs", () => {
