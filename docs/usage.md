@@ -62,6 +62,7 @@ Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal. U
 - When the two sides have different columns, it says which.
 - Click a column header to sort the rows by it: ascending, then descending, then back to dbt's order. Click another header to sort by that one, with the earlier one breaking ties. Nothing reruns: the sort acts on the rows already fetched, up to `cteDiff.limit`. In a comparison, a changed row's old and new versions move together, and each group keeps its own rows.
 - Type in **Filter rows** above the table to keep the rows with a cell that contains the text, case aside. Beside it, how many rows are left: `2 of 8 rows`. In a comparison, a changed row stays when either version matches.
+- **Columns**, beside the filter, lists the columns with a box to hide each. The filter then looks only at the columns shown.
 
 A preview of `payments`, the CTE that changed:
 

@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-/* What the results view does with the rows it holds: sort them by column, filter them. Works on the table src/results.ts draws, in
+/* What the results view does with the rows it holds: sort them by column, filter them, hide columns. Works on the table src/results.ts draws, in
  * place. No `vscode` or `node:` import: the extension's webview (src/view.ts) and the docs site (web/ui.ts) attach it. */
 
 /** One column's sort; a list's last entry sorts first, the earlier ones break ties. */
@@ -48,11 +48,16 @@ export function matches(texts: string[], filter: string): boolean {
   return !f || texts.some((t) => t.toLowerCase().includes(f));
 }
 
+/** CSS that hides the table's columns at cell indexes `cols`. A group's label row has one cell, so it stays. */
+export const hideRule = (cols: number[]): string =>
+  cols.length ? `${cols.map((c) => `.scroll tr > :nth-child(${c + 1})`).join(", ")} { display: none; }` : "";
+
 /** Wires the view's table under `root`, if it has one: a click (or Enter) on a column header sorts by it. In a
  * comparison, a changed row's old and new versions (`data-pair`) move together, sorted by the new one (by the old one
  * in a column only the old side has), and each group keeps its own rows. The filter box keeps the rows with a cell
- * that contains its text; a pair stays when either version matches, and a group with no match hides. */
-export function attach(root: ParentNode): void {
+ * that contains its text, in the columns shown; a pair stays when either version matches, and a group with no match
+ * hides. Columns lists the columns with a box to hide each. */
+export function attach(root: Document | ShadowRoot): void {
   const table = root.querySelector<HTMLTableElement>(".scroll table");
   if (!table) return;
   const heads = [...table.querySelectorAll<HTMLTableCellElement>("thead th")];
@@ -89,16 +94,19 @@ export function attach(root: ParentNode): void {
     }
   }
 
+  const hidden = new Set<number>();
   const filter = root.querySelector<HTMLInputElement>(".tools .filter");
   const shown = root.querySelector(".tools .shown");
-  filter?.addEventListener("input", () => {
+  function refilter(): void {
+    if (!filter) return;
     let kept = 0;
     let total = 0;
     for (const { tbody, units } of bodies) {
       let any = false;
       for (const u of units) {
         // Not the first cell: a row number or −/+ would match a digit or a sign.
-        const keep = matches(u.flatMap((tr) => [...tr.cells].slice(1).map((td) => td.textContent ?? "")), filter.value);
+        const texts = u.flatMap((tr) => [...tr.cells].filter((_, c) => c && !hidden.has(c)).map((td) => td.textContent ?? ""));
+        const keep = matches(texts, filter.value);
         for (const tr of u) tr.hidden = !keep;
         any ||= keep;
         kept += Number(keep);
@@ -107,7 +115,32 @@ export function attach(root: ParentNode): void {
       tbody.hidden = !any;
     }
     if (shown) shown.textContent = filter.value.trim() ? `${kept} of ${total} rows` : "";
-  });
+  }
+  filter?.addEventListener("input", refilter);
+
+  const picker = root.querySelector<HTMLDetailsElement>(".tools .cols");
+  if (picker) {
+    const style = table.ownerDocument.createElement("style");
+    table.after(style);
+    const summary = picker.querySelector("summary")!;
+    picker.addEventListener("change", (e) => {
+      const box = e.target as HTMLInputElement;
+      if (box.checked) hidden.delete(Number(box.value));
+      else hidden.add(Number(box.value));
+      style.textContent = hideRule([...hidden]);
+      summary.textContent = hidden.size ? `Columns (${hidden.size} hidden)` : "Columns";
+      refilter();
+    });
+    // The menu closes on Escape or a click elsewhere in the view.
+    picker.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !picker.open) return;
+      picker.open = false;
+      summary.focus();
+    });
+    root.addEventListener("click", (e) => {
+      if (!picker.contains(e.target as Node)) picker.open = false;
+    });
+  }
 
   heads.forEach((th, c) => {
     if (!c) return; // the row-number or side column

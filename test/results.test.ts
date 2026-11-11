@@ -60,6 +60,8 @@ test("comparisonHtml says when both sides match", () => {
 test("a table comes with a filter box; no rows, no box", () => {
   assert.match(rowsHtml("x", [{ id: 1 }], 100), /<input class="filter" type="search"[^>]*>[\s\S]*<div class="scroll">/);
   assert.doesNotMatch(rowsHtml("x", [], 100), /filter/);
+  // Columns lists each column with its cell index; cell 0 is the row number.
+  assert.match(rowsHtml("x", [{ id: 1, name: "a" }], 100), /<summary>Columns<\/summary><div class="menu"><label><input type="checkbox" checked value="1">id<\/label><label><input type="checkbox" checked value="2">name<\/label>/);
 });
 
 test("a column header sorts; the row-number column doesn't", () => {
