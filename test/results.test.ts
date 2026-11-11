@@ -57,10 +57,15 @@ test("comparisonHtml says when both sides match", () => {
   assert.doesNotMatch(html, /<table/);
 });
 
+test("a table comes with a filter box; no rows, no box", () => {
+  assert.match(rowsHtml("x", [{ id: 1 }], 100), /<input class="filter" type="search"[^>]*>[\s\S]*<div class="scroll">/);
+  assert.doesNotMatch(rowsHtml("x", [], 100), /filter/);
+});
+
 test("a column header sorts; the row-number column doesn't", () => {
   const html = rowsHtml("x", [{ id: 1, name: "a" }], 100);
   assert.match(html, /<th class="idx"><\/th><th tabindex="0" title="Sort" class="num">id<\/th><th tabindex="0" title="Sort">name<\/th>/);
-  assert.match(rowsHtml("x", [{ id: 1 }, { id: 2 }], 2), /The first 2 rows; sorting acts on these\./);
+  assert.match(rowsHtml("x", [{ id: 1 }, { id: 2 }], 2), /The first 2 rows; sorting and filtering act on these\./);
 });
 
 test("rowsHtml escapes values and marks NULLs", () => {

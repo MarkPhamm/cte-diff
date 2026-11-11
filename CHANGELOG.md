@@ -3,6 +3,7 @@
 ## 0.12.0
 
 - **Sort the results**: click a column header to sort the rows by it, ascending, then descending, then back to dbt's order. A click on a second header sorts by it, and the first breaks ties. No `ORDER BY` and no rerun: the sort acts on the rows already fetched. In a comparison, each changed row's old and new versions stay together.
+- **Filter the results**: the box above the table keeps the rows with a cell that contains what you type, and says how many are left. In a comparison, a changed row stays when either version matches.
 
 ## 0.11.0
 

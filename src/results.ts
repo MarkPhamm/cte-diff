@@ -26,11 +26,12 @@ function columns(rows: Row[]): string[] {
 }
 
 /** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
- * clicked (src/grid.ts). */
+ * clicked, and the box above filters them (src/grid.ts). */
 function table(rows: Row[], cols: string[], first: string, body: string): string {
   const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
   const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
-  return `<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
+  const tools = '<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><span class="shown muted" aria-live="polite"></span></div>';
+  return `${tools}<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
 }
 
 /** The view's heading: what ran, where and how long it took (`meta`), and the counts under it. */
@@ -73,7 +74,7 @@ export function setupHtml(checks: [string, string][], ok: boolean, output: strin
 export function rowsHtml(what: string, rows: Row[], limit: number, meta?: string): string {
   const cols = columns(rows);
   let body = heading(what, [stat(plural(rows.length, "row")), stat(plural(cols.length, "column"))], meta);
-  if (rows.length >= limit) body += `<p class="muted">The first ${plural(limit, "row")}; sorting acts on these. Raise <code>cteDiff.limit</code> for more.</p>`;
+  if (rows.length >= limit) body += `<p class="muted">The first ${plural(limit, "row")}; sorting and filtering act on these. Raise <code>cteDiff.limit</code> for more.</p>`;
   if (rows.length) {
     const trs = rows.map((r, i) => `<tr><td class="idx">${i + 1}</td>${cols.map((c) => cell(r, c)).join("")}</tr>`).join("");
     body += table(rows, cols, "idx", `<tbody>${trs}</tbody>`);
@@ -112,7 +113,7 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
   }
   const total = cutFrom(c, limit);
   if (total !== undefined) {
-    body += `<p class="muted">The first ${n(c.rows.length)}${k ? ` of ${n(total)}` : ""} differing rows; sorting acts on these. Raise <code>cteDiff.limit</code> for more.</p>`;
+    body += `<p class="muted">The first ${n(c.rows.length)}${k ? ` of ${n(total)}` : ""} differing rows; sorting and filtering act on these. Raise <code>cteDiff.limit</code> for more.</p>`;
   }
   if (c.rows.length) {
     const cols = [...p.key, ...columns(c.rows.map((r) => r.row)).filter((x) => !p.key.includes(x))];
@@ -156,6 +157,10 @@ code { font-family: var(--vscode-editor-font-family); }
 .scroll { overflow: auto; max-height: var(--results-max, calc(100vh - 120px)); border: 1px solid var(--vscode-panel-border); }
 table { border-collapse: collapse; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); }
 th { position: sticky; top: 0; z-index: 1; background: var(--vscode-editorGroupHeader-tabsBackground); text-align: left; font-weight: 600; }
+.tools { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.filter { width: 220px; max-width: 100%; padding: 3px 6px; font: inherit; color: inherit; background: var(--vscode-input-background, transparent);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; }
+.filter:focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
 th[tabindex] { cursor: pointer; user-select: none; }
 th[data-sort=asc]::after { content: " ▲"; } th[data-sort=desc]::after { content: " ▼"; }
 th[data-sort]:not([aria-sort])::after { opacity: .45; } /* a tie-breaker: an earlier sort */
