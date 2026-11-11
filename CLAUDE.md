@@ -8,7 +8,7 @@ Run `npm run typecheck && npm test`. Tests need Node 22+ (Node runs the `.ts` fi
 
 ## Layout rules the code doesn't state
 
-- **Pure modules**: `src/cte.ts` (parser), `src/query.ts` (SQL building, `dbt show` output parsing), `src/results.ts` (the results view's HTML and CSS), `src/grid.ts` (the results view's script: sorting, filtering), `src/dbt.ts` (running dbt) import nothing from `vscode`, so `node --test` loads them directly. Keep logic there and test it in `test/`; the other `src/` files are thin VS Code wiring.
+- **Pure modules**: `src/cte.ts` (parser), `src/query.ts` (SQL building, `dbt show` output parsing), `src/results.ts` (the results view's HTML and CSS), `src/grid.ts` (the results view's script: sorting, filtering, hiding columns), `src/dbt.ts` (running dbt) import nothing from `vscode`, so `node --test` loads them directly. Keep logic there and test it in `test/`; the other `src/` files are thin VS Code wiring.
 - `src/cte.ts`, `src/query.ts`, `src/results.ts` and `src/grid.ts` are also bundled for the browser into the docs site (`web/playground.ts`, `web/demo.ts`); `src/grid.ts` also runs in the results webview, as `out/view.js` (`src/view.ts`). They stay free of `node:` imports.
 - `web/sample.ts` holds the site's example and its made-up DuckDB tables. The hero demo's rows (`web/demo-rows.json`) come from running the extension's SQL on them: `node scripts/demo-rows.ts` (needs the `duckdb` CLI); rerun it after changing `web/sample.ts` or the comparison SQL. The playground runs the same SQL live, on duckdb-wasm loaded from jsDelivr (pinned in `web/playground.ts`).
 - TypeScript is erasable-only (`erasableSyntaxOnly`): type annotations, no `enum`, `namespace` or parameter properties. Relative imports carry the `.ts` extension.

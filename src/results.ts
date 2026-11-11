@@ -26,11 +26,13 @@ function columns(rows: Row[]): string[] {
 }
 
 /** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
- * clicked, and the box above filters them (src/grid.ts). */
+ * clicked; the box above filters them, and Columns hides some (src/grid.ts). */
 function table(rows: Row[], cols: string[], first: string, body: string): string {
   const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
   const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
-  const tools = '<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><span class="shown muted" aria-live="polite"></span></div>';
+  // The column picker's boxes carry the column's cell index (the row number or −/+ is cell 0).
+  const picker = cols.map((c, i) => `<label><input type="checkbox" checked value="${i + 1}">${esc(c)}</label>`).join("");
+  const tools = `<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><details class="cols"><summary>Columns</summary><div class="menu">${picker}</div></details><span class="shown muted" aria-live="polite"></span></div>`;
   return `${tools}<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
 }
 
@@ -157,10 +159,21 @@ code { font-family: var(--vscode-editor-font-family); }
 .scroll { overflow: auto; max-height: var(--results-max, calc(100vh - 120px)); border: 1px solid var(--vscode-panel-border); }
 table { border-collapse: collapse; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); }
 th { position: sticky; top: 0; z-index: 1; background: var(--vscode-editorGroupHeader-tabsBackground); text-align: left; font-weight: 600; }
-.tools { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
-.filter { width: 220px; max-width: 100%; padding: 3px 6px; font: inherit; color: inherit; background: var(--vscode-input-background, transparent);
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 6px; }
+.shown { white-space: nowrap; }
+.filter { width: 220px; min-width: 0; flex: 0 1 auto; padding: 3px 6px; font: inherit; color: inherit; background: var(--vscode-input-background, transparent);
   border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; }
-.filter:focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.filter:focus, .cols summary:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
+.cols { position: relative; }
+.cols summary { padding: 3px 8px; border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; cursor: pointer;
+  list-style: none; user-select: none; white-space: nowrap; }
+.cols summary::-webkit-details-marker { display: none; }
+.cols .menu { position: absolute; z-index: 3; top: calc(100% + 4px); left: 0; min-width: 180px; max-height: 260px; overflow: auto; padding: 4px 0;
+  background: var(--vscode-menu-background, var(--vscode-sideBar-background)); color: var(--vscode-menu-foreground, inherit);
+  border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border)); box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, .16)); }
+.cols label { display: flex; align-items: center; gap: 6px; padding: 2px 10px; white-space: nowrap; font-family: var(--vscode-editor-font-family); }
+.cols input { accent-color: var(--vscode-button-background, auto); }
+.cols label:hover { background: var(--vscode-list-hoverBackground, var(--vscode-editorGroupHeader-tabsBackground)); }
 th[tabindex] { cursor: pointer; user-select: none; }
 th[data-sort=asc]::after { content: " ▲"; } th[data-sort=desc]::after { content: " ▼"; }
 th[data-sort]:not([aria-sort])::after { opacity: .45; } /* a tie-breaker: an earlier sort */

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, matches, nextSorts, order, type Key } from "../src/grid.ts";
+import { compareText, hideRule, matches, nextSorts, order, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -43,4 +43,9 @@ test("a row passes the filter when a cell contains it, case aside", () => {
   assert.ok(!matches(["11", "Ada"], "grace"));
   assert.ok(matches(["11", "NULL"], "null"), "NULL reads as it shows");
   assert.ok(matches(["11"], "  "), "an empty filter passes every row");
+});
+
+test("hideRule hides the picked columns by cell position, and nothing when none are picked", () => {
+  assert.equal(hideRule([2, 4]), ".scroll tr > :nth-child(3), .scroll tr > :nth-child(5) { display: none; }");
+  assert.equal(hideRule([]), "");
 });
