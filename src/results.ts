@@ -26,14 +26,17 @@ function columns(rows: Row[]): string[] {
 }
 
 /** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
- * clicked; the box above filters them, and Columns hides some (src/grid.ts). */
+ * clicked; the toolbar above filters them, hides columns, copies and saves (src/grid.ts). */
 function table(rows: Row[], cols: string[], first: string, body: string): string {
   const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
   const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
   // The column picker's boxes carry the column's cell index (the row number or −/+ is cell 0).
   const picker = cols.map((c, i) => `<label><input type="checkbox" checked value="${i + 1}">${esc(c)}</label>`).join("");
-  const tools = `<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><details class="cols"><summary>Columns</summary><div class="menu">${picker}</div></details><span class="shown muted" aria-live="polite"></span></div>`;
-  return `${tools}<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
+  const tools = `<div class="tools"><input class="filter" type="search" placeholder="Filter rows" aria-label="Filter rows"><details class="cols"><summary>Columns</summary><div class="menu">${picker}</div></details><span class="shown muted" aria-live="polite"></span>` +
+    '<button type="button" data-copy="md" title="The selected cells, or every row shown, as a Markdown table">Copy Markdown</button>' +
+    '<button type="button" data-save="csv" title="Every row shown, as a CSV file">Save CSV</button>' +
+    '<button type="button" data-save="json" title="Every row shown, as a JSON file">Save JSON</button></div>';
+  return `${tools}<div class="scroll" tabindex="0"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
 }
 
 /** The view's heading: what ran, where and how long it took (`meta`), and the counts under it. */
@@ -165,8 +168,12 @@ th { position: sticky; top: 0; z-index: 1; background: var(--vscode-editorGroupH
   border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; }
 .filter:focus, .cols summary:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
 .cols { position: relative; }
-.cols summary { padding: 3px 8px; border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; cursor: pointer;
-  list-style: none; user-select: none; white-space: nowrap; }
+.cols summary, .tools button { padding: 3px 8px; font: inherit; color: inherit; background: var(--vscode-button-secondaryBackground, transparent);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 2px; cursor: pointer; list-style: none; user-select: none;
+  white-space: nowrap; }
+.cols summary:hover, .tools button:hover { background: var(--vscode-button-secondaryHoverBackground, var(--vscode-editorGroupHeader-tabsBackground)); }
+.tools button:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
+.tools [data-copy] { margin-left: auto; }
 .cols summary::-webkit-details-marker { display: none; }
 .cols .menu { position: absolute; z-index: 3; top: calc(100% + 4px); left: 0; min-width: 180px; max-height: 260px; overflow: auto; padding: 4px 0;
   background: var(--vscode-menu-background, var(--vscode-sideBar-background)); color: var(--vscode-menu-foreground, inherit);
@@ -190,6 +197,9 @@ tr.l .side { color: var(--vscode-gitDecoration-deletedResourceForeground); }
 tr.r .side { color: var(--vscode-gitDecoration-addedResourceForeground); }
 tr.l .chg { background: var(--vscode-diffEditor-removedTextBackground); }
 tr.r .chg { background: var(--vscode-diffEditor-insertedTextBackground); }
+.scroll:focus { outline: none; }
+.scroll:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--vscode-foreground)); outline-offset: -1px; }
+.scroll td.sel { background: var(--vscode-editor-selectionBackground, rgba(0, 95, 184, .18)); }
 .warn { color: var(--vscode-editorWarning-foreground); }
 .error { color: var(--vscode-errorForeground); white-space: pre-wrap; }
 .progress { position: absolute; top: 0; left: 0; right: 0; height: 2px; overflow: hidden; }

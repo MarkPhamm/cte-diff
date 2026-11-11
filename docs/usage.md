@@ -63,6 +63,8 @@ Results open in the **CTE Diff** tab of the bottom panel, beside the Terminal. U
 - Click a column header to sort the rows by it: ascending, then descending, then back to dbt's order. Click another header to sort by that one, with the earlier one breaking ties. Nothing reruns: the sort acts on the rows already fetched, up to `cteDiff.limit`. In a comparison, a changed row's old and new versions move together, and each group keeps its own rows.
 - Type in **Filter rows** above the table to keep the rows with a cell that contains the text, case aside. Beside it, how many rows are left: `2 of 8 rows`. In a comparison, a changed row stays when either version matches.
 - **Columns**, beside the filter, lists the columns with a box to hide each. The filter then looks only at the columns shown.
+- Click a cell to select it, Shift-click another to select the block between them, or click a row's number (or −/+) to select the row. Cmd/Ctrl-C copies the selection as tab-separated values, which paste into a spreadsheet's cells.
+- **Copy Markdown** copies the selection, or every row shown, as a Markdown table for a pull request. **Save CSV** and **Save JSON** save every row shown, sorted and filtered as you see them. A comparison's file has a `side` column, `left` or `right`.
 
 A preview of `payments`, the CTE that changed:
 

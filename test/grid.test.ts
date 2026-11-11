@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, hideRule, matches, nextSorts, order, type Key } from "../src/grid.ts";
+import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, order, tsv, type Grid, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -48,4 +48,42 @@ test("a row passes the filter when a cell contains it, case aside", () => {
 test("hideRule hides the picked columns by cell position, and nothing when none are picked", () => {
   assert.equal(hideRule([2, 4]), ".scroll tr > :nth-child(3), .scroll tr > :nth-child(5) { display: none; }");
   assert.equal(hideRule([]), "");
+});
+
+const grid: Grid = {
+  cols: ["side", "id", "note", "amount"],
+  rows: [
+    [{ text: "left", kind: "text" }, { text: "1", kind: "num" }, { text: 'say "hi", then\nleave', kind: "text" }, { text: "NULL", kind: "null" }],
+    [{ text: "right", kind: "text" }, { text: "1", kind: "num" }, { text: "a|b", kind: "text" }, { text: "", kind: "absent" }],
+  ],
+};
+
+test("csv quotes what needs it and leaves NULL and a missing column empty", () => {
+  assert.equal(csv(grid), 'side,id,note,amount\r\nleft,1,"say ""hi"", then\nleave",\r\nright,1,a|b,\r\n');
+});
+
+test("tsv keeps each value on one line, with or without the header", () => {
+  assert.equal(tsv(grid), "side\tid\tnote\tamount\nleft\t1\tsay \"hi\", then leave\t\nright\t1\ta|b\t");
+  assert.equal(tsv({ cols: ["id"], rows: [[{ text: "7", kind: "num" }]] }, false), "7");
+});
+
+test("markdown escapes pipes, shows NULL, right-aligns numbers", () => {
+  assert.equal(
+    markdown(grid),
+    ["| side | id | note | amount |", "| --- | ---: | --- | --- |", '| left | 1 | say "hi", then leave | NULL |', "| right | 1 | a\\|b |  |"].join("\n"),
+  );
+});
+
+test("json keeps numbers and NULL as values and leaves out a missing column", () => {
+  assert.deepEqual(JSON.parse(json(grid)), [
+    { side: "left", id: 1, note: 'say "hi", then\nleave', amount: null },
+    { side: "right", id: 1, note: "a|b" },
+  ]);
+});
+
+test("fileName takes the CTE's name from the heading", () => {
+  assert.equal(fileName("order_payments (orders.sql)", false, "csv"), "order_payments.csv");
+  assert.equal(fileName("final", true, "json"), "final-compare.json");
+  assert.equal(fileName("the whole query (a b.sql)", false, "csv"), "the_whole_query.csv");
+  assert.equal(fileName("…", false, "csv"), "results.csv");
 });

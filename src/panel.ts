@@ -1,6 +1,8 @@
 /* The Results view in the bottom panel, beside the Terminal: HTML redrawn for each state, plus one script (out/view.js,
- * from src/view.ts) that sorts the rows. The HTML itself comes from src/results.ts, which the docs site's demo shares. */
+ * from src/view.ts) that sorts, filters, copies and saves the rows. The HTML itself comes from src/results.ts, which the docs site's demo shares. */
 import { randomBytes } from "node:crypto";
+import * as os from "node:os";
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { type Comparison, type Row } from "./query.ts";
 import { SUPPORTED } from "./query.ts";
@@ -19,6 +21,7 @@ export function resultsProvider(extensionUri: vscode.Uri): vscode.WebviewViewPro
       // enableCommandUris: the Check Setup link under an error.
       v.webview.options = { enableScripts: true, enableCommandUris: ["cteDiff.checkSetup"], localResourceRoots: [out] };
       v.onDidDispose(() => (view = undefined));
+      v.webview.onDidReceiveMessage(received);
       v.description = last.title;
       v.webview.html = page(
         v.webview,
@@ -28,6 +31,23 @@ export function resultsProvider(extensionUri: vscode.Uri): vscode.WebviewViewPro
       );
     },
   };
+}
+
+/** What the view's script asks for: text on the clipboard, or a file saved where the user picks. */
+async function received(m: { copy?: unknown; save?: { name?: unknown; text?: unknown } }): Promise<void> {
+  if (typeof m.copy === "string") {
+    await vscode.env.clipboard.writeText(m.copy);
+    vscode.window.setStatusBarMessage("CTE Diff: copied as Markdown", 3000);
+  }
+  const { name, text } = m.save ?? {};
+  if (typeof name !== "string" || typeof text !== "string") return;
+  const file = path.basename(name);
+  const ext = path.extname(file).slice(1);
+  const folder = vscode.workspace.workspaceFolders?.[0]?.uri ?? vscode.Uri.file(os.homedir());
+  const uri = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.joinPath(folder, file), filters: { [ext.toUpperCase()]: [ext] } });
+  if (!uri) return;
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
+  vscode.window.setStatusBarMessage(`CTE Diff: saved ${path.basename(uri.fsPath)}`, 3000);
 }
 
 function show(title: string, body: string): void {
