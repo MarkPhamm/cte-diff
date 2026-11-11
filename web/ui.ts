@@ -3,6 +3,7 @@
 /* What the landing page's live demo (web/demo.ts) and playground (web/playground.ts) both draw: coloured SQL, a line
  * diff, where the extension puts its buttons, the sidebar's list, and the results panel. */
 import { parse, type Status } from "../src/cte.ts";
+import { attach } from "../src/grid.ts";
 import { RESULTS_CSS } from "../src/results.ts";
 
 export type Side = "left" | "right";
@@ -98,7 +99,7 @@ export function summary(statuses: { status: Status }[]): string {
 const MOTION = `@media (prefers-reduced-motion: no-preference) {
   h2, .stats, .verdict, .warn, .scroll, pre { animation: rise .3s cubic-bezier(.2,.8,.2,1) both; }
   .stats { animation-delay: .05s } .verdict, .warn { animation-delay: .1s } .scroll { animation-delay: .14s }
-  tbody tr { animation: rise .3s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.18s + var(--i, 0) * 40ms); }
+  table:not([data-sorted]) tbody tr { animation: rise .3s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.18s + var(--i, 0) * 40ms); }
   @keyframes rise { from { opacity: 0; transform: translateY(4px); } } }
 .sql { margin: 0; font: var(--vscode-editor-font-size)/1.6 var(--vscode-editor-font-family); white-space: pre; }
 .sql b { font-weight: 600; } .sql u { text-decoration: none; color: var(--vscode-descriptionForeground); }
@@ -110,5 +111,6 @@ export function resultsPanel(host: HTMLElement): (html: string) => void {
   return (html) => {
     shadow.innerHTML = `<style>${RESULTS_CSS}${MOTION}</style>${html}`;
     shadow.querySelectorAll<HTMLElement>("tbody tr").forEach((tr, i) => tr.style.setProperty("--i", String(i)));
+    attach(shadow);
   };
 }

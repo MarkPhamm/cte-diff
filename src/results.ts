@@ -25,10 +25,11 @@ function columns(rows: Row[]): string[] {
   return [...seen];
 }
 
-/** A table under a sticky header; a column of numbers is right-aligned, header included. */
+/** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
+ * clicked (src/grid.ts). */
 function table(rows: Row[], cols: string[], first: string, body: string): string {
   const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
-  const head = cols.map((c) => `<th${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
+  const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
   return `<div class="scroll"><table><thead><tr><th class="${first}"></th>${head}</tr></thead>${body}</table></div>`;
 }
 
@@ -72,7 +73,7 @@ export function setupHtml(checks: [string, string][], ok: boolean, output: strin
 export function rowsHtml(what: string, rows: Row[], limit: number, meta?: string): string {
   const cols = columns(rows);
   let body = heading(what, [stat(plural(rows.length, "row")), stat(plural(cols.length, "column"))], meta);
-  if (rows.length >= limit) body += `<p class="muted">The first ${plural(limit, "row")}. Raise <code>cteDiff.limit</code> for more.</p>`;
+  if (rows.length >= limit) body += `<p class="muted">The first ${plural(limit, "row")}; sorting acts on these. Raise <code>cteDiff.limit</code> for more.</p>`;
   if (rows.length) {
     const trs = rows.map((r, i) => `<tr><td class="idx">${i + 1}</td>${cols.map((c) => cell(r, c)).join("")}</tr>`).join("");
     body += table(rows, cols, "idx", `<tbody>${trs}</tbody>`);
@@ -111,13 +112,13 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
   }
   const total = cutFrom(c, limit);
   if (total !== undefined) {
-    body += `<p class="muted">The first ${n(c.rows.length)}${k ? ` of ${n(total)}` : ""} differing rows. Raise <code>cteDiff.limit</code> for more.</p>`;
+    body += `<p class="muted">The first ${n(c.rows.length)}${k ? ` of ${n(total)}` : ""} differing rows; sorting acts on these. Raise <code>cteDiff.limit</code> for more.</p>`;
   }
   if (c.rows.length) {
     const cols = [...p.key, ...columns(c.rows.map((r) => r.row)).filter((x) => !p.key.includes(x))];
     const width = cols.length + 1;
-    const row = (side: "l" | "r", r: Row, other?: Row) =>
-      `<tr class="${side}"><td class="side">${side === "l" ? "−" : "+"}</td>${cols.map((x) => cell(r, x, !!other && !same(r[x], other[x]))).join("")}</tr>`;
+    const row = (side: "l" | "r", r: Row, other?: Row, pair?: number) =>
+      `<tr class="${side}"${pair === undefined ? "" : ` data-pair="${pair}"`}><td class="side">${side === "l" ? "−" : "+"}</td>${cols.map((x) => cell(r, x, !!other && !same(r[x], other[x]))).join("")}</tr>`;
     const group = (label: string, trs: string) => (trs ? `<tbody><tr class="group"><td colspan="${width}">${label}</td></tr>${trs}</tbody>` : "");
     body += table(
       c.rows.map((r) => r.row),
@@ -125,7 +126,7 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
       "side",
       group(
         `${plural(p.pairs.length, "changed row")}, matched on ${esc(p.key.join(", "))}: old (−) above new (+)`,
-        p.pairs.map(([l, r]) => row("l", l, r) + row("r", r, l)).join(""),
+        p.pairs.map(([l, r], i) => row("l", l, r, i) + row("r", r, l, i)).join(""),
       ) +
         group(`Only on the left (old): ${n(p.left.length)}`, p.left.map((r) => row("l", r)).join("")) +
         group(`Only on the right (new): ${n(p.right.length)}`, p.right.map((r) => row("r", r)).join("")),
@@ -155,6 +156,9 @@ code { font-family: var(--vscode-editor-font-family); }
 .scroll { overflow: auto; max-height: var(--results-max, calc(100vh - 120px)); border: 1px solid var(--vscode-panel-border); }
 table { border-collapse: collapse; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); }
 th { position: sticky; top: 0; z-index: 1; background: var(--vscode-editorGroupHeader-tabsBackground); text-align: left; font-weight: 600; }
+th[tabindex] { cursor: pointer; user-select: none; }
+th[data-sort=asc]::after { content: " ▲"; } th[data-sort=desc]::after { content: " ▼"; }
+th[data-sort]:not([aria-sort])::after { opacity: .45; } /* a tie-breaker: an earlier sort */
 th, td { padding: 3px 8px; border-bottom: 1px solid var(--vscode-panel-border); white-space: pre; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .idx { color: var(--vscode-editorLineNumber-foreground); text-align: right; }

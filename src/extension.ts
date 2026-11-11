@@ -6,7 +6,7 @@ import { branchQuery, cteLabel, cteQuery, subqueryQuery } from "./cte.ts";
 import { compile, debug, findDbt, projectDirOf, show, type ShowOptions } from "./dbt.ts";
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
-import { results, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
+import { resultsProvider, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
 import { compareQuery, readComparison, unsupported, type Row } from "./query.ts";
 import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 
@@ -66,7 +66,8 @@ export function activate(context: vscode.ExtensionContext): { tree: CteTree; fil
       update();
       offerDiffLens(context);
     }),
-    vscode.window.registerWebviewViewProvider("cteDiff.results", results),
+    // Kept alive while hidden, so a sort survives a switch to the Terminal and back.
+    vscode.window.registerWebviewViewProvider("cteDiff.results", resultsProvider(context.extensionUri), { webviewOptions: { retainContextWhenHidden: true } }),
     vscode.workspace.registerTextDocumentContentProvider(COMPILED, compiledDocs),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       update();
