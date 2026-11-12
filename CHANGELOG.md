@@ -3,6 +3,7 @@
 ## 0.12.1
 
 - A CTE written `as materialized (...)` or `as not materialized (...)`, as DuckDB allows, is found like any other. Before, it and every CTE after it were missing from the sidebar, the CodeLens and the Command Palette.
+- The sidebar marks a CTE **reads a changed CTE** only when it reads that CTE in a `from` or `join`. Before, a column with the same name as a changed CTE marked it too.
 
 ## 0.12.0
 
