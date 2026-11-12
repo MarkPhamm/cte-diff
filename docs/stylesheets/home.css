@@ -51,7 +51,7 @@
 .qh-btn--primary { background: var(--bp-accent); border-color: var(--bp-accent); color: var(--bp-white) !important; }
 .qh-btn--primary:hover { background: var(--bp-accent-press); border-color: var(--bp-accent-press); }
 .qh-install { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 8px 8px 8px 14px; min-width: 0;
-  box-sizing: border-box; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 10px; }
+  box-sizing: border-box; text-align: left; background: var(--bp-sheet); border: 1px solid var(--bp-rule-strong); border-radius: 10px; }
 .qh-installs--center .qh-install { margin-top: 22px; }
 .qh-install code { background: none; padding: 0; flex: 1; min-width: 0; font-size: 14px; color: var(--bp-ink); white-space: nowrap; }
 .qh-install__prompt { color: var(--bp-ink-3); font: 12px var(--bp-mono); border: 1px solid var(--bp-rule-strong); border-radius: 4px; padding: 1px 5px; }
@@ -373,14 +373,14 @@ span.qh-how__r, .qh-how__json li.qh-how__r b, tr.qh-how__r td:first-child { colo
   .qh .qh-how.qh-anim:not(.qh-in) .qh-how__json li.qh-how__same.qh-how__r { background: var(--cd-added-bg); }
 }
 
-.qh-reqs { display: grid; gap: 0; margin: 32px 0 0; max-width: 46rem; border-top: 1px solid var(--bp-rule-strong); }
+.qh-reqs { display: grid; gap: 0; margin: 32px 0 0; border-top: 1px solid var(--bp-rule-strong); }
 .qh-reqs > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--bp-rule); }
 .qh-reqs dt { font-weight: 600; }
 .qh-reqs dd { margin: 0; color: var(--qd-muted); }
 
-/* the closing call to action: a mint callout */
+/* the closing call to action: a mint callout, inset to the content's edges so its rounded corners never meet the window's */
 .qh-final { margin-top: 120px; padding: 56px 24px; text-align: center; background: var(--bp-wash); border-radius: 16px; }
-.qh-wrap.qh-final { max-width: calc(1180px - 48px); }
+.qh-wrap.qh-final { max-width: calc(1180px - 48px); width: calc(100% - 2 * var(--qh-pad)); }
 .qh-final h2 { margin: 0 auto 24px; color: var(--bp-accent-press); }
 
 /* ------------------------------------------------------------------ playground
@@ -449,16 +449,13 @@ q-w { display: inline-block; }
   .qh-hero__text > :nth-child(1) { animation-delay: .25s; }
   .qh-hero__text > :nth-child(2) { animation-delay: .3s; }
   .qh-hero h1 q-w, .qh-play h1 q-w { animation: qh-word .42s calc(var(--i) * 30ms) var(--bp-ease-out) both; }
-  .qh-section h2.qh-words q-w, .qh-final > h2.qh-words q-w { opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .42s;
-    transition-timing-function: var(--bp-ease-out); transition-delay: calc(var(--i) * 30ms); }
-  .qh .qh-words.qh-in q-w { opacity: 1; transform: none; }
+  /* Opacity only: a word that moved would sit off its line until the last one landed. */
+  .qh-section h2.qh-words q-w, .qh-final > h2.qh-words q-w { opacity: 0; transition: opacity .3s var(--bp-ease-out) calc(var(--i) * 30ms); }
+  .qh .qh-words.qh-in q-w { opacity: 1; }
   .qh-rv { opacity: 0; transform: translateY(8px); transition: opacity .32s, transform .42s; transition-timing-function: var(--bp-ease-out);
     transition-delay: var(--d, 0s); }
   .qh-rv.qh-in { opacity: 1; transform: none; }
 }
-q-caret { display: inline-block; width: .55em; height: 1.15em; margin-left: 1px; vertical-align: -.2em; background: var(--bp-accent);
-  animation: qh-blink 1s steps(1) infinite; }
-@keyframes qh-blink { 50% { opacity: 0; } }
 
 /* ------------------------------------------------------------------ responsive */
 /* side by side only at the page's full width: narrower, the ledger's code cell overflows, so the text goes on top */

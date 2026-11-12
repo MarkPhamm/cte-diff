@@ -1,5 +1,5 @@
-/* Landing page (overrides/home.html): the copy buttons, and the motion qdbd.dev's home page has. Headings rise word by
- * word, text and cards reveal as they scroll into view, the closing install command types itself. Does nothing off
+/* Landing page (overrides/home.html): the copy buttons, and the motion qdbd.dev's home page has. Headings fade in word by
+ * word, text and cards reveal as they scroll into view. Does nothing off
  * the home page; with reduced motion, or landing mid-page, everything shows at once. The live demo is web/demo.ts. */
 (function () {
   "use strict";
@@ -15,6 +15,9 @@
       }, function () {});
     });
   });
+
+  /* Quick Open is Ctrl+P off macOS. */
+  if (!/Mac|iPhone|iPad/.test(navigator.platform)) document.querySelectorAll(".qh-install__prompt").forEach(function (p) { p.textContent = "Ctrl+P"; });
 
   var root = document.querySelector(".qh");
   if (!root) return;
@@ -101,22 +104,6 @@
     });
   }
 
-  /* Retypes an element's text with a caret. */
-  function type(node, speed) {
-    var full = node.textContent;
-    node.style.minWidth = node.offsetWidth + "px";
-    node.textContent = "";
-    var caret = document.createElement("q-caret");
-    node.appendChild(caret);
-    var k = 0;
-    (function tick() {
-      if (k < full.length) {
-        caret.before(full[k++]);
-        setTimeout(tick, speed);
-      } else setTimeout(function () { caret.remove(); }, 1600);
-    })();
-  }
-
   var h1 = root.querySelector(".qh-hero h1, .qh-play h1");
   if (h1) splitWords(h1);
   root.querySelectorAll(".qh-section > h2, .qh-final > h2").forEach(function (h) {
@@ -154,9 +141,4 @@
     onView(how.querySelector(".qh-how__steps"), function () { how.classList.add("qh-in"); });
   }
   root.querySelectorAll(".qh-feat__body, .qh-reqs").forEach(function (g) { reveal([].slice.call(g.children), 0.08); });
-  var code = root.querySelector(".qh-final .qh-install code");
-  if (code) {
-    var text = code.textContent;
-    onView(code, function () { setTimeout(function () { code.textContent = text; type(code, 45); }, 400); });
-  }
 })();
