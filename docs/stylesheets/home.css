@@ -220,9 +220,11 @@
 .qh-gap__t td { color: var(--bp-ink-2); }
 .qh-gap__t .qh-gap__same { color: var(--bp-ink-3); }
 .qh-gap__t b { font-weight: 700; }
-.qh .qh-gap__add { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--cd-added-bg); color: var(--bp-ink);
+.qh .qh-gap__add, .qh .qh-gap__del { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--cd-added-bg); color: var(--bp-ink);
   font-size: 12px; white-space: nowrap; }
+.qh .qh-gap__del { background: var(--cd-removed-bg); }
 .qh-gap__add b { color: var(--cd-added); margin-right: 4px; }
+.qh-gap__del b { color: var(--cd-removed); margin-right: 4px; }
 .qh-gap__note b { color: var(--cd-changed); margin-right: 4px; }
 .qh-gap__v { display: block; }
 .qh-gap__note { display: block; margin-top: 2px; font-size: 13px; color: var(--cd-changed); }

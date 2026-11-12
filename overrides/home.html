@@ -50,7 +50,7 @@
       <div class="cd-overlay" aria-hidden="true">
         <svg class="cd-cursor" width="22" height="22" viewBox="0 0 24 24"><path d="M4 2l15 11-7 1.2 4 7.3-2.8 1.5-4-7.4L4 20z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
       </div>
-      <figcaption>jaffle_shop’s <code>orders</code> model. One <code>where</code> in <code>payments</code>, and <code>order_payments</code> returns different totals without a changed character. <span class="cd-hint">Move your mouse over it to take control.</span> <a href="{{ 'playground/' | url }}">Edit the queries in the playground</a>.</figcaption>
+      <figcaption>jaffle_shop’s <code>orders</code> model: <code>payments</code> keeps successful payments only, <code>customers</code> is new, <code>refunds</code> is gone, and <code>final</code> swaps <code>refunded</code> for <code>first_name</code>. <code>order_payments</code> has no changed line, yet 3 of its 8 totals differ. <span class="cd-hint">Move your mouse over it to take control.</span> <a href="{{ 'playground/' | url }}">Edit the queries in the playground</a>.</figcaption>
     </figure>
     <ol class="cd-chapters">
       <li><b>Preview a CTE</b><span>▶ Preview above <code>payments</code></span><i></i></li>
@@ -71,8 +71,9 @@
   </section>
 
   <!-- -------------------------------------------------------------- the problem -->
-  {#- Three CTEs of the demo's model: what the SQL diff shows for each, next to what its data did. The counts are the
-      comparisons' in web/demo-rows.json (compare.<cte>[0]); rerun scripts/demo-rows.ts and they can move. home.js
+  {#- Each CTE of the demo's model: what the SQL diff shows for it, next to what its data did. The counts are in
+      web/demo-rows.json: the comparisons' (compare.<cte>[0]), and a new or removed CTE's row count (right.<cte>,
+      left.<cte>); rerun scripts/demo-rows.ts and they can move. home.js
       fills the data column in after the diff column, then lights order_payments. -#}
   <section class="qh-section qh-wrap qh-gap">
     <h2><span>A diff shows what the SQL changed.</span> <span>It can’t show what the data did.</span></h2>
@@ -90,7 +91,10 @@
           <tbody>
             <tr><th scope="row">orders</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v qh-gap__same">same 8 rows</span></td></tr>
             <tr><th scope="row">payments</th><td data-label="SQL diff"><code class="qh-gap__add"><b aria-hidden="true">+</b> where status = 'success'</code></td><td data-label="Data"><span class="qh-gap__v">3 of 12 rows gone</span></td></tr>
+            <tr><th scope="row">customers</th><td data-label="SQL diff"><code class="qh-gap__add"><b aria-hidden="true">+</b> new CTE</code></td><td data-label="Data"><span class="qh-gap__v">5 rows</span></td></tr>
             <tr class="qh-gap__hit"><th scope="row">order_payments</th><td data-label="SQL diff" class="qh-gap__same">no change</td><td data-label="Data"><span class="qh-gap__v">3 of 8 totals changed</span><span class="qh-gap__note"><b aria-hidden="true">↓</b> reads a changed CTE</span></td></tr>
+            <tr><th scope="row">final</th><td data-label="SQL diff"><code class="qh-gap__add"><b aria-hidden="true">+</b> first_name</code> <code class="qh-gap__del"><b aria-hidden="true">−</b> refunded</code></td><td data-label="Data"><span class="qh-gap__v">same 8 orders, one column swapped</span></td></tr>
+            <tr><th scope="row">refunds</th><td data-label="SQL diff"><code class="qh-gap__del"><b aria-hidden="true">−</b> CTE removed</code></td><td data-label="Data"><span class="qh-gap__v">its 1 row gone</span></td></tr>
           </tbody>
         </table>
       </figure>
