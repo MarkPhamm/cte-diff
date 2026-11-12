@@ -68,9 +68,9 @@ if (root) {
     `<div class="qp-editors">${editor("left", "Old (left)")}${editor("right", "New (right)")}</div>` +
     `<div class="cd-win__body qp-body"><aside class="cd-side"><div class="cd-side__head"><b>CTE Diff</b> old.sql ↔ new.sql</div><p class="cd-side__msg"></p><ul class="cd-side__list"></ul>` +
     `<button class="qp-reset" type="button">Reset the example</button></aside>` +
-    `<section class="cd-panel" aria-label="Results"><div class="cd-panel__tabs" role="tablist"><button type="button" role="tab" data-tab="rows">Rows</button><button type="button" role="tab" data-tab="sql">SQL</button>` +
+    `<section class="cd-panel" aria-label="Results"><div class="cd-panel__tabs" role="tablist"><button type="button" role="tab" id="qp-tab-rows" aria-controls="qp-panel" data-tab="rows">Rows</button><button type="button" role="tab" id="qp-tab-sql" aria-controls="qp-panel" data-tab="sql">SQL</button>` +
     `<span class="qp-adapter" role="group" aria-label="Warehouse the SQL is for"><button type="button" data-adapter="bigquery">BigQuery</button><button type="button" data-adapter="duckdb">DuckDB</button><button type="button" data-adapter="redshift">Redshift</button><button type="button" data-adapter="snowflake">Snowflake</button></span>` +
-    `<em class="cd-panel__title"></em></div><div class="cd-panel__body" aria-live="polite"></div></section></div>`;
+    `<em class="cd-panel__title"></em></div><div class="cd-panel__body" id="qp-panel" role="tabpanel" aria-live="polite"></div></section></div>`;
 
   const eds = Object.fromEntries(
     [...root.querySelectorAll<HTMLElement>(".qp-ed")].map((ed) => [
@@ -147,7 +147,9 @@ if (root) {
     root!.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => {
       b.classList.toggle("on", b.dataset.tab === tab);
       b.setAttribute("aria-selected", String(b.dataset.tab === tab));
+      b.tabIndex = b.dataset.tab === tab ? 0 : -1;
     });
+    root!.querySelector("#qp-panel")!.setAttribute("aria-labelledby", `qp-tab-${tab}`);
     root!.querySelectorAll<HTMLElement>("[data-adapter]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.adapter === adapter)));
     root!.classList.toggle("qp--sql", tab === "sql");
   }
@@ -192,6 +194,21 @@ if (root) {
     }
   }
 
+  const pickTab = (t: typeof tab) => {
+    tab = t;
+    mark();
+    void run();
+  };
+
+  // The tabs' arrow keys: Left and Right move to the other tab and show it.
+  root.querySelector(".cd-panel__tabs")!.addEventListener("keydown", (e) => {
+    const k = (e as KeyboardEvent).key;
+    if (k !== "ArrowLeft" && k !== "ArrowRight") return;
+    e.preventDefault();
+    pickTab(tab === "rows" ? "sql" : "rows");
+    root.querySelector<HTMLElement>(`#qp-tab-${tab}`)!.focus();
+  });
+
   const select = (s: typeof sel) => {
     sel = s;
     mark();
@@ -203,11 +220,7 @@ if (root) {
     const act = t.closest<HTMLElement>("button[data-act]");
     if (act) return select({ act: act.dataset.act as Act, side: act.dataset.side as Side, name: act.dataset.name! });
     const tb = t.closest<HTMLElement>("[data-tab]");
-    if (tb) {
-      tab = tb.dataset.tab as typeof tab;
-      mark();
-      return void run();
-    }
+    if (tb) return pickTab(tb.dataset.tab as typeof tab);
     const ad = t.closest<HTMLElement>("[data-adapter]");
     if (ad) {
       adapter = ad.dataset.adapter!;
