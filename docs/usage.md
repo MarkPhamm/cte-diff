@@ -7,7 +7,7 @@ Reviewing a change to a dbt model? Open the two versions in a diff editor and cl
 
 You see what the change did to the data, CTE by CTE, without copying SQL into a worksheet.
 
-![Opening the changed orders model from Source Control: the two versions side by side, with Preview and Compare sides above each CTE](assets/img/demo-diff.gif){ width="100%" }
+![Preview payments on the old side, 12 rows, then on the new side, 9 rows, then Compare sides: three failed payments only on the old side](assets/img/demo.gif){ width="100%" }
 
 ## Open a comparison
 
@@ -15,6 +15,8 @@ You see what the change did to the data, CTE by CTE, without copying SQL into a 
 - **Another branch:** click **⑂ Compare with Branch…** in the sidebar's title bar, or run **CTE Diff: Compare with Branch…**, and pick a branch. The open SQL file opens in a diff with that branch's latest commit on the left and your working tree on the right. With no SQL file open, it asks for one first. Remote branches are as of your last `git fetch`.
 - **Any two files:** in the sidebar's **Compare Files**, set **Old** and **New**, then click **Open the diff**. Or run **CTE Diff: Compare Two Files…** and pick the old file, then the new one.
 - **Pasted SQL:** run **CTE Diff: New Comparison (Paste Two Queries)** from the Command Palette, or click its button in the sidebar's title bar. Paste the old query on the left and the new one on the right.
+
+**Compare with Branch** on `orders.sql`, against `qa`:
 
 ![Compare with Branch on orders.sql: pick qa, the diff opens as orders.sql (qa) ↔ orders.sql, and Compare sides on order_payments lists 3 changed totals](assets/img/demo-branch.gif){ width="100%" }
 

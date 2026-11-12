@@ -23,7 +23,7 @@ node scripts/capture.ts stills           # Power User stills, CTE Diff not insta
 
 It needs ffmpeg, the duckdb CLI and a dbt with dbt-duckdb: set `CTE_DIFF_DBT`, or set up `examples/duckdb`'s venv (see its README). Rerun it after any change to what the sidebar, the CodeLens or the results look like.
 
-`npm run render` in `videos/cte-diff-demo` writes `renders/cte-diff-demo.mp4`. `ship.sh` reads that file and writes the web mp4, the poster and, through `gifs.sh`, the README's opening GIF. The Use it loops (`demo-diff`, `demo-marks`, `demo-preview`, `demo-compare`, `demo-final`) are the previous film. `gifs.sh` does not recut them.
+`npm run render` in `videos/cte-diff-demo` writes `renders/cte-diff-demo.mp4`. `ship.sh` reads that file and writes the web mp4, the poster and, through `gifs.sh`, the README's opening GIF. `gifs.sh` also cuts `demo-branch` from it, and the Use it loops (`demo-marks`, `demo-preview`, `demo-compare`, `demo-final`) from the previous film, read from git. Every GIF drops the film's headline band.
 
 ## This site
 

@@ -1,7 +1,8 @@
 #!/bin/sh
-# The README's and docs' GIFs. 10 fps, 800 px, 256 colours, no dithering, so UI text stays sharp.
+# The README's and docs' GIFs. 10 fps, 800 px, 256 colours, no dithering, so UI text stays sharp. The films' headline
+# band (the top 76 px at 800 px wide) is cropped off: beside the docs' own text, the GIFs show only the editor.
 # demo.gif is cut from this film (the web mp4 ship.sh writes): Preview on HEAD, Preview on the working tree,
-# then Compare sides on the two files. demo-branch is this film's Compare with Branch scene. The section loops (demo-diff, demo-marks, demo-preview, demo-compare,
+# then Compare sides on the two files. demo-branch is this film's Compare with Branch scene. The section loops (demo-marks, demo-preview, demo-compare,
 # demo-final) show features this film does not, so they come from the previous 38-second film, read from git.
 set -eu
 cd "$(dirname "$0")"
@@ -13,7 +14,7 @@ trap 'rm -rf "$work"' EXIT
 old="$work/old.mp4"
 git -C "$root" show 60f0755:docs/assets/video/cte-diff-demo.mp4 > "$old"
 
-LOOK="fps=10,scale=800:-1:flags=lanczos,split[s][p];[p]palettegen=max_colors=256:stats_mode=diff[pal];[s][pal]paletteuse=dither=none:diff_mode=rectangle"
+LOOK="fps=10,scale=800:-1:flags=lanczos,crop=iw:ih-76:0:76,split[s][p];[p]palettegen=max_colors=256:stats_mode=diff[pal];[s][pal]paletteuse=dither=none:diff_mode=rectangle"
 
 # name, source, then start:end pairs in that film's seconds, joined with hard cuts.
 gif() {
@@ -35,7 +36,6 @@ gif() {
 # Each span starts once its title has landed and ends before the camera leaves for the next scene.
 gif demo "$src" 6.3:9.2 10.0:13.95 18.0:22.6
 gif demo-branch "$src" 23.3:31.7
-gif demo-diff "$old" 2.4:5.85
 gif demo-marks "$old" 6.85:11.1
 gif demo-preview "$old" 12.3:16.6
 gif demo-compare "$old" 18.3:24.35
