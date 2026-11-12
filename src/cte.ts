@@ -271,12 +271,14 @@ interface FromItem {
   keys: string[];
   /** As written, to put in a FROM clause. */
   text: string;
+  /** Its name when unqualified, so it can be a CTE. */
+  table?: string;
   start: number;
   end: number;
 }
 
 /** A relation in a FROM clause, with its alias if it has one. */
-function relationAt(toks: Positioned[], i: number, sql: string): { keys: string[]; text: string; start: number; end: number; next: number } | undefined {
+function relationAt(toks: Positioned[], i: number, sql: string): (FromItem & { next: number }) | undefined {
   while (i < toks.length && (isWord(toks[i].token, "lateral") || isWord(toks[i].token, "only"))) i++;
   const first = toks[i];
   if (!first) return undefined;
@@ -284,6 +286,7 @@ function relationAt(toks: Positioned[], i: number, sql: string): { keys: string[
   const start = first.token.start;
   let end = first.token.end;
   let keys: string[] = [];
+  let table: string | undefined;
   if (first.token.text === "(") {
     const close = skipGroupAt(toks, i);
     if (close <= i) return undefined;
@@ -302,11 +305,13 @@ function relationAt(toks: Positioned[], i: number, sql: string): { keys: string[
       i += 2;
     }
     keys = parts.map((_, j) => parts.slice(j).join("."));
+    if (parts.length === 1) table = parts[0];
     if (i < toks.length && toks[i].token.text === "(" && toks[i].depth === depth) {
       const close = skipGroupAt(toks, i);
       end = toks[close - 1].token.end;
       i = close;
       keys = []; // a table function has no name to qualify it by
+      table = undefined;
     }
   } else return undefined;
   // AS alias, or a bare alias.
@@ -318,7 +323,7 @@ function relationAt(toks: Positioned[], i: number, sql: string): { keys: string[
     end = alias.token.end;
     i = j + 1;
   }
-  return { keys, text: sql.slice(start, end), start, end, next: i };
+  return { keys, text: sql.slice(start, end), table, start, end, next: i };
 }
 
 const JOIN_WORDS = new Set(["left", "right", "full", "inner", "outer", "cross", "natural", "semi", "anti", "lateral", "asof"]);
@@ -353,7 +358,7 @@ function parseFromList(toks: Positioned[], i: number, depth: number, sql: string
       if (want) {
         const relation = relationAt(toks, i, sql);
         if (!relation) return i;
-        if (relation.keys.length) out.push({ keys: relation.keys, text: relation.text, start: relation.start, end: relation.end });
+        if (relation.keys.length) out.push({ keys: relation.keys, text: relation.text, table: relation.table, start: relation.start, end: relation.end });
         i = relation.next;
         want = false;
         continue;
@@ -654,11 +659,12 @@ export function compareCtes(left: string, right: string): CteStatus[] {
   const text = (sql: string, from: number, to: number) =>
     sql.slice(from, to).replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1").trim();
   const finalText = (sql: string, ctes: Cte[]) => text(sql, ctes.at(-1)?.bodyEnd ?? 0, sql.length).replace(/;$/, "");
-  // Names (normalised) that a stretch of SQL reads.
+  // Names (normalised) of the relations a stretch of SQL reads, in the FROM clauses of every query block in it.
   const reads = (from: number, to: number) => {
-    const out = new Set<string>();
-    for (const t of tokens(right)) if (t.start >= from && t.end <= to && (t.kind === "word" || t.kind === "quoted")) out.add(norm(t.text));
-    return out;
+    const toks = tokensInRange(right, from, to);
+    const items: FromItem[] = [];
+    for (let i = 0; i < toks.length; i++) if (isWord(toks[i].token, "from")) parseFromList(toks, i + 1, toks[i].depth, right, items);
+    return new Set(items.flatMap((item) => (item.table ? [norm(item.table)] : [])));
   };
   const statusOf = (dirty: Set<string>, changed: boolean, from: number, to: number): Status =>
     changed ? "changed" : [...reads(from, to)].some((w) => dirty.has(w)) ? "affected" : "same";

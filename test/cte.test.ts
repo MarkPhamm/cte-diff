@@ -348,6 +348,22 @@ select * from b;`;
   ]);
 });
 
+test("compareCtes: only a relation in FROM or JOIN reads a CTE, not a column of the same name", () => {
+  const status = (body: string) => {
+    const sql = (v: number) => `with changed_cte as (select ${v} as value), summary as (${body}) select 1`;
+    return compareCtes(sql(1), sql(2))[1].status;
+  };
+  assert.equal(status("select changed_cte, t.changed_cte from source_rows t where changed_cte is distinct from 0"), "same");
+  assert.equal(status("select schema.changed_cte.x from schema.changed_cte"), "same");
+  assert.equal(status("select * from changed_cte"), "affected");
+  assert.equal(status('select * from t left join "CHANGED_CTE" c on c.id = t.id'), "same", "a quoted name is case-sensitive");
+  assert.equal(status("select * from t left outer join CHANGED_CTE c on c.id = t.id"), "affected");
+  assert.equal(status("select * from t, changed_cte"), "affected");
+  assert.equal(status("select * from t where id in (select id from changed_cte)"), "affected");
+  assert.equal(status("select * from (select * from changed_cte) x"), "affected");
+  assert.equal(status("with inner_cte as (select * from changed_cte) select * from inner_cte"), "affected");
+});
+
 test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs compares the whole text", () => {
   assert.deepEqual(compareCtes("with a as (select 1), b as (select * from a) select * from b", "with b as (select * from a) select * from b"), [
     { name: "b", status: "affected" },
