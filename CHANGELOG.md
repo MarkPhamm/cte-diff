@@ -4,6 +4,7 @@
 
 - A CTE written `as materialized (...)` or `as not materialized (...)`, as DuckDB allows, is found like any other. Before, it and every CTE after it were missing from the sidebar, the CodeLens and the Command Palette.
 - The sidebar marks a CTE **reads a changed CTE** only when it reads that CTE in a `from` or `join`. Before, a column with the same name as a changed CTE marked it too.
+- **Check Setup** stops a preview or comparison still running, as a new preview does, and has a Cancel button. Before, its `dbt debug` ran alongside the other dbt run in the same project.
 
 ## 0.12.0
 
