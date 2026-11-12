@@ -108,6 +108,9 @@ export function parse(sql: string): Parsed {
     }
     if (!isWord(t, "as")) break;
     t = next();
+    // `as [not] materialized (...)`, as DuckDB and Postgres allow.
+    if (isWord(t, "not")) t = next();
+    if (isWord(t, "materialized")) t = next();
     if (t?.text !== "(") break;
     const bodyStart = t.start;
     const bodyEnd = skipGroup();

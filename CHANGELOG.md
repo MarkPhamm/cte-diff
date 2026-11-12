@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1
+
+- A CTE written `as materialized (...)` or `as not materialized (...)`, as DuckDB allows, is found like any other. Before, it and every CTE after it were missing from the sidebar, the CodeLens and the Command Palette.
+
 ## 0.12.0
 
 - **Sort the results**: click a column header to sort the rows by it, ascending, then descending, then back to dbt's order. A click on a second header sorts by it, and the first breaks ties. No `ORDER BY` and no rerun: the sort acts on the rows already fetched. In a comparison, each changed row's old and new versions stay together.
