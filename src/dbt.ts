@@ -70,17 +70,18 @@ const notFound = (dbt: string) => `dbt not found at "${dbt}". Set cteDiff.dbtPat
 /** The arguments every dbt command here ends with: `--target`, then the cteDiff.dbtArgs setting's, such as `--vars`. */
 const settingArgs = (o: Omit<ShowOptions, "limit">) => [...(o.target ? ["--target", o.target] : []), ...(o.dbtArgs ?? [])];
 
-/** `dbt debug` in the project: whether dbt finds the project, its profile and the warehouse, and the end of its output. */
-export function debug(o: Omit<ShowOptions, "limit">): Promise<{ ok: boolean; output: string }> {
+/** `dbt debug` in the project: whether dbt finds the project, its profile and the warehouse, and the end of its output.
+ * Like any run, it stops the one still running. */
+export function debug(o: Omit<ShowOptions, "limit">, signal?: AbortSignal): Promise<{ ok: boolean; output: string }> {
   const args = ["debug", ...settingArgs(o)];
   o.log?.(`$ cd ${o.projectDir} && ${o.dbt} ${args.join(" ")}`);
-  return new Promise((resolve) => {
-    execFile(o.dbt, args, { cwd: o.projectDir, env: envFor(o.projectDir), maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
-      o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
-      if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") resolve({ ok: false, output: notFound(o.dbt) });
-      else resolve({ ok: !err, output: dbtError(stdout, stderr) });
-    });
-  });
+  return runDbt(args, o, signal).then(
+    ({ stdout, stderr, failed }) => ({ ok: !failed, output: dbtError(stdout, stderr) }),
+    (e: Error) => {
+      if (e.message === "Cancelled") throw e;
+      return { ok: false, output: e.message }; // dbt not found
+    },
+  );
 }
 
 export interface ShowOptions {

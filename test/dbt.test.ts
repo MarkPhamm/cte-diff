@@ -60,6 +60,23 @@ test("show, compile and debug end with --target and cteDiff.dbtArgs", async () =
   }
 });
 
+test("debug stops a show still running, and says when dbt isn't found", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cte-diff-"));
+  try {
+    // A fake dbt whose show takes 10 s and whose debug passes at once.
+    const dbt = path.join(dir, "dbt");
+    const script = `if (process.argv[2] === "show") setTimeout(() => console.log("[]"), 10000); else console.log("All checks passed!");`;
+    fs.writeFileSync(dbt, `#!${process.execPath}\n${script}\n`, { mode: 0o755 });
+    const o = { dbt, projectDir: dir, limit: 5 };
+    const stopped = assert.rejects(show("select 1", o), /Cancelled/);
+    assert.equal((await debug(o)).ok, true);
+    await stopped;
+    assert.deepEqual(await debug({ ...o, dbt: path.join(dir, "missing") }), { ok: false, output: `dbt not found at "${path.join(dir, "missing")}". Set cteDiff.dbtPath to your dbt executable.` });
+  } finally {
+    fs.rmSync(dir, { recursive: true });
+  }
+});
+
 test("show gives the query's size when it is too long for the command line", async () => {
   // 2 MiB: over Linux's 128 KiB for one argument and macOS's 1 MiB for all of them.
   const sql = "x".repeat(2048 * 1024);

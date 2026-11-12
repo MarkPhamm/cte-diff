@@ -355,11 +355,17 @@ async function checkSetup(): Promise<void> {
   ];
   const id = ++latest;
   showRunning("Check Setup", "Setup", "dbt debug");
-  const { ok, output } = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: "CTE Diff: running dbt debug" },
-    () => debug(o),
-  );
-  if (id === latest) showSetup(checks, ok, output);
+  try {
+    const { ok, output } = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: "CTE Diff: running dbt debug", cancellable: true },
+      (_, token) => debug(o, nextRun(token)),
+    );
+    if (id === latest) showSetup(checks, ok, output);
+  } catch (e) {
+    if (id !== latest) return;
+    if (message(e) === "Cancelled") showCancelled("Check Setup", "Setup");
+    else throw e;
+  }
 }
 
 /** Picks the project that runs SQL outside any dbt project, such as pasted queries, for the rest of the session. */
