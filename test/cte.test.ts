@@ -63,6 +63,12 @@ test("strings with escapes, $$ blocks and with recursive", () => {
   assert.deepEqual(names(sql), ["a", "b"]);
 });
 
+test("a MATERIALIZED or NOT MATERIALIZED hint before the body", () => {
+  const sql = "with a as materialized (select 1 as id), b as not materialized (select * from a), c as (select * from b) select * from c";
+  assert.deepEqual(names(sql), ["a", "b", "c"]);
+  assert.equal(cteQuery(sql, "b"), "with a as materialized (select 1 as id), b as not materialized (select * from a)\nselect * from b");
+});
+
 test("a nested WITH stays inside its CTE", () => {
   const sql = "with outer_cte as (with inner_cte as (select 1) select * from inner_cte) select * from outer_cte";
   assert.deepEqual(names(sql), ["outer_cte"]);
