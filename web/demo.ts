@@ -158,6 +158,8 @@ if (root) {
         chapters.forEach((c, i) => {
           c.classList.toggle("on", i === k);
           c.classList.toggle("done", i < k);
+          if (i === k) c.setAttribute("aria-current", "step");
+          else c.removeAttribute("aria-current");
           c.style.setProperty("--dur", `${PLAY[i][0]}s`);
         });
         const t0 = performance.now();
@@ -185,7 +187,10 @@ if (root) {
       token++;
       root.classList.add("mine");
       state.textContent = "Your turn";
-      chapters.forEach((c) => c.classList.remove("on", "done"));
+      chapters.forEach((c) => {
+        c.classList.remove("on", "done");
+        c.removeAttribute("aria-current");
+      });
     });
     root.addEventListener("mouseleave", () => {
       resume = setTimeout(() => {
