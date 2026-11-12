@@ -87,7 +87,7 @@
 .cd-side__head b { color: var(--bp-ink); font-weight: 600; margin-right: 6px; }
 .cd-side__msg { margin: 0 12px 8px; font: 12px/1.45 var(--bp-sans); color: var(--bp-ink-2); }
 .cd-side__list { list-style: none; margin: 0; padding: 0; }
-.cd-side__list li { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 6px 0 12px; white-space: nowrap; cursor: pointer;
+.cd-side__list li { position: relative; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 6px 0 12px; white-space: nowrap; cursor: pointer;
   transition: background-color var(--bp-t-hover) linear; }
 .cd-side__list li:hover, .cd-side__list li.cd-hover { background: var(--bp-ink-a04); }
 .cd-side__list em { flex: 1; min-width: 0; font-style: normal; color: var(--bp-ink-3); overflow: hidden; text-overflow: ellipsis; }
@@ -97,7 +97,11 @@
 .cd-removed .cd-mark { color: var(--cd-removed); }
 .cd-affected em { text-decoration: underline dashed var(--bp-ink-3); text-underline-offset: 3px; }
 .cd-side__list li.cd-sel { background: var(--bp-wash); box-shadow: inset 2px 0 var(--bp-accent); }
-.cd-side__btns { display: flex; gap: 1px; flex: none; opacity: 0; transition: opacity .15s linear; }
+/* Over the row's right end, as VS Code's inline actions: hidden, they take no room from the note. */
+.cd-side__btns { position: absolute; right: 6px; display: flex; gap: 1px; padding-left: 4px; background: var(--bp-paper); opacity: 0;
+  transition: opacity .15s linear; }
+.cd-side__list li:hover .cd-side__btns, .cd-side__list li.cd-hover .cd-side__btns { background-image: linear-gradient(var(--bp-ink-a04), var(--bp-ink-a04)); }
+.cd-side__list li.cd-sel .cd-side__btns { background: var(--bp-wash); }
 .cd-side__list li:hover .cd-side__btns, .cd-side__list li.cd-hover .cd-side__btns, .cd-side__list li.cd-sel .cd-side__btns,
 .cd-side__list li:focus-within .cd-side__btns { opacity: 1; }
 .cd-side__btns button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: none; cursor: pointer;
@@ -463,8 +467,11 @@ q-w { display: inline-block; }
   .qh-gap__body { grid-template-columns: minmax(0, 1fr); }
   .qh-gap__text > .qh-more { padding-bottom: 0; }
 }
+/* Narrower, the sidebar goes above the diff: beside it, neither its notes nor the diff's two panes fit. */
 @media (max-width: 1080px) {
-  .cd-win__body { grid-template-columns: 210px minmax(0, 1fr); }
+  .qh-hero__shot .cd-win__body { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .qh-hero__shot .cd-side { border-right: 0; border-bottom: 1px solid var(--bp-rule); }
+  .cd-main { grid-template-rows: 380px 340px; }
 }
 @media (max-width: 960px) {
   .qh-hero { grid-template-columns: minmax(0, 1fr); gap: 28px; }
@@ -489,7 +496,7 @@ q-w { display: inline-block; }
 @media (max-width: 720px) {
   .cd-win__body { grid-template-columns: minmax(0, 1fr); height: auto; }
   .cd-side { border-right: 0; }
-  .cd-side__btns { opacity: 1; }
+  .cd-side__btns { position: static; opacity: 1; }
   .cd-main { grid-template-rows: 320px; }
   .cd-diff { display: none; }
   .cd-chapters { grid-template-columns: minmax(0, 1fr); }
