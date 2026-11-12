@@ -1,6 +1,6 @@
 /* Landing page (overrides/home.html): the copy buttons, and the motion qdbd.dev's home page has. Headings rise word by
  * word, text and cards reveal as they scroll into view, the closing install command types itself. Does nothing off
- * the home page; with reduced motion everything shows at once. The live demo is web/demo.ts. */
+ * the home page; with reduced motion, or landing mid-page, everything shows at once. The live demo is web/demo.ts. */
 (function () {
   "use strict";
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -56,7 +56,10 @@
     pick(0);
   });
 
-  if (reduce) return;
+  /* Landing mid-page, from a link to a section, a reload or Back, shows everything finished: hidden content waiting for
+   * its scroll-in would read as blank. The motion plays when the page opens at the top and is scrolled down. */
+  var nav = performance.getEntriesByType("navigation")[0];
+  if (reduce || location.hash || (nav && nav.type !== "navigate")) return;
 
   /* fn(el) once el scrolls into view, or at once when it is already above the viewport. */
   function onView(el, fn) {
