@@ -70,7 +70,7 @@ export function lensLines(sql: string): Map<number, string> {
 }
 
 export const button = (act: Act, side: Side, name: string, text: string, label: string) =>
-  `<button type="button" data-act="${act}" data-side="${side}" data-name="${esc(name)}" title="${esc(label)}">${text}</button>`;
+  `<button type="button" data-act="${act}" data-side="${side}" data-name="${esc(name)}" title="${esc(label)}" aria-label="${esc(label)}">${text}</button>`;
 
 /** The sidebar's list: every CTE of both sides, marked, with ← → ⇄ (shown on hover). */
 export function sidebarList(statuses: { name?: string; status: Status }[]): string {
