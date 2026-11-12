@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 /* The landing page's playground: two editable queries, coloured, their changed lines tinted, ▶ Preview and ⇄ Compare
- * on each CTE as in the extension. The sidebar and the results panel are the live demo's (web/ui.ts). Rows come from
+ * on each CTE as in the extension, in a column beside the line numbers so they never cover the SQL. The sidebar and the results panel are the live demo's (web/ui.ts). Rows come from
  * running the extension's own SQL on DuckDB in the browser (duckdb-wasm from jsDelivr, loaded once the playground is
  * near the screen) over web/sample.ts's made-up tables, and rerun as you type. The SQL tab shows that SQL for the
  * chosen warehouse (BigQuery, DuckDB, Redshift or Snowflake) while the rows always come from DuckDB. Bundled by
@@ -61,8 +61,8 @@ const root = document.getElementById("qp");
 if (root) {
   const editor = (side: Side, label: string) =>
     `<div class="qp-ed" data-side="${side}"><div class="qp-ed__head">${label}</div><div class="qp-ed__body">` +
-    `<div class="qp-gutter" aria-hidden="true"><div></div></div><div class="qp-code"><pre class="qp-hl" aria-hidden="true"><div></div></pre>` +
-    `<textarea spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="${label}"></textarea><div class="qp-lenses"><div></div></div></div></div></div>`;
+    `<div class="qp-lenses"><div></div></div><div class="qp-gutter" aria-hidden="true"><div></div></div><div class="qp-code"><pre class="qp-hl" aria-hidden="true"><div></div></pre>` +
+    `<textarea spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="${label}"></textarea></div></div></div>`;
   root.innerHTML =
     `<div class="cd-win__bar"><i></i><i></i><i></i><span>old.sql ↔ new.sql</span><b class="qp-engine"></b></div>` +
     `<div class="qp-editors">${editor("left", "Old (left)")}${editor("right", "New (right)")}</div>` +
@@ -121,7 +121,7 @@ if (root) {
         .map(([i, name]) => {
           const label = name || "the whole query";
           const both = statusOf.get(name) !== "added" && statusOf.get(name) !== "removed";
-          return `<span class="qp-lens" style="top:${PAD + i * LH}px">${button("preview", side, name, name ? "▶ Preview" : "▶ Preview query", `Preview ${label}, ${side === "left" ? "old" : "new"}`)}${both ? button("compare", side, name, "⇄ Compare sides", `Compare ${label} on both sides`) : ""}</span>`;
+          return `<span class="qp-lens" style="top:${PAD + i * LH}px">${button("preview", side, name, "▶", `Preview ${label}, ${side === "left" ? "old" : "new"}`)}${both ? button("compare", side, name, "⇄", `Compare ${label} on both sides`) : ""}</span>`;
         })
         .join("");
     }
@@ -262,7 +262,7 @@ if (root) {
   eds.left.text.value = before;
   eds.right.text.value = after;
   paint();
-  show(`<p class="muted">Click <b>▶ Preview</b> or <b>⇄ Compare sides</b> on a CTE. The rows come from DuckDB, running in your browser.</p>`);
+  show(`<p class="muted">Click <b>▶</b> to preview a CTE or <b>⇄</b> to compare its sides, beside its first line. The rows come from DuckDB, running in your browser.</p>`);
   title.textContent = "Compare: order_payments";
   new IntersectionObserver(
     (es, io) => {
