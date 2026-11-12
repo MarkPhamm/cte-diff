@@ -124,7 +124,11 @@
   .md-main { background: linear-gradient(to right, var(--qd-side) 0, var(--qd-side) var(--qd-sidebar-w),
     var(--bp-rule-strong) var(--qd-sidebar-w), var(--bp-rule-strong) calc(var(--qd-sidebar-w) + 1px), var(--qd-bg) calc(var(--qd-sidebar-w) + 1px)); }
   .md-sidebar--primary { width: var(--qd-sidebar-w); }
-  .md-sidebar--primary .md-sidebar__scrollwrap { margin: 0; }
+  /* Material sizes the nav to the part of the page above the footer, which cut its last links off at the bottom of a
+   * page. Its own height instead, so it scrolls away with the page's end, and scrolls itself only in a window too short
+   * for it (3.2rem header, 2.4rem padding). */
+  .md-sidebar--primary { height: auto; }
+  .md-sidebar--primary .md-sidebar__scrollwrap { margin: 0; height: auto !important; max-height: calc(100vh - 5.6rem); }
   .md-sidebar--secondary { width: 14rem; }
   .md-content { max-width: 50rem; }
   .md-content__inner { margin-left: 1.6rem; margin-right: 1.6rem; }
