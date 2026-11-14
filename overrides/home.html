@@ -59,17 +59,6 @@
     </ol>
   </section>
 
-  <!-- -------------------------------------------------------------- demo video
-       Rendered by videos/cte-diff-demo from the capture (scripts/capture.ts). home.js plays it only while at
-       least 40% is on screen; with reduced motion it waits for the play button. -->
-  <section class="qh-section qh-wrap qh-video" id="demo">
-    <h2>Both sides of a diff, two files, another branch</h2>
-    <p class="qh-sub">Silent. 37 seconds.</p>
-    <div class="qh-video__frame">
-      <video src="{{ 'assets/video/cte-diff-demo.mp4' | url }}" poster="{{ 'assets/img/demo-poster.jpg' | url }}" width="1920" height="1080" muted loop playsinline controls preload="metadata" aria-label="A 37-second silent demo. Execute CTE is only on the right of a git diff. CTE Diff previews payments on HEAD, 12 rows, and on the working tree, 9 rows, then compares payments across orders_v1.sql and orders_v2.sql. Three failed payments are only in the old file. Then it compares orders.sql with the qa branch: three order totals changed."></video>
-    </div>
-  </section>
-
   <!-- -------------------------------------------------------------- the problem -->
   {#- Each CTE of the demo's model: what the SQL diff shows for it, next to what its data did. The counts are in
       web/demo-rows.json: the comparisons' (compare.<cte>[0]), and a new or removed CTE's row count (right.<cte>,
@@ -103,14 +92,14 @@
 
   <!-- ------------------------------------------------------------ three features
        One section per way to open a comparison: a tabbed card of what you do, beside a blueprint stage of what opens
-       and the result it gives, the stage right, left, right. Stills from the capture (scripts/capture.ts: git.mp4,
-       files.mp4); rows from web/demo-rows.json and the capture's order_payments comparison. The branch's git graph is
-       a drawing. -->
-  {%- macro stage(title, img, alt) -%}
+       with the result it gives below it, the stage right, left, right. Stills from the capture (scripts/capture.ts:
+       git.mp4, files.mp4), cropped to the lines they show; rows from web/demo-rows.json and the capture's
+       order_payments comparison. The branch's git graph is a drawing. -->
+  {%- macro stage(title, img, w, h, alt) -%}
       <i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i><i class="qh-bp__c" aria-hidden="true"></i>
       <div class="qh-bp__win">
         <div class="qh-bp__bar"><span>{{ title }}</span><b>VS Code</b></div>
-        <img src="{{ img | url }}" width="1280" height="800" loading="lazy" alt="{{ alt }}">
+        <img src="{{ img | url }}" width="{{ w }}" height="{{ h }}" loading="lazy" alt="{{ alt }}">
       </div>
   {%- endmacro %}
 
@@ -143,7 +132,7 @@ payments as (
         </div>
       </div>
       <figure class="qh-bp">
-        {{ stage("orders.sql (Working Tree)", "assets/img/way-git.jpg", "The working tree's side of the git diff: the new where line in payments, with Preview and Compare sides above each CTE") }}
+        {{ stage("orders.sql (Working Tree)", "assets/img/way-git.jpg", 880, 674, "The working tree's side of the git diff: the new where line in payments, with Preview and Compare sides above each CTE") }}
         <div class="qh-bp__card">
           <p class="qh-bp__h"><code>payments</code> <span class="qh-bp__n">12</span> rows on HEAD <b>→</b> <span class="qh-bp__n qh-bp__n--acc">9</span> in the working tree</p>
           <p class="qh-bp__m">The new <code>where</code> drops three failed payments.</p>
@@ -158,7 +147,7 @@ payments as (
     <h2>Compare <span class="qh-acc">two files</span></h2>
     <div class="qh-feat__body">
       <figure class="qh-bp">
-        {{ stage("orders_v1.sql ↔ orders_v2.sql", "assets/img/way-files.jpg", "Compare Files in the sidebar: Old orders_v1.sql, New orders_v2.sql, and their diff open beside it") }}
+        {{ stage("orders_v1.sql ↔ orders_v2.sql", "assets/img/way-files.jpg", 1100, 560, "Compare Files in the sidebar: Old orders_v1.sql, New orders_v2.sql, and their diff open beside it") }}
         <div class="qh-bp__card">
           <p class="qh-bp__h"><code>payments</code> ⇄ <span class="qh-bp__n qh-bp__n--del">3</span> rows only in the old file</p>
           <p class="qh-bp__m">Left 12 rows, right 9. The three failed payments.</p>

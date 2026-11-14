@@ -22,18 +22,6 @@
   var root = document.querySelector(".qh");
   if (!root) return;
 
-  /* Demo video: muted play only while at least 40% of it is on screen. Reduced motion waits for the play button. */
-  function video(scope) {
-    var v = scope.querySelector("#demo video");
-    if (!v || reduce) return;
-    new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (!e.isIntersecting) v.pause();
-        else { var p = v.play(); if (p) p.catch(function () {}); }
-      });
-    }, { threshold: 0.4 }).observe(v);
-  }
-  video(root);
   /* Tabs in the feature cards: click or arrow keys. Without this script every panel shows. */
   root.querySelectorAll("[data-tabs]").forEach(function (box) {
     var tabs = [].slice.call(box.querySelectorAll('[role="tab"]'));
