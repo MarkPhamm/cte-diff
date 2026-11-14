@@ -397,6 +397,7 @@ span.qh-how__r, .qh-how__json li.qh-how__r b, tr.qh-how__r td:first-child { colo
 .qp-engine[data-state="ready"] { color: var(--bp-accent); }
 .qp-engine[data-state="failed"] { color: var(--cd-removed); }
 .qp-editors { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--bp-rule-strong); }
+.qp-ed { container-type: inline-size; }
 .qp-ed + .qp-ed { border-left: 1px solid var(--bp-rule); }
 .qp-ed__head { padding: 7px 12px; border-bottom: 1px solid var(--bp-rule); font: 500 12px var(--bp-sans); color: var(--bp-ink-2); }
 .qp-ed[data-side="left"] .qp-ed__head::before { content: "−"; margin-right: 6px; color: var(--cd-removed); font-weight: 700; }
@@ -424,11 +425,18 @@ span.qh-how__r, .qh-how__json li.qh-how__r b, tr.qh-how__r td:first-child { colo
 /* The buttons' own column, left of the line numbers, as VS Code's glyph margin: the SQL is never under them. */
 .qp-lenses { position: relative; overflow: hidden; background: var(--bp-paper); }
 .qp-lens { position: absolute; left: 4px; display: flex; gap: 2px; height: var(--lh); align-items: center; }
-.qp-lens button { display: grid; place-items: center; width: 17px; height: 17px; padding: 0; border: 1px solid var(--bp-rule); border-radius: 4px;
+.qp-lens button { display: flex; align-items: center; justify-content: center; gap: 4px; width: 17px; height: 17px; padding: 0; border: 1px solid var(--bp-rule); border-radius: 4px;
   background: var(--bp-sheet); cursor: pointer; font: 500 12px var(--bp-sans); color: var(--bp-ink-2); box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
   transition: color var(--bp-t-hover) linear, border-color var(--bp-t-hover) linear, background-color var(--bp-t-hover) linear; }
 .qp-lens button:hover { color: var(--bp-accent); border-color: var(--bp-accent); }
 .qp-lens button.cd-hit { color: var(--bp-accent); border-color: var(--bp-accent); background: var(--bp-wash); }
+.qp-lens button span { display: none; }
+/* A wide pane has room for the names, as the extension's lenses show them; a narrow one keeps the icons. */
+@container (min-width: 480px) {
+  .qp-ed__body { grid-template-columns: 156px 4.5ch minmax(0, 1fr); }
+  .qp-lens button { width: auto; padding: 0 4px; }
+  .qp-lens button span { display: inline; }
+}
 .qp-body { height: 400px; }
 .qp-body .cd-side { display: flex; flex-direction: column; }
 .qp-reset { margin: auto 12px 0; padding: 10px 0 0; border: 0; background: none; color: var(--bp-accent); cursor: pointer; text-align: left;
