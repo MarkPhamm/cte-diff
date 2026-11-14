@@ -121,7 +121,7 @@ if (root) {
         .map(([i, name]) => {
           const label = name || "the whole query";
           const both = statusOf.get(name) !== "added" && statusOf.get(name) !== "removed";
-          return `<span class="qp-lens" style="top:${PAD + i * LH}px">${button("preview", side, name, "▶", `Preview ${label}, ${side === "left" ? "old" : "new"}`)}${both ? button("compare", side, name, "⇄", `Compare ${label} on both sides`) : ""}</span>`;
+          return `<span class="qp-lens" style="top:${PAD + i * LH}px">${button("preview", side, name, "▶<span>Preview</span>", `Preview ${label}, ${side === "left" ? "old" : "new"}`)}${both ? button("compare", side, name, "⇄<span>Compare</span>", `Compare ${label} on both sides`) : ""}</span>`;
         })
         .join("");
     }
