@@ -29,6 +29,29 @@ interface Token {
 const isWord = (t: Token | undefined, w: string) => t?.kind === "word" && t.text.toLowerCase() === w;
 const isIdent = (t: Token | undefined) => t?.kind === "word" || t?.kind === "quoted";
 
+/** Offset past the string literal opened at `from`, or undefined when it never closes. */
+function stringEnd(sql: string, from: number, escapes: boolean): number | undefined {
+  for (let i = from + 1; i < sql.length; ) {
+    if (escapes && sql[i] === "\\") i += 2;
+    else if (sql[i] === "'" && sql[i + 1] === "'") i += 2;
+    else if (sql[i] === "'") return i + 1;
+    else i++;
+  }
+  return undefined;
+}
+
+/** `//` after an operand and before a number is DuckDB integer division; Snowflake's `//` comment rarely starts that way. */
+function isDivision(sql: string, at: number): boolean {
+  const line = sql.slice(sql.lastIndexOf("\n", at - 1) + 1, at).trimEnd();
+  return /[\w)"\]]$/.test(line) && /^\s*\d/.test(sql.slice(at + 2));
+}
+
+/** A BigQuery `#` comment starts a line or follows a comma or `(`; elsewhere `#` is an operator, as in Postgres. */
+function isHashComment(sql: string, at: number): boolean {
+  const line = sql.slice(sql.lastIndexOf("\n", at - 1) + 1, at).trimEnd();
+  return line === "" || /[,(]$/.test(line);
+}
+
 /** Tokens outside strings and comments: words, "quoted identifiers", single punctuation, and whole Jinja tags. */
 function* tokens(sql: string): Generator<Token> {
   let i = 0;
@@ -41,7 +64,7 @@ function* tokens(sql: string): Generator<Token> {
     const c = sql[i];
     const two = sql.slice(i, i + 2);
     if (/\s/.test(c)) i++;
-    else if (two === "--" || two === "//") i = skipTo("\n", i);
+    else if (two === "--" || (two === "//" && !isDivision(sql, i)) || (c === "#" && isHashComment(sql, i))) i = skipTo("\n", i);
     else if (two === "/*") i = skipTo("*/", i + 2);
     else if (two === "{{" || two === "{%" || two === "{#") {
       const start = i;
@@ -49,14 +72,10 @@ function* tokens(sql: string): Generator<Token> {
       yield { kind: "jinja", text: sql.slice(start, i), start, end: i };
     } else if (two === "$$") i = skipTo("$$", i + 2);
     else if (c === "'") {
-      i++;
-      while (i < n) {
-        if (sql[i] === "\\") i += 2;
-        else if (sql[i] === "'" && sql[i + 1] === "'") i += 2;
-        else if (sql[i] === "'") break;
-        else i++;
-      }
-      i++;
+      // Backslash escapes in BigQuery and Snowflake, not in DuckDB or Postgres: when the escaping reading leaves the string open, read it without.
+      const end = stringEnd(sql, i, true) ?? stringEnd(sql, i, false);
+      if (end === undefined) yield { kind: "punct", text: c, start: i, end: ++i };
+      else i = end;
     } else if (c === '"') {
       const start = i++;
       while (i < n) {
