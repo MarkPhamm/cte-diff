@@ -6,7 +6,7 @@
  * near the screen) over web/sample.ts's made-up tables, and rerun as you type. The SQL tab shows that SQL for the
  * chosen warehouse (BigQuery, DuckDB, Redshift or Snowflake) while the rows always come from DuckDB. Bundled by
  * `npm run site:js` into docs/javascripts/playground.js. */
-import { compareCtes, cteQuery, type Status } from "../src/cte.ts";
+import { compareCtes, cteQuery, parse, type Status } from "../src/cte.ts";
 import { compareQuery, forAdapter, readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
 import { after, before, forDuckdb, tables } from "./sample.ts";
@@ -15,6 +15,8 @@ import { button, diffRows, esc, highlight, lensLines, resultsPanel, sidebarList,
 const DUCKDB = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.32.0/+esm";
 const LH = 20; // editor line height, px: the coloured copy, the gutter and the buttons line up with the textarea by it
 const PAD = 10;
+/** The sample's CTE names and "" (the whole query): the only names lens_click sends to GA4, so a visitor's own SQL stays theirs. */
+const SAMPLE_CTES = new Set(["", ...[...parse(before).ctes, ...parse(after).ctes].map((c) => c.name)]);
 
 /** The duckdb-wasm calls the playground makes. */
 interface Conn {
@@ -219,7 +221,8 @@ if (root) {
     const t = e.target as HTMLElement;
     const act = t.closest<HTMLElement>("button[data-act]");
     if (act) {
-      track("lens_click", { act: act.dataset.act!, cte: act.dataset.name!, where: "playground" });
+      const name = act.dataset.name!;
+      track("lens_click", { act: act.dataset.act!, cte: SAMPLE_CTES.has(name) ? name : "custom", where: "playground" });
       return select({ act: act.dataset.act as Act, side: act.dataset.side as Side, name: act.dataset.name! });
     }
     const tb = t.closest<HTMLElement>("[data-tab]");
