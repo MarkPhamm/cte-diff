@@ -10,7 +10,7 @@ import { compareCtes, cteQuery, type Status } from "../src/cte.ts";
 import { compareQuery, forAdapter, readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
 import { after, before, forDuckdb, tables } from "./sample.ts";
-import { button, diffRows, esc, highlight, lensLines, resultsPanel, sidebarList, summary, type Act, type Side } from "./ui.ts";
+import { button, diffRows, esc, highlight, lensLines, resultsPanel, sidebarList, summary, track, type Act, type Side } from "./ui.ts";
 
 const DUCKDB = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.32.0/+esm";
 const LH = 20; // editor line height, px: the coloured copy, the gutter and the buttons line up with the textarea by it
@@ -218,7 +218,10 @@ if (root) {
   root.addEventListener("click", (e) => {
     const t = e.target as HTMLElement;
     const act = t.closest<HTMLElement>("button[data-act]");
-    if (act) return select({ act: act.dataset.act as Act, side: act.dataset.side as Side, name: act.dataset.name! });
+    if (act) {
+      track("lens_click", { act: act.dataset.act!, cte: act.dataset.name!, where: "playground" });
+      return select({ act: act.dataset.act as Act, side: act.dataset.side as Side, name: act.dataset.name! });
+    }
     const tb = t.closest<HTMLElement>("[data-tab]");
     if (tb) return pickTab(tb.dataset.tab as typeof tab);
     const ad = t.closest<HTMLElement>("[data-adapter]");
