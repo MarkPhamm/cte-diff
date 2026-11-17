@@ -10,7 +10,7 @@ import { readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
 import demoRows from "./demo-rows.json" with { type: "json" };
 import { after, before } from "./sample.ts";
-import { button, diffRows, highlight, lensLines, resultsPanel, sidebarList, summary, type Act, type Side } from "./ui.ts";
+import { button, diffRows, highlight, lensLines, resultsPanel, sidebarList, summary, track, type Act, type Side } from "./ui.ts";
 
 const ROWS = demoRows as Record<Side | "compare", Record<string, Row[]>>;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -86,7 +86,11 @@ if (root) {
   root.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
     const b = target.closest<HTMLButtonElement>("button[data-act]");
-    if (b) return void run(b.dataset.act as Act, b.dataset.side as Side, b.dataset.name!);
+    if (b) {
+      // The autoplay clicks too; count only the visitor's clicks.
+      if (e.isTrusted) track("lens_click", { act: b.dataset.act!, cte: b.dataset.name!, where: "demo" });
+      return void run(b.dataset.act as Act, b.dataset.side as Side, b.dataset.name!);
+    }
     const li = target.closest<HTMLElement>(".cd-side__list li");
     if (li) {
       select(li.dataset.name!);

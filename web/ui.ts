@@ -13,6 +13,10 @@ export type Act = "preview" | "compare";
 const MARK: Record<Status, string> = { changed: "~", added: "+", removed: "−", affected: "↓", same: "" };
 const NOTE: Record<Status, string> = { changed: "changed", added: "new", removed: "removed", affected: "reads a changed CTE", same: "" };
 
+/** Sends a GA4 event through the Google tag that overrides/main.html loads; a no-op when a blocker stopped it. */
+export const track = (name: string, params: Record<string, string>) =>
+  (globalThis as { gtag?: (...args: unknown[]) => void }).gtag?.("event", name, params);
+
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** Keywords bold, Jinja muted, strings tinted, comments faded: enough colour to read SQL. */
