@@ -6,6 +6,7 @@
 - **Preview** and **Compare sides** work on a CTE defined inside a Jinja block, such as `{% if var('include_b') %}` or `{% for %}`. Before, the query sent to dbt cut the block off before its `{% endif %}`, and dbt failed with `Unexpected end of template`.
 - **Preview** and **Compare sides** work on a CTE of a query wrapped in parentheses, `(with ... select ...)`. Before, the query sent to dbt lost the closing parenthesis and failed with a syntax error.
 - Previewing or comparing a whole query that ends with `;` and then a comment, such as `select * from a; -- done`, works. Before, the `;` stayed in the query sent to dbt and it failed with a syntax error. This happened most with queries pasted into **New Comparison (Paste Two Queries)**.
+- Integers above 2^53, such as 64-bit hash keys from Snowflake `HASH()` or BigQuery `FARM_FINGERPRINT()`, show their exact digits in previews and comparisons, and **Save JSON** keeps them. Before, the panel showed a nearby number, and a comparison could match a changed row to the wrong partner.
 
 ## 0.12.1
 
