@@ -173,6 +173,10 @@ const digits = (n: string) => n.replace(/^-/, "").replace(/e.*$/i, "").replace("
 const exact = (_key: string, v: unknown, ctx?: { source?: string }) =>
   typeof v === "number" && ctx?.source !== undefined && digits(ctx.source).length > 15 && digits(ctx.source) !== digits(String(v)) ? ctx.source : v;
 
+/** Whether `v` is a number kept as its digits by the reader, because a double would round it. */
+export const isExactNumber = (v: unknown): v is string =>
+  typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v) && digits(v).length > 15 && digits(v) !== digits(String(Number(v)));
+
 /** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. A JSON comparison's rows hold
  * their data as a `__row` JSON string (counts first); Redshift's hold the row's own columns beside `__side`. */
 export function readComparison(rows: Row[]): Comparison {
@@ -192,7 +196,7 @@ export function readComparison(rows: Row[]): Comparison {
   return out;
 }
 
-/** The rows from `dbt show --output json`'s stdout: dbt Fusion prints a JSON array on a line of its own; dbt-core
+/** The rows from `dbt show --output json`'s stdout, a number a double would round kept as its digits: dbt Fusion prints a JSON array on a line of its own; dbt-core
  * prints `{"node": ..., "show": [...]}`, possibly over several lines. Log lines around it are ignored. */
 export function parseShow(stdout: string): Row[] | undefined {
   const lines = stdout.split(/\r?\n/);
@@ -202,7 +206,7 @@ export function parseShow(stdout: string): Row[] | undefined {
     const text = balanced(lines.slice(i).join("\n").trimStart());
     if (!text) continue;
     try {
-      const v = JSON.parse(text);
+      const v = JSON.parse(text, exact);
       if (Array.isArray(v)) return v;
       if (Array.isArray(v?.show)) return v.show;
     } catch {

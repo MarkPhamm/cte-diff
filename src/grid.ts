@@ -95,9 +95,11 @@ export function markdown(g: Grid): string {
   ].join("\n");
 }
 
-/** A JSON array of row objects: numbers as numbers, NULL as null, a column the row lacks left out. */
+/** A JSON array of row objects: numbers as numbers, NULL as null, a column the row lacks left out. A number a double
+ * would round, such as a 64-bit hash key, stays its digits, as a string. */
 export function json(g: Grid): string {
-  const value = (c: Cell) => (c.kind === "num" ? Number(c.text) : c.kind === "null" ? null : c.text);
+  const num = (text: string) => (String(Number(text)) === text ? Number(text) : text);
+  const value = (c: Cell) => (c.kind === "num" ? num(c.text) : c.kind === "null" ? null : c.text);
   const rows = g.rows.map((r) => Object.fromEntries(g.cols.flatMap((name, i) => (r[i].kind === "absent" ? [] : [[name, value(r[i])]]))));
   return JSON.stringify(rows, null, 2) + "\n";
 }

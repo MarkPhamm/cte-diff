@@ -1,11 +1,14 @@
 /* The results view's HTML and CSS: a preview's rows, a comparison's paired rows. No `vscode` or `node:` import, so the
  * extension's panel (src/panel.ts) and the docs site's live demo (web/demo.ts) draw the same view. */
-import { cutFrom, pairRows, type Comparison, type Row } from "./query.ts";
+import { cutFrom, isExactNumber, pairRows, type Comparison, type Row } from "./query.ts";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const n = (x: number) => x.toLocaleString("en-US");
 const plural = (k: number, word: string) => `${n(k)} ${word}${k === 1 ? "" : "s"}`;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** A number, or one kept as its digits because a double would round it. */
+const isNumber = (v: unknown) => typeof v === "number" || isExactNumber(v);
 
 /** A cell; `changed` marks a value that differs from the row's other version. */
 function cell(r: Row, c: string, changed = false): string {
@@ -13,7 +16,7 @@ function cell(r: Row, c: string, changed = false): string {
   if (!(c in r)) return '<td class="absent" title="Not a column on this side"></td>';
   const v = r[c];
   if (v === null || v === undefined) return `<td class="${["null", ...cls].join(" ")}">NULL</td>`;
-  if (typeof v === "number") cls.push("num");
+  if (isNumber(v)) cls.push("num");
   const attr = cls.length ? ` class="${cls.join(" ")}"` : "";
   return `<td${attr}>${esc(typeof v === "object" ? JSON.stringify(v) : String(v))}</td>`;
 }
@@ -28,7 +31,7 @@ function columns(rows: Row[]): string[] {
 /** A table under a sticky header; a column of numbers is right-aligned, header included. A header sorts the rows when
  * clicked; the toolbar above filters them, hides and pins columns, copies and saves (src/grid.ts). `pins` start pinned. */
 function table(rows: Row[], cols: string[], first: string, body: string, pins: string[] = []): string {
-  const numeric = (c: string) => rows.some((r) => typeof r[c] === "number") && rows.every((r) => r[c] == null || typeof r[c] === "number");
+  const numeric = (c: string) => rows.some((r) => isNumber(r[c])) && rows.every((r) => r[c] == null || isNumber(r[c]));
   const head = cols.map((c) => `<th tabindex="0" title="Sort"${numeric(c) ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
   // The column picker's boxes carry the column's cell index (the row number or −/+ is cell 0).
   const picker = cols

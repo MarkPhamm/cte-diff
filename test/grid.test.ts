@@ -58,6 +58,12 @@ const grid: Grid = {
   ],
 };
 
+test("json keeps the digits of a number a double would round", () => {
+  const g: Grid = { cols: ["id", "n"], rows: [[{ text: "9007199254740993", kind: "num" }, { text: "12.5", kind: "num" }]] };
+  assert.match(json(g), /"id": "9007199254740993"/);
+  assert.deepEqual(JSON.parse(json(g)), [{ id: "9007199254740993", n: 12.5 }]);
+});
+
 test("csv quotes what needs it and leaves NULL and a missing column empty", () => {
   assert.equal(csv(grid), 'side,id,note,amount\r\nleft,1,"say ""hi"", then\nleave",\r\nright,1,a|b,\r\n');
 });
