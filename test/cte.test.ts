@@ -56,6 +56,14 @@ select * from c`;
   );
 });
 
+test("a CTE of a query wrapped in parentheses closes each wrapper", () => {
+  const body = "with orders as (select 7 as id) select * from orders";
+  assert.equal(cteQuery(body, "orders"), "with orders as (select 7 as id)\nselect * from orders");
+  assert.equal(cteQuery(`(${body})`, "orders"), "(with orders as (select 7 as id)\nselect * from orders)");
+  assert.equal(cteQuery(`((${body}))`, "orders"), "((with orders as (select 7 as id)\nselect * from orders))");
+  assert.equal(cteQuery(`(with h as (${body}) select * from h)`, "orders", ["h"]), "(with h as (with orders as (select 7 as id)\nselect * from orders)\nselect * from h)");
+});
+
 test("the whole query drops the trailing semicolon", () => {
   assert.ok(cteQuery(REVIEW).endsWith("select * from order_versions"));
 });

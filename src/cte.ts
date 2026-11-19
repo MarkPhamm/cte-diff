@@ -180,7 +180,10 @@ export function cteQuery(sql: string, name?: string, path: string[] = []): strin
   let tail = "";
   for (let i = names.length - 1; i > 0; i--) tail += `\nselect * from ${names[i]})`;
   const kept = sql.slice(0, found.cte.bodyEnd);
-  return `${kept}${jinjaClosers(kept)}${tail}\nselect * from ${names[0]}`;
+  // `(with ...)`: the query wrapped in parentheses keeps them, so each one opened before the WITH closes at the end.
+  let wraps = 0;
+  for (const t of tokens(sql.slice(0, parse(sql).withStart))) if (t.text === "(") wraps++;
+  return `${kept}${jinjaClosers(kept)}${tail}\nselect * from ${names[0]}${")".repeat(wraps)}`;
 }
 
 /** Jinja tags that open a block closed by `{% end<tag> %}`. `set` opens one only without `=`: `{% set x %}...{% endset %}`. */
