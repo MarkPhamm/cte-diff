@@ -130,6 +130,23 @@ test("readComparison splits counts from rows, whatever the column case", () => {
   ]);
 });
 
+test("readComparison keeps a number's own digits when a double would round them", () => {
+  const c = readComparison([
+    { __side: "left", __row: '{"fx_rate":0.123456789012345678,"id":9007199254740993,"amount":12.50,"ratio":0.1}' },
+    { __side: "right", __row: '{"fx_rate":0.123456789012345679,"id":9007199254740993,"amount":12.5,"ratio":0.1}' },
+  ]);
+  assert.deepEqual(c.rows, [
+    { side: "left", row: { fx_rate: "0.123456789012345678", id: "9007199254740993", amount: 12.5, ratio: 0.1 } },
+    { side: "right", row: { fx_rate: "0.123456789012345679", id: "9007199254740993", amount: 12.5, ratio: 0.1 } },
+  ]);
+});
+
+test("compareQuery's DuckDB rows take a decimal's text, not json_each's double", () => {
+  const duckdb = forAdapter(compareQuery("select 1 x", "select 2 x"), "duckdb");
+  assert.match(duckdb, /select COLUMNS\(\*\)::varchar from \(select unnest\(__t\)\)/);
+  assert.match(duckdb, /when o\.type = 'DOUBLE' and regexp_full_match\(v\.value ->> '\$', '-\?\[0-9\]\+\(\\\.\[0-9\]\+\)\?'\) then v\.value ->> '\$'/);
+});
+
 test("readComparison reads Redshift's raw rows: the row's columns beside __side, no counts", () => {
   const c = readComparison([
     { __side: "left", id: 1, amount: 32 },

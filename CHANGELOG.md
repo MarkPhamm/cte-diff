@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.2
+
+- On DuckDB, **Compare sides** catches a decimal that differs only past its 15th digit, such as `0.123456789012345678` against `0.123456789012345679`, and the changed cell shows both values in full. Before, the comparison read both as the same number and said the sides matched.
+
 ## 0.12.1
 
 - A CTE written `as materialized (...)` or `as not materialized (...)`, as DuckDB allows, is found like any other. Before, it and every CTE after it were missing from the sidebar, the CodeLens and the Command Palette.
