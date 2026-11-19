@@ -179,7 +179,28 @@ export function cteQuery(sql: string, name?: string, path: string[] = []): strin
   const names = [...found.holders, found.cte].map((c) => c.name);
   let tail = "";
   for (let i = names.length - 1; i > 0; i--) tail += `\nselect * from ${names[i]})`;
-  return `${sql.slice(0, found.cte.bodyEnd)}${tail}\nselect * from ${names[0]}`;
+  const kept = sql.slice(0, found.cte.bodyEnd);
+  return `${kept}${jinjaClosers(kept)}${tail}\nselect * from ${names[0]}`;
+}
+
+/** Jinja tags that open a block closed by `{% end<tag> %}`. `set` opens one only without `=`: `{% set x %}...{% endset %}`. */
+const JINJA_BLOCKS = new Set(["if", "for", "macro", "call", "filter", "set", "with", "block", "autoescape", "raw"]);
+
+/** The end tags of the Jinja blocks `sql` leaves open, innermost first: a CTE inside `{% if %}` is cut off before the
+ * `{% endif %}`, and dbt rejects a template whose block never closes. */
+export function jinjaClosers(sql: string): string {
+  const open: string[] = [];
+  for (const t of tokens(sql)) {
+    if (t.kind !== "jinja" || !t.text.startsWith("{%")) continue;
+    const m = /^{%[-+]?\s*(\w+)([^]*?)[-+]?%}$/.exec(t.text);
+    if (!m) continue;
+    const [, tag, rest] = m;
+    if (tag.startsWith("end")) {
+      const i = open.lastIndexOf(tag.slice(3));
+      if (i >= 0) open.length = i;
+    } else if (JINJA_BLOCKS.has(tag) && !(tag === "set" && rest.includes("="))) open.push(tag);
+  }
+  return open.reverse().map((tag) => `\n{% end${tag} %}`).join("");
 }
 
 const norm = (s: string) => (s.startsWith('"') ? s : s.toUpperCase());
