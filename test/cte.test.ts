@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { branches, branchQuery, compareCtes, cteQuery, nestedCtes, parse, subqueries, subqueryQuery } from "../src/cte.ts";
+import { branches, branchQuery, compareCtes, cteQuery, jinjaClosers, nestedCtes, parse, subqueries, subqueryQuery } from "../src/cte.ts";
 
 const names = (sql: string) => parse(sql).ctes.map((c) => c.name);
 
@@ -38,6 +38,22 @@ test("a CTE's query keeps the CTEs before it and selects from it", () => {
   assert.ok(q.endsWith("where o.order_id = 42\n)\nselect * from key_tuples"));
   assert.ok(!q.includes("order_versions"));
   assert.ok(cteQuery(REVIEW, "ORDER_VERSIONS").endsWith(")\nselect * from order_versions"), "unquoted names match any case");
+});
+
+test("a CTE inside a Jinja block closes the block before selecting from it", () => {
+  const sql = `with a as (select 1 as x),
+{% if var('include_b', true) %}
+b as (select * from a),
+{% endif %}
+c as (select * from a)
+select * from c`;
+  assert.equal(cteQuery(sql, "b"), "with a as (select 1 as x),\n{% if var('include_b', true) %}\nb as (select * from a)\n{% endif %}\nselect * from b");
+  assert.equal(cteQuery(sql, "c"), sql.replace("\nselect * from c", "") + "\nselect * from c", "a closed block adds nothing");
+  assert.equal(
+    jinjaClosers("{% set n = 1 %}{% set cols %}a{% endset %}{%- for i in r -%}{% if i %}x{% elif j %}{% else %}"),
+    "\n{% endif %}\n{% endfor %}",
+    "innermost first; set with = and a closed set block open nothing",
+  );
 });
 
 test("the whole query drops the trailing semicolon", () => {
