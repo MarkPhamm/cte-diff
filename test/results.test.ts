@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { comparisonHtml, errorHtml, rowsHtml, setupHtml, unsupportedHtml } from "../src/results.ts";
+import { readComparison } from "../src/query.ts";
 
 test("rowsHtml shows the run's files, target and time under the heading", () => {
   assert.match(rowsHtml("x", [], 100, "orders.sql · target dev · 1.2 s"), /<h2>x<\/h2><p class="meta muted">orders.sql · target dev · 1.2 s<\/p>/);
@@ -52,6 +53,20 @@ test("comparisonHtml lists a changed row as a pair with its changed cell marked"
   // data-pair keeps the two versions together when the view is sorted.
   assert.match(html, /<tr class="l" data-pair="0"><td class="side">−<\/td><td class="num">1<\/td><td class="chg num">120<\/td><\/tr>/);
   assert.match(html, /<tr class="r" data-pair="0"><td class="side">\+<\/td><td class="num">1<\/td><td class="chg num">160<\/td><\/tr>/);
+});
+
+test("comparisonHtml marks a decimal that differs past a double's 17 digits", () => {
+  const html = comparisonHtml(
+    "rates",
+    readComparison([
+      { __side: "counts", __row: '{"left":1,"right":1,"only_left":1,"only_right":1}' },
+      { __side: "left", __row: '{"fx_rate":0.123456789012345678,"order_id":1}' },
+      { __side: "right", __row: '{"fx_rate":0.123456789012345679,"order_id":1}' },
+    ]),
+    100,
+  );
+  assert.match(html, /<td class="chg">0\.123456789012345678<\/td>/);
+  assert.match(html, /<td class="chg">0\.123456789012345679<\/td>/);
 });
 
 test("comparisonHtml says when both sides match", () => {

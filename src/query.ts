@@ -36,12 +36,17 @@ export const forAdapter = (sql: string, type: string): string => {
 export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPORTED} (\\w+)`))?.[1];
 
 /** A row of `__t` as JSON text. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column order, so its keys
- * are sorted by hand; BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
+ * are sorted by hand, through json_each, which reads every decimal back as a double: a value it reads as one takes the
+ * column's own text instead (`__v`, the row cast to text), so decimals past a double's 17 digits still differ (decimals
+ * nested in a struct or list still round). BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
  * which keeps the STRUCT's field order (TO_JSON would sort the keys), so a reordered column list reads as a
  * difference there. */
 const rowJson: Record<Exclude<Adapter, "redshift">, string> = {
   bigquery: "TO_JSON_STRING(__t)",
-  duckdb: `(select '{' || string_agg(to_json(key) || ':' || value, ',' order by key) || '}' from json_each(to_json(__t)))`,
+  duckdb:
+    "(select '{' || string_agg(to_json(o.key) || ':' || case when o.type = 'DOUBLE' and regexp_full_match(v.value ->> '$', '-?[0-9]+(\\.[0-9]+)?') " +
+    "then v.value ->> '$' else o.value end, ',' order by o.key) || '}' from json_each(to_json(__t)) o " +
+    "join json_each((select to_json(__v) from (select COLUMNS(*)::varchar from (select unnest(__t))) __v)) v on o.key = v.key)",
   snowflake: "to_json(object_construct_keep_null(*))",
 };
 
@@ -159,6 +164,15 @@ export function pairRows(c: Comparison): Paired {
   return { key, pairs, left: rest, right: right.filter((r) => !paired.has(r)) };
 }
 
+/** A number's significant digits: `-0.1250` and `1.25e-1` both give `125`. */
+const digits = (n: string) => n.replace(/^-/, "").replace(/e.*$/i, "").replace(".", "").replace(/^0+/, "").replace(/0+$/, "");
+
+/** A JSON.parse reviver that keeps a number's source text when a double would change its digits: a decimal past 17
+ * digits, an integer past 2^53. Needs the reviver's source context (Node 22, current browsers); without it, numbers
+ * stay doubles. */
+const exact = (_key: string, v: unknown, ctx?: { source?: string }) =>
+  typeof v === "number" && ctx?.source !== undefined && digits(ctx.source).length > 15 && digits(ctx.source) !== digits(String(v)) ? ctx.source : v;
+
 /** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. A JSON comparison's rows hold
  * their data as a `__row` JSON string (counts first); Redshift's hold the row's own columns beside `__side`. */
 export function readComparison(rows: Row[]): Comparison {
@@ -168,7 +182,7 @@ export function readComparison(rows: Row[]): Comparison {
     const side = get(r, "__side");
     const text = get(r, "__row");
     if (side === "counts") out.counts = JSON.parse(String(text));
-    else if (text !== undefined) out.rows.push({ side: side === "left" ? "left" : "right", row: JSON.parse(String(text)) });
+    else if (text !== undefined) out.rows.push({ side: side === "left" ? "left" : "right", row: JSON.parse(String(text), exact) });
     else
       out.rows.push({
         side: side === "left" ? "left" : "right",
