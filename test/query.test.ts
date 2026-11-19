@@ -49,6 +49,11 @@ test("compareQuery raises a plain error on a warehouse it has no SQL for", () =>
   assert.equal(unsupported("Database Error: syntax error at or near 'except'"), undefined);
 });
 
+test("parseShow keeps an integer past 2^53 as its digits", () => {
+  const out = '{"node": "inline_query", "show": [{"id": 9007199254740993, "small": 9007199254740991, "amount": 1.5}]}';
+  assert.deepEqual(parseShow(out), [{ id: "9007199254740993", small: 9007199254740991, amount: 1.5 }]);
+});
+
 test("parseShow reads dbt Fusion's output, logs around it", () => {
   // Captured from dbt 2.0.9: dbt show --inline ... --output json
   const out = `       dbt 2.0.9
