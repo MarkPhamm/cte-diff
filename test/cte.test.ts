@@ -68,6 +68,15 @@ test("the whole query drops the trailing semicolon", () => {
   assert.ok(cteQuery(REVIEW).endsWith("select * from order_versions"));
 });
 
+test("the whole query drops a final semicolon followed by comments", () => {
+  const q = "with a as (select 1 as x)\nselect * from a";
+  assert.equal(cteQuery(`${q}; -- done`), q);
+  assert.equal(cteQuery(`${q};;\n/* end */ ;\n{# jinja note #}\n`), q);
+  assert.equal(cteQuery(`${q} -- no semicolon`), `${q} -- no semicolon`);
+  assert.equal(cteQuery(`${q} -- a comment's ;`), `${q} -- a comment's ;`, "a ; inside a comment isn't the query's");
+  assert.equal(cteQuery(`${q} where x = ';'`), `${q} where x = ';'`, "a ; inside a string isn't either");
+});
+
 test("dbt Jinja before the WITH is kept, and Jinja inside is skipped", () => {
   const sql = `{{ config(materialized='table', tags=['a)']) }}
 {% set cols = ["a", "b"] %}
