@@ -16,6 +16,21 @@ not a line`);
   assert.deepEqual(env, { DBT_ENV_NAME: "dev", SNOWFLAKE_ROLE: "TRANSFORMER", KEY_PASSPHRASE: "a b#c", WAREHOUSE: "WH", EMPTY: "" });
 });
 
+test("parseEnv drops a comment after a quoted value and reads a multi-line quoted value whole", () => {
+  const env = parseEnv(`SNOWFLAKE_PASSWORD="s3cret" # prod
+DBT_USER='mark'  # me
+SNOWFLAKE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+MIIE
+-----END PRIVATE KEY-----"
+AFTER=1`);
+  assert.deepEqual(env, {
+    SNOWFLAKE_PASSWORD: "s3cret",
+    DBT_USER: "mark",
+    SNOWFLAKE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----",
+    AFTER: "1",
+  });
+});
+
 test("findDbt: the setting wins, else plain dbt when nothing is installed where it looks", () => {
   assert.equal(findDbt("/x/dbt", []), "/x/dbt");
   const none = path.join(import.meta.dirname, "no-such-home");

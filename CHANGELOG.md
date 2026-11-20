@@ -2,6 +2,7 @@
 
 ## 0.12.2
 
+- A dbt project's `.env` is read as `python-dotenv` reads it: a quoted value followed by a `# comment` loses its quotes, and a quoted value over several lines, such as a PEM private key for a Snowflake key-pair login, is kept whole. Before, dbt got the quotes or only the key's first line.
 - On DuckDB, **Compare sides** catches a decimal that differs only past its 15th digit, such as `0.123456789012345678` against `0.123456789012345679`, and the changed cell shows both values in full. Before, the comparison read both as the same number and said the sides matched.
 - **Preview** and **Compare sides** work on a CTE defined inside a Jinja block, such as `{% if var('include_b') %}` or `{% for %}`. Before, the query sent to dbt cut the block off before its `{% endif %}`, and dbt failed with `Unexpected end of template`.
 - **Preview** and **Compare sides** work on a CTE of a query wrapped in parentheses, `(with ... select ...)`. Before, the query sent to dbt lost the closing parenthesis and failed with a syntax error.
