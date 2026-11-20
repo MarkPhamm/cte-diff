@@ -17,14 +17,14 @@ not a line`);
 });
 
 test("parseEnv drops a comment after a quoted value and reads a multi-line quoted value whole", () => {
-  const env = parseEnv(`SNOWFLAKE_PASSWORD="s3cret" # prod
+  const env = parseEnv(`SNOWFLAKE_ROLE="analyst" # prod
 DBT_USER='mark'  # me
 SNOWFLAKE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
 MIIE
 -----END PRIVATE KEY-----"
 AFTER=1`);
   assert.deepEqual(env, {
-    SNOWFLAKE_PASSWORD: "s3cret",
+    SNOWFLAKE_ROLE: "analyst",
     DBT_USER: "mark",
     SNOWFLAKE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----",
     AFTER: "1",
