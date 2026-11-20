@@ -32,12 +32,23 @@ export function findDbt(setting: string, dirs: string[], platform = process.plat
  * values there, and VS Code doesn't load it. */
 export function parseEnv(text: string): Record<string, string> {
   const env: Record<string, string> = {};
-  for (const line of text.split(/\r?\n/)) {
-    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_]\w*)\s*=\s*(.*?)\s*$/);
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^\s*(?:export\s+)?([A-Za-z_]\w*)\s*=\s*(.*?)\s*$/);
     if (!m) continue;
-    const v = m[2];
+    let v = m[2];
     const q = v[0];
-    env[m[1]] = (q === '"' || q === "'") && v.endsWith(q) && v.length > 1 ? v.slice(1, -1) : v.replace(/\s+#.*$/, "");
+    if (q === '"' || q === "'") {
+      // A quoted value runs to its closing quote, over several lines for a PEM key; what follows the quote is a comment.
+      let body = v.slice(1);
+      let close = body.indexOf(q);
+      while (close < 0 && i + 1 < lines.length) {
+        body += "\n" + lines[++i];
+        close = body.indexOf(q);
+      }
+      v = close < 0 ? q + body : body.slice(0, close);
+    } else v = v.replace(/\s+#.*$/, "");
+    env[m[1]] = v;
   }
   return env;
 }
