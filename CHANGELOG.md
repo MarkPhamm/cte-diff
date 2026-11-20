@@ -7,6 +7,7 @@
 - **Preview** and **Compare sides** work on a CTE of a query wrapped in parentheses, `(with ... select ...)`. Before, the query sent to dbt lost the closing parenthesis and failed with a syntax error.
 - Previewing or comparing a whole query that ends with `;` and then a comment, such as `select * from a; -- done`, works. Before, the `;` stayed in the query sent to dbt and it failed with a syntax error. This happened most with queries pasted into **New Comparison (Paste Two Queries)**.
 - Integers above 2^53, such as 64-bit hash keys from Snowflake `HASH()` or BigQuery `FARM_FINGERPRINT()`, show their exact digits in previews and comparisons, and **Save JSON** keeps them. Before, the panel showed a nearby number, and a comparison could match a changed row to the wrong partner.
+- Models that use a string ending in a backslash on DuckDB or Postgres (`split_part(path, '\', -1)`), DuckDB's `//` integer division, or a BigQuery `#` comment with an apostrophe in it keep their **Preview** and **Compare sides** buttons and sidebar entries. Before, the CTEs of such a model were not found at all.
 
 ## 0.12.1
 
