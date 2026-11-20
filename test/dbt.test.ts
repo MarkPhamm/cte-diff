@@ -77,6 +77,21 @@ test("debug stops a show still running, and says when dbt isn't found", async ()
   }
 });
 
+test("a missing project folder and a dbtPath that is a folder each get their own message", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cte-diff-"));
+  try {
+    const dbt = path.join(dir, "dbt");
+    fs.writeFileSync(dbt, `#!${process.execPath}\nconsole.log("ok");\n`, { mode: 0o755 });
+    const gone = path.join(dir, "no-such-project");
+    await assert.rejects(show("select 1", { dbt, projectDir: gone, limit: 1 }), /project folder .*no-such-project does not exist.*cteDiff\.projectDir/);
+    const folder = path.join(dir, "bin");
+    fs.mkdirSync(folder);
+    await assert.rejects(show("select 1", { dbt: folder, projectDir: dir, limit: 1 }), /dbt could not start: .*EACCES.*cteDiff\.dbtPath/);
+  } finally {
+    fs.rmSync(dir, { recursive: true });
+  }
+});
+
 test("show gives the query's size when it is too long for the command line", async () => {
   // 2 MiB: over Linux's 128 KiB for one argument and macOS's 1 MiB for all of them.
   const sql = "x".repeat(2048 * 1024);

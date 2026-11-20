@@ -110,7 +110,10 @@ function runDbt(args: string[], o: Omit<ShowOptions, "limit">, signal?: AbortSig
         if (running === child) running = undefined;
         o.log?.(stderr.trim() ? `${stdout}\n${stderr}` : stdout);
         if (signal?.aborted || child.killed) return reject(new Error("Cancelled"));
-        if ((err as NodeJS.ErrnoException | null)?.code === "ENOENT") return reject(new Error(notFound(o.dbt)));
+        const code = (err as NodeJS.ErrnoException | null)?.code;
+        // A string code is a spawn error; dbt's own failure sets a numeric exit status. Node reports a missing cwd as ENOENT, too.
+        if (code === "ENOENT") return reject(new Error(fs.existsSync(o.projectDir) ? notFound(o.dbt) : `The dbt project folder ${o.projectDir} does not exist. Check cteDiff.projectDir.`));
+        if (typeof code === "string") return reject(new Error(`dbt could not start: ${err!.message}. Check that cteDiff.dbtPath is the dbt executable, not a folder.`));
         resolve({ stdout, stderr, failed: err !== null });
       });
     } catch (e) {
