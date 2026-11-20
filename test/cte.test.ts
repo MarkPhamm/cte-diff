@@ -406,3 +406,26 @@ test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs c
   assert.deepEqual(compareCtes("select 1", "select  1;"), [{ status: "same" }]);
   assert.deepEqual(compareCtes("select 1", "select 2"), [{ status: "changed" }]);
 });
+
+test("a string ending in a backslash, as DuckDB and Postgres allow, does not hide the CTEs", () => {
+  const sql = "with files as (select split_part(path, '\\', -1) as file_name from raw_files),\nfinal as (select * from files)\nselect * from final";
+  assert.deepEqual(names(sql), ["files", "final"]);
+});
+
+test("a backslash escape inside a string still works", () => {
+  assert.deepEqual(names("with a as (select 'it\\'s' as x), b as (select 'y' as y) select * from b"), ["a", "b"]);
+});
+
+test("`//` between numbers or columns is integer division, not a comment", () => {
+  const sql = "with p as (select (amount // 100) as dollars from payments), final as (select * from p) select * from final";
+  assert.deepEqual(names(sql), ["p", "final"]);
+});
+
+test("a `//` comment still hides what follows it", () => {
+  assert.deepEqual(names("with a as (select 1 // it's (one)\n), b as (select 2) select * from b"), ["a", "b"]);
+});
+
+test("a BigQuery # comment holding a quote does not open a string", () => {
+  const sql = "with a as (\n  select id, # don't (keep)\n  name\n  from t\n), b as (select * from a) select * from b";
+  assert.deepEqual(names(sql), ["a", "b"]);
+});
