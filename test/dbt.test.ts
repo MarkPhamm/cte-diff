@@ -112,3 +112,16 @@ test("show gives the query's size when it is too long for the command line", asy
   const sql = "x".repeat(2048 * 1024);
   await assert.rejects(show(sql, { dbt: process.execPath, projectDir: import.meta.dirname, limit: 1 }), /the query is 2048 KiB/);
 });
+
+test("parseEnv keeps text after an escaped quote in a double-quoted value", () => {
+  const env = parseEnv(`APP_LABEL="order \\"ready\\" today" # display label
+MULTI="first \\"a\\"
+second \\"b\\" end"
+NEXT=after
+SINGLE='keep \\ as is'
+`);
+  assert.equal(env.APP_LABEL, 'order "ready" today');
+  assert.equal(env.MULTI, 'first "a"\nsecond "b" end');
+  assert.equal(env.NEXT, "after");
+  assert.equal(env.SINGLE, "keep \\ as is");
+});

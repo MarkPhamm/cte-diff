@@ -40,13 +40,22 @@ export function parseEnv(text: string): Record<string, string> {
     const q = v[0];
     if (q === '"' || q === "'") {
       // A quoted value runs to its closing quote, over several lines for a PEM key; what follows the quote is a comment.
+      // In double quotes a backslash escapes the next character, so `\"` does not close the value.
+      const closeOf = (b: string) => {
+        for (let k = 0; k < b.length; k++) {
+          if (q === '"' && b[k] === "\\") k++;
+          else if (b[k] === q) return k;
+        }
+        return -1;
+      };
       let body = v.slice(1);
-      let close = body.indexOf(q);
+      let close = closeOf(body);
       while (close < 0 && i + 1 < lines.length) {
         body += "\n" + lines[++i];
-        close = body.indexOf(q);
+        close = closeOf(body);
       }
       v = close < 0 ? q + body : body.slice(0, close);
+      if (close >= 0 && q === '"') v = v.replace(/\\(["\\])/g, "$1");
     } else v = v.replace(/\s+#.*$/, "");
     env[m[1]] = v;
   }
