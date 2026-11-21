@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareQuery, cutFrom, dbtError, forAdapter, pairRows, parseCompiled, parseShow, readComparison, SUPPORTED, unsupported, type Comparison, type Row } from "../src/query.ts";
+import { compareQuery, cutFrom, dbtError, forAdapter, limitComparison, pairRows, parseCompiled, parseShow, readComparison, SUPPORTED, unsupported, type Comparison, type Row } from "../src/query.ts";
 
 test("compareQuery wraps each side and diffs both ways", () => {
   const q = compareQuery("with a as (select 1 x) select * from a -- trailing comment", "select 2 x");
@@ -211,4 +211,13 @@ test("pairRows needs every id column that is unique on both sides to agree", () 
 test("pairRows pairs nothing without an id column", () => {
   const p = pairRows(sides([{ name: "a", n: 1 }], [{ name: "a", n: 2 }]));
   assert.deepEqual(p, { key: [], pairs: [], left: [{ name: "a", n: 1 }], right: [{ name: "a", n: 2 }] });
+});
+
+test("limitComparison keeps limit differing rows, whether or not the result has a counts row", () => {
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ side: "left" as const, row: { id: i } }));
+  const counts = { left: 5, right: 5, only_left: 3, only_right: 0 };
+  assert.equal(limitComparison({ counts, rows: rows(3) }, 1).rows.length, 1, "limit 1 shows one differing row beside the counts");
+  assert.equal(cutFrom(limitComparison({ counts, rows: rows(3) }, 1), 1), 3);
+  assert.equal(limitComparison({ rows: rows(2) }, 1).rows.length, 1, "Redshift: the extra row is dropped");
+  assert.equal(limitComparison({ counts, rows: rows(2) }, 100).rows.length, 2);
 });

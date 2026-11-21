@@ -7,7 +7,7 @@ import { compile, debug, findDbt, projectDirOf, show, type ShowOptions } from ".
 import { FilesTree, type FileNode, type Side } from "./files.ts";
 import { CteLens, diffOf } from "./lens.ts";
 import { resultsProvider, showCancelled, showComparison, showError, showRows, showRunning, showSetup, showUnsupported } from "./panel.ts";
-import { compareQuery, readComparison, unsupported, type Row } from "./query.ts";
+import { compareQuery, limitComparison, readComparison, unsupported, type Row } from "./query.ts";
 import { CteTree, reveal, SQL_LANGUAGES, type CteNode } from "./tree.ts";
 
 let log: vscode.OutputChannel;
@@ -207,8 +207,8 @@ async function compare(uri: vscode.Uri, name?: string, within: string[] = []): P
   const sql = async (o: ShowOptions, signal: AbortSignal) => compareQuery(await sideSql(diff.left, l, o, signal), await sideSql(diff.right, r, o, signal));
   const title = `Compare: ${label(name, within)}`;
   // A git diff's left side lives at a git: URI, so the project is found from the right side's file.
-  const result = await run(diff.right, title, label(name, within), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`);
-  if (result) showComparison(title, label(name, within), readComparison(result.rows), result.limit, result.meta);
+  const result = await run(diff.right, title, label(name, within), sql, `${fileName(diff.left)} ↔ ${fileName(diff.right)}`, 1); // one more row than the setting: a JSON comparison's counts row takes one of dbt's rows
+  if (result) showComparison(title, label(name, within), limitComparison(readComparison(result.rows), result.limit), result.limit, result.meta);
 }
 
 /** The diff editor tab in front, if any. */
@@ -316,6 +316,7 @@ async function run(
   what: string,
   sql: (o: ShowOptions, signal: AbortSignal) => Promise<string>,
   files: string,
+  extraRows = 0,
 ): Promise<{ rows: Row[]; limit: number; meta: string } | undefined> {
   const o = await setup(uri);
   const id = ++latest;
@@ -326,7 +327,7 @@ async function run(
       { location: vscode.ProgressLocation.Notification, title: `CTE Diff: running dbt show for ${what}`, cancellable: true },
       async (_, token) => {
         const signal = nextRun(token);
-        return show(await sql(o, signal), o, signal);
+        return show(await sql(o, signal), { ...o, limit: o.limit + extraRows }, signal);
       },
     );
     const extra = o.dbtArgs.length ? ` · ${o.dbtArgs.join(" ")}` : "";
