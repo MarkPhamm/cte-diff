@@ -122,9 +122,14 @@ export interface Comparison {
   rows: { side: "left" | "right"; row: Row }[];
 }
 
-/** How many rows differ in all, when the result holds fewer: dbt's limit counts the counts row too, so a JSON
- * comparison cuts the differing rows at limit - 1. A raw comparison (Redshift) has no counts row, so it cuts at
- * limit. Undefined when every differing row is there. */
+/** The comparison with at most `limit` differing rows. dbt is asked for limit + 1 rows, so a JSON comparison's counts
+ * row does not use up one of the differing rows; a raw comparison (Redshift) has no counts row and gets one row too many. */
+export function limitComparison(c: Comparison, limit: number): Comparison {
+  return { ...c, rows: c.rows.slice(0, limit) };
+}
+
+/** How many rows differ in all, when the result holds fewer: the totals say so for a JSON comparison. A raw comparison
+ * (Redshift) has no counts row, so a result of `limit` rows is cut. Undefined when every differing row is there. */
 export function cutFrom(c: Comparison, limit: number): number | undefined {
   const total = c.counts ? c.counts.only_left + c.counts.only_right : undefined;
   if (total !== undefined) return c.rows.length < total ? total : undefined;
