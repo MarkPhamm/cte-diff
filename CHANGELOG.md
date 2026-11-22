@@ -13,6 +13,7 @@
 - Integers above 2^53, such as 64-bit hash keys from Snowflake `HASH()` or BigQuery `FARM_FINGERPRINT()`, show their exact digits in previews and comparisons, and **Save JSON** keeps them. Before, the panel showed a nearby number, and a comparison could match a changed row to the wrong partner.
 - Models that use a string ending in a backslash on DuckDB or Postgres (`split_part(path, '\', -1)`), DuckDB's `//` integer division, or a BigQuery `#` comment with an apostrophe in it keep their **Preview** and **Compare sides** buttons and sidebar entries. Before, the CTEs of such a model were not found at all.
 - **Preview branch** on a `UNION` branch that ends in a string, such as `select 'old' union all select 'new'` or `... where status = 'open'`, previews the whole branch. Before, the string was cut off and the query failed.
+- **Preview branch** no longer offers a branch for BigQuery's `select * except (column)`, and a `union all` of two such selects previews each with its exclusion list. Before, the preview was a bare `select *`.
 
 ## 0.12.1
 

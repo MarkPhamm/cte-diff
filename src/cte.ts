@@ -655,7 +655,9 @@ export function branches(sql: string): Branch[] {
     let last = -1;
     for (let i = 0; i < toks.length; i++) {
       const { token, depth } = toks[i];
-      if (depth === 0 && token.kind === "word" && SET_OPS.has(token.text.toLowerCase())) {
+      // BigQuery's `select * except (col)` excludes columns; it follows a `*` and opens a column list.
+      const starExcept = isWord(token, "except") && toks[i - 1]?.token.text === "*" && toks[i + 1]?.token.text === "(";
+      if (depth === 0 && token.kind === "word" && SET_OPS.has(token.text.toLowerCase()) && !starExcept) {
         if (first >= 0) parts.push({ first, last });
         first = -1;
         while (i + 1 < toks.length && toks[i + 1].depth === 0 && SET_OP_MODIFIERS.has(toks[i + 1].token.text.toLowerCase())) i++;

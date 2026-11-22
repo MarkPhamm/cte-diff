@@ -441,3 +441,17 @@ test("a branch ending in a string literal keeps it", () => {
   assert.equal(branchQuery(filtered, c.start), "select a from t where k = 'x'");
   assert.equal(branchQuery(filtered, d.start), "select a from u where k = 'y'", "the set-wide ORDER BY stays out");
 });
+
+test("BigQuery SELECT * EXCEPT (cols) is a projection, not a set operation", () => {
+  const star = "select * except (internal_id) from sales";
+  assert.deepEqual(branches(star), []);
+
+  const both = "select * except (internal_id) from a union all select * except (internal_id) from b";
+  const [x, y] = branches(both);
+  assert.equal(branches(both).length, 2);
+  assert.equal(branchQuery(both, x.start), "select * except (internal_id) from a");
+  assert.equal(branchQuery(both, y.start), "select * except (internal_id) from b");
+
+  const real = "select a from x except distinct select a from y";
+  assert.equal(branches(real).length, 2, "a genuine EXCEPT DISTINCT still splits");
+});
