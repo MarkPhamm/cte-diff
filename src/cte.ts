@@ -20,7 +20,7 @@ export interface Parsed {
 }
 
 interface Token {
-  kind: "word" | "quoted" | "punct" | "jinja";
+  kind: "word" | "quoted" | "punct" | "jinja" | "string";
   text: string;
   start: number;
   end: number;
@@ -53,7 +53,7 @@ function isHashComment(sql: string, at: number): boolean {
 }
 
 /** Tokens outside strings and comments: words, "quoted identifiers", single punctuation, and whole Jinja tags. */
-function* tokens(sql: string): Generator<Token> {
+function* tokens(sql: string, withStrings = false): Generator<Token> {
   let i = 0;
   const n = sql.length;
   const skipTo = (close: string, from: number) => {
@@ -75,7 +75,10 @@ function* tokens(sql: string): Generator<Token> {
       // Backslash escapes in BigQuery and Snowflake, not in DuckDB or Postgres: when the escaping reading leaves the string open, read it without.
       const end = stringEnd(sql, i, true) ?? stringEnd(sql, i, false);
       if (end === undefined) yield { kind: "punct", text: c, start: i, end: ++i };
-      else i = end;
+      else {
+        if (withStrings) yield { kind: "string", text: sql.slice(i, end), start: i, end };
+        i = end;
+      }
     } else if (c === '"') {
       const start = i++;
       while (i < n) {
@@ -292,10 +295,10 @@ interface Positioned {
 }
 
 /** Tokens in `[start, end)` with their parenthesis depth, the range's own level being 0. */
-function tokensInRange(sql: string, start: number, end: number): Positioned[] {
+function tokensInRange(sql: string, start: number, end: number, withStrings = false): Positioned[] {
   const out: Positioned[] = [];
   let depth = 0;
-  for (const token of tokens(sql)) {
+  for (const token of tokens(sql, withStrings)) {
     if (token.end <= start) continue;
     if (token.start >= end) break;
     if (token.text === ")") depth--;
@@ -645,7 +648,8 @@ export function branches(sql: string): Branch[] {
     // A block's own WITH comes before its branches; the preview hoists it.
     const own = parse(sql.slice(block.start, block.end));
     if (own.ctes.length && /^\s*with\b/i.test(sql.slice(block.start, block.end))) from = block.start + own.ctes.at(-1)!.bodyEnd;
-    const toks = tokensInRange(sql, from, block.end);
+    // String literals count here: a branch can end in one.
+    const toks = tokensInRange(sql, from, block.end, true);
     const parts: { first: number; last: number }[] = [];
     let first = -1;
     let last = -1;
