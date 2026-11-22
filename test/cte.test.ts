@@ -429,3 +429,15 @@ test("a BigQuery # comment holding a quote does not open a string", () => {
   const sql = "with a as (\n  select id, # don't (keep)\n  name\n  from t\n), b as (select * from a) select * from b";
   assert.deepEqual(names(sql), ["a", "b"]);
 });
+
+test("a branch ending in a string literal keeps it", () => {
+  const sql = "select 'old' union all select 'new'";
+  const [a, b] = branches(sql);
+  assert.equal(branchQuery(sql, a.start), "select 'old'");
+  assert.equal(branchQuery(sql, b.start), "select 'new'");
+
+  const filtered = "select a from t where k = 'x' union all select a from u where k = 'y' order by 1";
+  const [c, d] = branches(filtered);
+  assert.equal(branchQuery(filtered, c.start), "select a from t where k = 'x'");
+  assert.equal(branchQuery(filtered, d.start), "select a from u where k = 'y'", "the set-wide ORDER BY stays out");
+});
