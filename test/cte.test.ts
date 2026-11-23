@@ -455,3 +455,15 @@ test("BigQuery SELECT * EXCEPT (cols) is a projection, not a set operation", () 
   const real = "select a from x except distinct select a from y";
   assert.equal(branches(real).length, 2, "a genuine EXCEPT DISTINCT still splits");
 });
+
+test("a branch ending in a dollar-quoted string keeps it", () => {
+  const sql = "select $$old$$ union all select $$new$$";
+  const [a, b] = branches(sql);
+  assert.equal(branchQuery(sql, a.start), "select $$old$$");
+  assert.equal(branchQuery(sql, b.start), "select $$new$$");
+
+  const tricky = "select $$a union all (b$$ union all select $$c)$$";
+  const [c, d] = branches(tricky);
+  assert.equal(branchQuery(tricky, c.start), "select $$a union all (b$$");
+  assert.equal(branchQuery(tricky, d.start), "select $$c)$$");
+});

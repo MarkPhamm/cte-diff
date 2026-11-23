@@ -70,7 +70,11 @@ function* tokens(sql: string, withStrings = false): Generator<Token> {
       const start = i;
       i = skipTo(two === "{{" ? "}}" : two === "{%" ? "%}" : "#}", i + 2);
       yield { kind: "jinja", text: sql.slice(start, i), start, end: i };
-    } else if (two === "$$") i = skipTo("$$", i + 2);
+    } else if (two === "$$") {
+      const end = skipTo("$$", i + 2);
+      if (withStrings) yield { kind: "string", text: sql.slice(i, end), start: i, end };
+      i = end;
+    }
     else if (c === "'") {
       // Backslash escapes in BigQuery and Snowflake, not in DuckDB or Postgres: when the escaping reading leaves the string open, read it without.
       const end = stringEnd(sql, i, true) ?? stringEnd(sql, i, false);
