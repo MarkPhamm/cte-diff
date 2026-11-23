@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, order, pinRule, pretty, tsv, type Grid, type Key } from "../src/grid.ts";
+import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, numericKey, order, pinRule, pretty, tsv, type Grid, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -121,4 +121,10 @@ test("pretty lays out a JSON object or array and leaves anything else alone", ()
   assert.equal(pretty("[1]"), "[\n  1\n]");
   assert.equal(pretty("{not json"), "{not json");
   assert.equal(pretty("Ada"), "Ada");
+});
+
+test("order sorts integers beyond 2^53 by their exact values", () => {
+  const rows: Key[][] = [[numericKey("9007199254740993")], [numericKey("9007199254740992")], [null], [numericKey("5")], [numericKey("-9007199254740993")], [numericKey("1.5")]];
+  assert.deepEqual(order(rows, [{ col: 0, desc: false }]), [4, 5, 3, 1, 0, 2]);
+  assert.deepEqual(order(rows, [{ col: 0, desc: true }]), [0, 1, 3, 5, 4, 2]);
 });
