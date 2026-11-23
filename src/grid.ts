@@ -10,7 +10,14 @@ export interface Sort {
 }
 
 /** A cell's sort key: a number in a numeric column, its text otherwise, null for NULL or a column the row lacks. */
-export type Key = string | number | null;
+export type Key = string | number | bigint | null;
+
+/** A numeric cell's sort key: a bigint for an integer beyond 2^53, which a Number would round, else a Number. */
+export function numericKey(text: string): number | bigint {
+  const t = text.trim();
+  return /^[+-]?\d+$/.test(t) && !Number.isSafeInteger(Number(t)) ? BigInt(t) : Number(t);
+}
+
 
 /** Text order as people read it: case aside, and digits by value, so `row2` comes before `row10`. */
 export const compareText = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }).compare;
@@ -36,7 +43,9 @@ export function order(rows: Key[][], sorts: Sort[]): number[] {
         if (x === y) continue;
         if (x === null) return 1;
         if (y === null) return -1;
-        const c = typeof x === "number" && typeof y === "number" ? x - y : compareText(String(x), String(y));
+        const isNum = (v: Key) => typeof v === "number" || typeof v === "bigint";
+        // `<` compares a bigint and a number exactly; subtracting would round or throw.
+        const c = isNum(x) && isNum(y) ? (x < y ? -1 : x > y ? 1 : 0) : compareText(String(x), String(y));
         if (c) return desc ? -c : c;
       }
       return a - b;
@@ -161,7 +170,7 @@ export function attach(root: Document | ShadowRoot, host: Host): void {
     return { tbody, units };
   });
   const key = (td: HTMLTableCellElement, numeric: boolean): Key =>
-    td.classList.contains("null") || td.classList.contains("absent") ? null : numeric ? Number(td.textContent) : (td.textContent ?? "");
+    td.classList.contains("null") || td.classList.contains("absent") ? null : numeric ? numericKey(td.textContent ?? "") : (td.textContent ?? "");
   let sorts: Sort[] = [];
   const hidden = new Set<number>();
   const comparison = heads[0].classList.contains("side");
