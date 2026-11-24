@@ -50,7 +50,7 @@ const LOOK: Record<Status, { icon: string; color?: string; note: string; tip: st
     icon: "arrow-down",
     color: "gitDecoration.modifiedResourceForeground",
     note: "reads a changed CTE",
-    tip: "Same text, but it reads a CTE that changed, so its rows can differ. ⇄ compares them.",
+    tip: "Same text, but it reads a CTE or a Jinja variable that changed, so its rows can differ. ⇄ compares them.",
   },
   same: { icon: "circle-small", note: "", tip: "Same text on both sides, reading nothing that changed." },
 };
@@ -101,6 +101,7 @@ export class CteTree implements vscode.TreeDataProvider<CteNode> {
       // The notes are written for one CTE: "2 read a changed CTE".
       const note = (s: Status) => (count(s) > 1 ? LOOK[s].note.replace("reads", "read") : LOOK[s].note);
       const parts = (["changed", "added", "removed", "affected"] as Status[]).filter(count).map((s) => `${count(s)} ${note(s)}`);
+      if (statuses.at(-1)?.jinjaChanged) parts.unshift("Jinja before WITH changed");
       this.describe(path.basename(diff.right.path), parts.length ? parts.join(" · ") : "No CTE changed.");
     } else if (SQL_LANGUAGES.includes(doc.languageId)) {
       const sql = doc.getText();

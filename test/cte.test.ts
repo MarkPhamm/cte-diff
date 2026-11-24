@@ -405,6 +405,20 @@ test("compareCtes: whitespace and punctuation inside a string or quoted name cou
   assert.deepEqual(statuses("concat( 'a b' ,  x )", "concat('a b', x)"), ["same", "same"]);
 });
 
+test("compareCtes: a {% set %} before WITH that changed marks what uses it affected", () => {
+  const sql = (cutoff: number, label = "a") =>
+    `{% set cutoff = ${cutoff} %}\n{% set label %}{{ "${label}" }}{% endset %}\n` +
+    "with orders as (select {{ cutoff }} as n), totals as (select * from orders), tags as (select {{ label }} as tag)\nselect * from tags";
+  const statuses = (l: string, r: string) => compareCtes(l, r).map((s) => s.status);
+  assert.deepEqual(statuses(sql(1), sql(2)), ["affected", "affected", "same", "same"]);
+  assert.deepEqual(statuses(sql(1), sql(1, "b")), ["same", "same", "affected", "affected"]);
+  assert.deepEqual(compareCtes(sql(1), sql(1)).at(-1), { status: "same" });
+  assert.equal(compareCtes(sql(1), sql(2)).at(-1)?.jinjaChanged, true);
+  // No variable to follow: the summary still says the Jinja changed.
+  const config = (v: number) => `{{ config(alias='t${v}') }} with x as (select 1) select * from x`;
+  assert.deepEqual(compareCtes(config(1), config(2)), [{ name: "x", status: "same" }, { status: "same", jinjaChanged: true }]);
+});
+
 test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs compares the whole text", () => {
   assert.deepEqual(compareCtes("with a as (select 1), b as (select * from a) select * from b", "with b as (select * from a) select * from b"), [
     { name: "b", status: "affected" },
