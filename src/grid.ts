@@ -10,12 +10,46 @@ export interface Sort {
 }
 
 /** A cell's sort key: a number in a numeric column, its text otherwise, null for NULL or a column the row lacks. */
-export type Key = string | number | bigint | null;
+export type Key = string | number | bigint | Decimal | null;
 
-/** A numeric cell's sort key: a bigint for an integer beyond 2^53, which a Number would round, else a Number. */
-export function numericKey(text: string): number | bigint {
+/** An exact decimal, `digits` x 10^`exp`, for a fractional value a Number would round. */
+export interface Decimal {
+  digits: bigint;
+  exp: number;
+}
+
+const decimalOf = (text: string): Decimal | null => {
+  const m = /^([+-]?)(\d*)\.?(\d*)(?:e([+-]?\d+))?$/i.exec(text.trim());
+  if (!m || !m[2] + m[3]) return null;
+  const exp = Number(m[4] ?? 0) - m[3].length;
+  if (Math.abs(exp) > 1000) return null;
+  return { digits: BigInt(m[1] + (m[2] + m[3])), exp };
+};
+
+/** A numeric cell's sort key: a bigint for an integer beyond 2^53 and a Decimal for a fraction of more than 15
+ * significant digits, which a Number would round, else a Number. */
+export function numericKey(text: string): number | bigint | Decimal {
   const t = text.trim();
-  return /^[+-]?\d+$/.test(t) && !Number.isSafeInteger(Number(t)) ? BigInt(t) : Number(t);
+  if (/^[+-]?\d+$/.test(t)) return Number.isSafeInteger(Number(t)) ? Number(t) : BigInt(t);
+  const d = decimalOf(t);
+  return d && d.digits.toString().replace(/^-/, "").replace(/0+$/, "").length > 15 ? d : Number(t);
+}
+
+/** Compares two numeric keys by exact value; `<` serves a bigint and a number, which it compares exactly. */
+function compareNum(x: number | bigint | Decimal, y: number | bigint | Decimal): number {
+  if (typeof x === "object" || typeof y === "object") {
+    const a = typeof x === "object" ? x : decimalOf(String(x));
+    const b = typeof y === "object" ? y : decimalOf(String(y));
+    if (a && b) {
+      const e = Math.min(a.exp, b.exp);
+      const u = a.digits * 10n ** BigInt(a.exp - e);
+      const v = b.digits * 10n ** BigInt(b.exp - e);
+      return u < v ? -1 : u > v ? 1 : 0;
+    }
+    x = typeof x === "object" ? Number(x.digits) * 10 ** x.exp : x;
+    y = typeof y === "object" ? Number(y.digits) * 10 ** y.exp : y;
+  }
+  return x < y ? -1 : x > y ? 1 : 0;
 }
 
 
@@ -43,9 +77,8 @@ export function order(rows: Key[][], sorts: Sort[]): number[] {
         if (x === y) continue;
         if (x === null) return 1;
         if (y === null) return -1;
-        const isNum = (v: Key) => typeof v === "number" || typeof v === "bigint";
-        // `<` compares a bigint and a number exactly; subtracting would round or throw.
-        const c = isNum(x) && isNum(y) ? (x < y ? -1 : x > y ? 1 : 0) : compareText(String(x), String(y));
+        const isNum = (v: Key): v is number | bigint | Decimal => typeof v !== "string";
+        const c = isNum(x) && isNum(y) ? compareNum(x, y) : compareText(String(x), String(y));
         if (c) return desc ? -c : c;
       }
       return a - b;

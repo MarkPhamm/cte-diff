@@ -128,3 +128,10 @@ test("order sorts integers beyond 2^53 by their exact values", () => {
   assert.deepEqual(order(rows, [{ col: 0, desc: false }]), [4, 5, 3, 1, 0, 2]);
   assert.deepEqual(order(rows, [{ col: 0, desc: true }]), [0, 1, 3, 5, 4, 2]);
 });
+
+test("order sorts fractions beyond 15 digits by their exact values", () => {
+  const k = (t: string) => numericKey(t);
+  const rows: Key[][] = [[k("0.123456789012345679")], [k("0.123456789012345678")], [k("-0.123456789012345679")], [k("-0.123456789012345678")], [k("0.50")], [k("0.5")], [null], [k("1e-7")]];
+  assert.deepEqual(order(rows, [{ col: 0, desc: false }]), [2, 3, 7, 1, 0, 4, 5, 6]);
+  assert.deepEqual(order(rows, [{ col: 0, desc: true }]), [4, 5, 0, 1, 7, 3, 2, 6]);
+});
