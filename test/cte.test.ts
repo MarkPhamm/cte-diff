@@ -397,6 +397,14 @@ test("compareCtes: only a relation in FROM or JOIN reads a CTE, not a column of 
   assert.equal(status("with inner_cte as (select * from changed_cte) select * from inner_cte"), "affected");
 });
 
+test("compareCtes: whitespace and punctuation inside a string or quoted name count; outside, only formatting", () => {
+  const statuses = (a: string, b: string) => compareCtes(`with a as (select ${a} as label) select * from a`, `with a as (select ${b} as label) select * from a`).map((s) => s.status);
+  assert.deepEqual(statuses("'a  b'", "'a b'"), ["changed", "affected"]);
+  assert.deepEqual(statuses("'a , b'", "'a,b'"), ["changed", "affected"]);
+  assert.deepEqual(statuses("'x' || \"my  col\"", "'x' || \"my col\""), ["changed", "affected"]);
+  assert.deepEqual(statuses("concat( 'a b' ,  x )", "concat('a b', x)"), ["same", "same"]);
+});
+
 test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs compares the whole text", () => {
   assert.deepEqual(compareCtes("with a as (select 1), b as (select * from a) select * from b", "with b as (select * from a) select * from b"), [
     { name: "b", status: "affected" },

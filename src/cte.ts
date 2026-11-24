@@ -719,9 +719,18 @@ export interface CteStatus {
 export function compareCtes(left: string, right: string): CteStatus[] {
   const l = parse(left).ctes;
   const r = parse(right).ctes;
-  // A CTE's text from after its name to its closing parenthesis, whitespace collapsed; the final select after the last.
-  const text = (sql: string, from: number, to: number) =>
-    sql.slice(from, to).replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1").trim();
+  // A CTE's text from after its name to its closing parenthesis, whitespace collapsed outside strings and quoted names;
+  // the final select after the last.
+  const text = (sql: string, from: number, to: number) => {
+    const squash = (s: string) => s.replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1");
+    let out = "";
+    for (const { token } of tokensInRange(sql, from, to, true)) {
+      if (token.kind !== "string" && token.kind !== "quoted") continue;
+      out += squash(sql.slice(from, token.start)) + token.text;
+      from = token.end;
+    }
+    return (out + squash(sql.slice(from, to))).trim();
+  };
   const finalText = (sql: string, ctes: Cte[]) => text(sql, ctes.at(-1)?.bodyEnd ?? 0, sql.length).replace(/;$/, "");
   // Names (normalised) of the relations a stretch of SQL reads, in the FROM clauses of every query block in it.
   const reads = (from: number, to: number) => {
