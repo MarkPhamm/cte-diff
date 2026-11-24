@@ -18,6 +18,7 @@
 - Models that use a string ending in a backslash on DuckDB or Postgres (`split_part(path, '\', -1)`), DuckDB's `//` integer division, or a BigQuery `#` comment with an apostrophe in it keep their **Preview** and **Compare sides** buttons and sidebar entries. Before, the CTEs of such a model were not found at all.
 - **Preview branch** on a `UNION` branch that ends in a string, such as `select 'old' union all select 'new'` or `... where status = 'open'`, previews the whole branch. Before, the string was cut off and the query failed. The same goes for a DuckDB `$$...$$` string at the end of a branch.
 - **Preview branch** no longer offers a branch for BigQuery's `select * except (column)`, and a `union all` of two such selects previews each with its exclusion list. Before, the preview was a bare `select *`.
+- On DuckDB, **Compare sides** treats decimals that differ only in trailing zeros, such as `1.10` and `1.1`, as equal. Before, a column whose scale changed flagged every row as only on the left and only on the right.
 
 ## 0.12.1
 
