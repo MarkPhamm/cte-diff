@@ -291,8 +291,11 @@ async function newComparison(): Promise<void> {
 
 /** Where and how dbt runs for `uri`: the settings, the project, and the dbt executable. */
 async function setup(uri: vscode.Uri) {
-  const config = vscode.workspace.getConfiguration("cteDiff", uri);
+  let config = vscode.workspace.getConfiguration("cteDiff", uri);
   const projectDir = await projectFor(uri, config.get<string>("projectDir", ""));
+  // An untitled (pasted) query sits in no folder: read the other settings from the folder of the project it runs in.
+  const home = vscode.workspace.getWorkspaceFolder(uri) ? undefined : vscode.workspace.getWorkspaceFolder(vscode.Uri.file(projectDir));
+  if (home) config = vscode.workspace.getConfiguration("cteDiff", home.uri);
   const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
   const dbt = findDbt(config.get<string>("dbtPath", ""), [projectDir, ...folders]);
   return { dbt, projectDir, limit: config.get<number>("limit", 100), target: config.get<string>("target") || undefined, dbtArgs: config.get<string[]>("dbtArgs", []), log: (l: string) => log.appendLine(l) };

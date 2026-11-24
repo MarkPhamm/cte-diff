@@ -2,6 +2,7 @@
 
 ## 0.12.2
 
+- **New Comparison (Paste Two Queries)** in a multi-root workspace uses the chosen project folder's own `cteDiff.dbtArgs`, `target`, `limit` and `dbtPath`. Before, it read the workspace-level values, so a folder's `--vars` were silently ignored.
 - **Save JSON** writes a boolean as `true` or `false` and a nested object or array as JSON, as it came from the warehouse. Before, they were saved as strings, and an object was double-encoded. A string such as `"true"` stays a string.
 - Sorting a column of fractions with more than 15 significant digits, such as `0.123456789012345678` and `0.123456789012345679`, orders them by their exact values. Before, they counted as equal and kept dbt's order.
 - Sorting a column of integers above 2^53, such as 64-bit hash keys, orders them by their exact values. Before, neighbours such as `9007199254740992` and `9007199254740993` counted as equal and kept dbt's order.
