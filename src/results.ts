@@ -17,7 +17,7 @@ function cell(r: Row, c: string, changed = false): string {
   const v = r[c];
   if (v === null || v === undefined) return `<td class="${["null", ...cls].join(" ")}">NULL</td>`;
   if (isNumber(v)) cls.push("num");
-  const attr = cls.length ? ` class="${cls.join(" ")}"` : "";
+  const attr = (cls.length ? ` class="${cls.join(" ")}"` : "") + (typeof v === "boolean" ? ' data-t="bool"' : typeof v === "object" ? ' data-t="json"' : "");
   return `<td${attr}>${esc(typeof v === "object" ? JSON.stringify(v) : String(v))}</td>`;
 }
 
