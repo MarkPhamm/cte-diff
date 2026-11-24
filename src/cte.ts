@@ -712,13 +712,17 @@ export interface CteStatus {
   name?: string;
   status: Status;
   nested?: CteStatus[];
+  /** The whole query only: the Jinja before its WITH, such as a `{% set %}`, differs. */
+  jinjaChanged?: boolean;
 }
 
 /** One entry per CTE (the right side's order, then CTEs only on the left), then the whole query (`name` undefined).
  * A CTE with its own WITH lists those CTEs' statuses under `nested`, the same way. */
 export function compareCtes(left: string, right: string): CteStatus[] {
-  const l = parse(left).ctes;
-  const r = parse(right).ctes;
+  const lp = parse(left);
+  const rp = parse(right);
+  const l = lp.ctes;
+  const r = rp.ctes;
   // A CTE's text from after its name to its closing parenthesis, whitespace collapsed outside strings and quoted names;
   // the final select after the last.
   const text = (sql: string, from: number, to: number) => {
@@ -739,8 +743,24 @@ export function compareCtes(left: string, right: string): CteStatus[] {
     for (let i = 0; i < toks.length; i++) if (isWord(toks[i].token, "from")) parseFromList(toks, i + 1, toks[i].depth, right, items);
     return new Set(items.flatMap((item) => (item.table ? [norm(item.table)] : [])));
   };
+  // Each `{% set %}` before the WITH, by name; a name set differently on the two sides makes whatever uses it affected.
+  const sets = (sql: string, withStart: number) => {
+    const head = sql.slice(0, Math.max(0, withStart));
+    const out = new Map<string, string>();
+    for (const m of head.matchAll(/{%-?\s*set\s+(\w+)\s*(=)?/g)) {
+      // `{% set x = ... %}` ends at its own tag; a block `{% set x %}...{% endset %}` at its endset.
+      const end = m[2] ? head.indexOf("%}", m.index) : head.slice(m.index).search(/{%-?\s*endset\s*-?%}/) + m.index;
+      out.set(m[1], text(head, m.index, end < m.index ? head.length : end));
+    }
+    return out;
+  };
+  const ls = sets(left, lp.withStart);
+  const rs = sets(right, rp.withStart);
+  const vars = [...new Set([...ls.keys(), ...rs.keys()])].filter((v) => ls.get(v) !== rs.get(v));
+  const usesVar = (from: number, to: number) =>
+    tokensInRange(right, from, to).some(({ token }) => token.kind === "jinja" && vars.some((v) => new RegExp(`\\b${v}\\b`).test(token.text)));
   const statusOf = (dirty: Set<string>, changed: boolean, from: number, to: number): Status =>
-    changed ? "changed" : [...reads(from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
+    changed ? "changed" : usesVar(from, to) || [...reads(from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
   // `dirty`: names, from outer WITHs too, that are changed, added, removed or affected; whatever reads them is affected.
   const compareList = (l: Cte[], r: Cte[], dirty: Set<string>): CteStatus[] => {
     const out: CteStatus[] = [];
@@ -764,6 +784,8 @@ export function compareCtes(left: string, right: string): CteStatus[] {
   };
   const dirty = new Set<string>();
   const out = compareList(l, r, dirty);
-  out.push({ status: statusOf(dirty, finalText(left, l) !== finalText(right, r), r.at(-1)?.bodyEnd ?? 0, right.length) });
+  const whole: CteStatus = { status: statusOf(dirty, finalText(left, l) !== finalText(right, r), r.at(-1)?.bodyEnd ?? 0, right.length) };
+  if (l.length && r.length && text(left, 0, lp.withStart) !== text(right, 0, rp.withStart)) whole.jinjaChanged = true;
+  out.push(whole);
   return out;
 }

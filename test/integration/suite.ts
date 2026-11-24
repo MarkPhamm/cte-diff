@@ -50,7 +50,7 @@ export async function run(): Promise<void> {
   );
   assert.equal(tree.getTreeItem(nodes[0]).command?.command, "cteDiff.compareCompiled");
   assert.equal(tree.view?.message, "1 changed · 1 new · 1 removed · 1 reads a changed CTE");
-  assert.match(String(tree.getTreeItem(nodes[5]).tooltip), /reads a CTE that changed/);
+  assert.match(String(tree.getTreeItem(nodes[5]).tooltip), /reads a CTE or a Jinja variable that changed/);
   const commands = await vscode.commands.getCommands(true);
   for (const c of ["cteDiff.compareCte", "cteDiff.compareCompiled", "cteDiff.previewCte", "cteDiff.previewSubquery", "cteDiff.previewBranch", "cteDiff.tree.previewSubquery", "cteDiff.rerun", "cteDiff.showLog", "cteDiff.checkSetup", "cteDiff.chooseProject"]) {
     assert.ok(commands.includes(c), c);

@@ -53,6 +53,6 @@ The sidebar compares each CTE's text, with whitespace collapsed:
 
 - A CTE whose text differs is **changed**.
 - A CTE on one side only is **new** or **removed**.
-- A CTE with the same text that reads a changed, new or removed CTE is marked **reads a changed CTE**. This follows the chain: a CTE that reads one of those is marked too.
+- A CTE with the same text that reads a changed, new or removed CTE is marked **reads a changed CTE**. This follows the chain: a CTE that reads one of those is marked too. A CTE that uses a Jinja variable whose `{% set %}` before the `with` changed is marked the same way, and the sidebar's summary says **Jinja before WITH changed** whenever the text before the `with` differs.
 
 Comments and Jinja tags are skipped when finding CTEs, but they count as text inside a CTE's body. Editing a comment or a `ref()` in a CTE marks it changed.
