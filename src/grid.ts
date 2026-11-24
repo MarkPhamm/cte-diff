@@ -95,6 +95,8 @@ export function matches(texts: string[], filter: string): boolean {
 export interface Cell {
   text: string;
   kind: "text" | "num" | "null" | "absent";
+  /** A text cell that held a boolean or a nested value, which JSON export writes back as one. */
+  as?: "bool" | "json";
 }
 
 /** Rows taken out of the view, under their column names. */
@@ -141,7 +143,14 @@ export function markdown(g: Grid): string {
  * would round, such as a 64-bit hash key, stays its digits, as a string. */
 export function json(g: Grid): string {
   const num = (text: string) => (String(Number(text)) === text ? Number(text) : text);
-  const value = (c: Cell) => (c.kind === "num" ? num(c.text) : c.kind === "null" ? null : c.text);
+  const typed = (c: Cell) => {
+    try {
+      if (c.as === "bool" && (c.text === "true" || c.text === "false")) return c.text === "true";
+      if (c.as === "json") return JSON.parse(c.text);
+    } catch {}
+    return c.text;
+  };
+  const value = (c: Cell) => (c.kind === "num" ? num(c.text) : c.kind === "null" ? null : typed(c));
   const rows = g.rows.map((r) => Object.fromEntries(g.cols.flatMap((name, i) => (r[i].kind === "absent" ? [] : [[name, value(r[i])]]))));
   return JSON.stringify(rows, null, 2) + "\n";
 }
@@ -212,7 +221,8 @@ export function attach(root: Document | ShadowRoot, host: Host): void {
   const shownCols = () => heads.map((_, c) => c).filter((c) => c && !hidden.has(c));
   const cellOf = (td: HTMLTableCellElement): Cell => {
     const kind = (["absent", "null", "num"] as const).find((k) => td.classList.contains(k)) ?? "text";
-    return { text: td.textContent ?? "", kind };
+    const as = td.dataset.t === "bool" || td.dataset.t === "json" ? td.dataset.t : undefined;
+    return { text: td.textContent ?? "", kind, ...(as && { as }) };
   };
   /** The rows and columns as a Grid; `side` adds a comparison's left/right column. */
   const gridOf = (rows: HTMLTableRowElement[], cols: number[], side: boolean): Grid => {

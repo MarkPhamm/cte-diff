@@ -99,3 +99,10 @@ test("rowsHtml escapes values and marks NULLs", () => {
   assert.match(html, /&#60;b&#62;/);
   assert.match(html, /<td class="null">NULL<\/td>/);
 });
+
+test("rowsHtml tags boolean and nested cells so a saved JSON can restore them", () => {
+  const html = rowsHtml("x", [{ b: true, s: "true", o: { k: 1 } }], 100, "");
+  assert.match(html, /<td data-t="bool">true<\/td>/);
+  assert.match(html, /<td>true<\/td>/);
+  assert.match(html, /<td data-t="json">/);
+});

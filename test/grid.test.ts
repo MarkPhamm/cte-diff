@@ -135,3 +135,17 @@ test("order sorts fractions beyond 15 digits by their exact values", () => {
   assert.deepEqual(order(rows, [{ col: 0, desc: false }]), [2, 3, 7, 1, 0, 4, 5, 6]);
   assert.deepEqual(order(rows, [{ col: 0, desc: true }]), [4, 5, 0, 1, 7, 3, 2, 6]);
 });
+
+test("json writes booleans and nested values back as such, and a JSON-looking string stays a string", () => {
+  const g: Grid = {
+    cols: ["b", "s", "o", "a", "bad"],
+    rows: [[
+      { text: "true", kind: "text", as: "bool" },
+      { text: "true", kind: "text" },
+      { text: '{"k":[1,null]}', kind: "text", as: "json" },
+      { text: "[1,2]", kind: "text" },
+      { text: "{oops", kind: "text", as: "json" },
+    ]],
+  };
+  assert.deepEqual(JSON.parse(json(g)), [{ b: true, s: "true", o: { k: [1, null] }, a: "[1,2]", bad: "{oops" }]);
+});
