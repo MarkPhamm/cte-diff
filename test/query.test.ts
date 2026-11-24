@@ -149,7 +149,9 @@ test("readComparison keeps a number's own digits when a double would round them"
 test("compareQuery's DuckDB rows take a decimal's text, not json_each's double", () => {
   const duckdb = forAdapter(compareQuery("select 1 x", "select 2 x"), "duckdb");
   assert.match(duckdb, /select COLUMNS\(\*\)::varchar from \(select unnest\(__t\)\)/);
-  assert.match(duckdb, /when o\.type = 'DOUBLE' and regexp_full_match\(v\.value ->> '\$', '-\?\[0-9\]\+\(\\\.\[0-9\]\+\)\?'\) then v\.value ->> '\$'/);
+  assert.match(duckdb, /when o\.type = 'DOUBLE' and regexp_full_match\(v\.value ->> '\$', '-\?\[0-9\]\+\(\\\.\[0-9\]\+\)\?'\) then regexp_replace\(v\.value ->> '\$'/);
+  // Trailing zeros dropped, so `1.10` and `1.1` match; run on DuckDB, `select 1.10 a, -2.50 b, 0.00 c` against `select 1.1, -2.5, 0` gives no differing rows.
+  assert.ok(duckdb.includes("regexp_replace(v.value ->> '$', '(\\.[0-9]*[1-9])0+$|\\.0+$', '\\1')"));
 });
 
 test("readComparison reads Redshift's raw rows: the row's columns beside __side, no counts", () => {

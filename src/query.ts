@@ -38,14 +38,14 @@ export const unsupported = (error: string) => error.match(new RegExp(`${UNSUPPOR
 /** A row of `__t` as JSON text. Snowflake's OBJECT keeps keys sorted; DuckDB's struct keeps column order, so its keys
  * are sorted by hand, through json_each, which reads every decimal back as a double: a value it reads as one takes the
  * column's own text instead (`__v`, the row cast to text), so decimals past a double's 17 digits still differ (decimals
- * nested in a struct or list still round). BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
+ * nested in a struct or list still round), less trailing zeros, so `1.10` and `1.1` match. BigQuery turns the row itself (its FROM alias `__t`, a STRUCT) into JSON with TO_JSON_STRING,
  * which keeps the STRUCT's field order (TO_JSON would sort the keys), so a reordered column list reads as a
  * difference there. */
 const rowJson: Record<Exclude<Adapter, "redshift">, string> = {
   bigquery: "TO_JSON_STRING(__t)",
   duckdb:
     "(select '{' || string_agg(to_json(o.key) || ':' || case when o.type = 'DOUBLE' and regexp_full_match(v.value ->> '$', '-?[0-9]+(\\.[0-9]+)?') " +
-    "then v.value ->> '$' else o.value end, ',' order by o.key) || '}' from json_each(to_json(__t)) o " +
+    "then regexp_replace(v.value ->> '$', '(\\.[0-9]*[1-9])0+$|\\.0+$', '\\1') else o.value end, ',' order by o.key) || '}' from json_each(to_json(__t)) o " +
     "join json_each((select to_json(__v) from (select COLUMNS(*)::varchar from (select unnest(__t))) __v)) v on o.key = v.key)",
   snowflake: "to_json(object_construct_keep_null(*))",
 };
