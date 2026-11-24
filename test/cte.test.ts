@@ -443,8 +443,18 @@ test("`//` between numbers or columns is integer division, not a comment", () =>
   assert.deepEqual(names(sql), ["p", "final"]);
 });
 
+test("`//` before a column is DuckDB integer division", () => {
+  const sql = "with sales as (select 9 as units, 2 as pack), boxes as (select units // pack as n from sales) select * from boxes";
+  assert.deepEqual(names(sql), ["sales", "boxes"]);
+  assert.match(cteQuery(sql, "boxes"), /select units \/\/ pack as n from sales/);
+});
+
 test("a `//` comment still hides what follows it", () => {
   assert.deepEqual(names("with a as (select 1 // it's (one)\n), b as (select 2) select * from b"), ["a", "b"]);
+  // Starts with a number but leaves a ( open: a comment.
+  assert.deepEqual(names("with prices as (\n  select 42 as amount // 2026 migration (temporary\n), final as (select * from prices)\nselect * from final"), ["prices", "final"]);
+  // A word after a CTE's closing ) is a comment, not a divisor.
+  assert.deepEqual(names("with a as (select 1) // first CTE\n, b as (select 2) select * from b"), ["a", "b"]);
 });
 
 test("a BigQuery # comment holding a quote does not open a string", () => {

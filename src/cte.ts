@@ -40,10 +40,14 @@ function stringEnd(sql: string, from: number, escapes: boolean): number | undefi
   return undefined;
 }
 
-/** `//` after an operand and before a number is DuckDB integer division; Snowflake's `//` comment rarely starts that way. */
+/** `//` between two operands is DuckDB integer division; otherwise a Snowflake comment. A comment can start like an
+ * operand (`// 2026 migration`), so the rest of the line must also read as SQL: no `(` left open, no string left open.
+ * A word after `)` stays a comment, as in `) // final CTE` between two CTEs. */
 function isDivision(sql: string, at: number): boolean {
-  const line = sql.slice(sql.lastIndexOf("\n", at - 1) + 1, at).trimEnd();
-  return /[\w)"\]]$/.test(line) && /^\s*\d/.test(sql.slice(at + 2));
+  const before = sql.slice(sql.lastIndexOf("\n", at - 1) + 1, at).trimEnd();
+  const rest = sql.slice(at + 2, (sql.indexOf("\n", at) + 1 || sql.length + 1) - 1);
+  const operand = /^\s*\d/.test(rest) ? /[\w)"\]]$/.test(before) : /^\s*[A-Za-z_("]/.test(rest) && /[\w"\]]$/.test(before);
+  return operand && rest.split("'").length % 2 === 1 && rest.split("(").length <= rest.split(")").length;
 }
 
 /** A BigQuery `#` comment starts a line or follows a comma or `(`; elsewhere `#` is an operator, as in Postgres. */
