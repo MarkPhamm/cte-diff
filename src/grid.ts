@@ -20,7 +20,7 @@ export interface Decimal {
 
 const decimalOf = (text: string): Decimal | null => {
   const m = /^([+-]?)(\d*)\.?(\d*)(?:e([+-]?\d+))?$/i.exec(text.trim());
-  if (!m || !m[2] + m[3]) return null;
+  if (!m || !(m[2] + m[3])) return null;
   const exp = Number(m[4] ?? 0) - m[3].length;
   if (Math.abs(exp) > 1000) return null;
   return { digits: BigInt(m[1] + (m[2] + m[3])), exp };
