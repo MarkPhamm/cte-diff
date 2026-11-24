@@ -21,6 +21,7 @@
 - On DuckDB, **Compare sides** treats decimals that differ only in trailing zeros, such as `1.10` and `1.1`, as equal. Before, a column whose scale changed flagged every row as only on the left and only on the right.
 - The sidebar marks a CTE **changed** when only the spacing or punctuation inside a string or a quoted name changed, such as `'a  b'` to `'a b'`. Before, it counted as formatting and the CTE showed as unchanged.
 - A changed `{% set %}` before the `with`, such as `{% set cutoff = 1 %}` to `2`, marks every CTE that uses the variable **reads a changed CTE**, and the sidebar's summary starts with **Jinja before WITH changed**. Before, the sidebar said **No CTE changed** although the rows did.
+- Models that divide by a column with DuckDB's `//` (`units // pack`), or have a Snowflake `//` comment starting with a number and holding a parenthesis (`// 2026 migration (temporary`), keep their **Preview** and **Compare sides** buttons and sidebar entries. Before, their CTEs were not all found.
 
 ## 0.12.1
 
