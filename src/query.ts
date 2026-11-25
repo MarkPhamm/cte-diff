@@ -81,7 +81,8 @@ select * from (
 ) order by __k, __row, __side`;
 
 /** Redshift has no row-to-JSON for an unknown column list, so its comparison runs on the rows themselves: the differing
- * rows come back with a `__side` marker and their own columns, and there is no counts row. An added, dropped, renamed
+ * rows come back with a `__cte_diff_side` marker and their own columns, and there is no counts row. The marker has a name
+ * of its own, so a model's own `__side`, `__row` or `__k` column comes back as data. An added, dropped, renamed
  * or reordered column then errors in Redshift instead of showing as a difference. */
 const rawCompare = (left: string, right: string) => `with __l as (
 ${left}
@@ -91,8 +92,8 @@ ${right}
 ),
 __only_l as (select * from __l except select * from __r),
 __only_r as (select * from __r except select * from __l)
-select 'left' as __side, * from __only_l
-union all select 'right' as __side, * from __only_r`;
+select 'left' as __cte_diff_side, * from __only_l
+union all select 'right' as __cte_diff_side, * from __only_r`;
 
 /** The comparison of `left` and `right` on whichever warehouse dbt runs it. Each side is written once, in a Jinja set
  * block that every adapter's SQL prints: dbt gets the query as one command-line argument, which Linux caps at 128 KiB. */
@@ -183,20 +184,23 @@ export const isExactNumber = (v: unknown): v is string =>
   typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v) && digits(v).length > 15 && digits(v) !== digits(String(Number(v)));
 
 /** Reads compareQuery's rows. Column names come back in whatever case the warehouse uses. A JSON comparison's rows hold
- * their data as a `__row` JSON string (counts first); Redshift's hold the row's own columns beside `__side`. */
+ * their data as a `__row` JSON string (counts first); Redshift's hold the row's own columns beside `__cte_diff_side`. */
 export function readComparison(rows: Row[]): Comparison {
   const get = (r: Row, k: string) => r[k] ?? r[k.toUpperCase()];
   const out: Comparison = { rows: [] };
   for (const r of rows) {
+    const raw = get(r, "__cte_diff_side");
+    if (raw !== undefined) {
+      out.rows.push({
+        side: raw === "left" ? "left" : "right",
+        row: Object.fromEntries(Object.entries(r).filter(([k]) => k.toLowerCase() !== "__cte_diff_side")),
+      });
+      continue;
+    }
     const side = get(r, "__side");
     const text = get(r, "__row");
     if (side === "counts") out.counts = JSON.parse(String(text));
-    else if (text !== undefined) out.rows.push({ side: side === "left" ? "left" : "right", row: JSON.parse(String(text), exact) });
-    else
-      out.rows.push({
-        side: side === "left" ? "left" : "right",
-        row: Object.fromEntries(Object.entries(r).filter(([k]) => !/^__(?:side|k)$/i.test(k))),
-      });
+    else out.rows.push({ side: side === "left" ? "left" : "right", row: JSON.parse(String(text), exact) });
   }
   return out;
 }
