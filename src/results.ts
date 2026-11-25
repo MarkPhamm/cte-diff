@@ -112,7 +112,7 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
   if (!k) body += '<p class="muted">Row counts unavailable.</p>';
   const identical = k ? !k.only_left && !k.only_right : c.rows.length === 0;
   if (identical) {
-    const verdict = !k ? "No differing rows." : k.left === k.right ? "Both sides return the same rows." : "Same distinct rows; the counts differ only by duplicates.";
+    const verdict = !k ? "No differing rows." : k.left === k.right ? "Same distinct rows and the same row count. How often each row repeats isn't compared." : "Same distinct rows; the counts differ only by duplicates.";
     body += `<p class="verdict"><span class="good">✓</span> ${verdict}</p>`;
   } else {
     const parts = [p.pairs.length && plural(p.pairs.length, "changed row"), p.left.length && `${n(p.left.length)} only left`, p.right.length && `${n(p.right.length)} only right`];

@@ -2,6 +2,7 @@
 
 ## 0.12.3
 
+- When **Compare sides** finds no differing row and the same row count on each side, the panel says "Same distinct rows and the same row count", and that how often each row repeats isn't compared. Before, it said "Both sides return the same rows", although ids `1, 1, 2` against `1, 2, 2` match that way.
 - On Redshift, **Compare sides** works on a model with a column named `__row`, `__k` or `__side`, and shows that column. Before, a `__row` column made the comparison fail with a JSON error, and a `__k` or `__side` column was dropped from the rows shown.
 
 ## 0.12.2
