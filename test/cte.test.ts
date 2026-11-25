@@ -419,6 +419,27 @@ test("compareCtes: a {% set %} before WITH that changed marks what uses it affec
   assert.deepEqual(compareCtes(config(1), config(2)), [{ name: "x", status: "same" }, { status: "same", jinjaChanged: true }]);
 });
 
+test("compareCtes: SQL moved into or out of a line comment counts; reindenting around a comment doesn't", () => {
+  const sql = (body: string) => `with sales as (\n${body}\n), report as (select * from sales)\nselect * from report`;
+  const statuses = (a: string, b: string) => compareCtes(sql(a), sql(b)).map((s) => s.status);
+  // `+ 5` on its own line runs; on the comment's line it doesn't: 15 rows become 10.
+  assert.deepEqual(statuses("  select 10 -- adjustment\n   + 5", "  select 10 -- adjustment + 5"), ["changed", "affected", "affected"]);
+  assert.deepEqual(statuses("  select 10\n  # BigQuery note\n  + 5", "  select 10\n  # BigQuery note + 5"), ["changed", "affected", "affected"]);
+  assert.deepEqual(statuses("  select 10 -- adjustment\n   + 5", "      select 10    -- adjustment   \n + 5"), ["same", "same", "same"]);
+});
+
+test("compareCtes: spacing inside a string in a {% set %} before WITH counts; around the tag's words, it doesn't", () => {
+  const sql = (set: string) => `${set}\nwith labeled as (select '{{ label }}' as label) select * from labeled`;
+  assert.deepEqual(compareCtes(sql("{% set label = 'a b' %}"), sql("{% set label = 'a  b' %}")), [
+    { name: "labeled", status: "affected" },
+    { status: "affected", jinjaChanged: true },
+  ]);
+  assert.deepEqual(compareCtes(sql("{% set label = 'a b' %}"), sql("{%  set  label =  'a b'  %}")), [
+    { name: "labeled", status: "same" },
+    { status: "same" },
+  ]);
+});
+
 test("compareCtes: an unchanged CTE reading a removed one is affected; no CTEs compares the whole text", () => {
   assert.deepEqual(compareCtes("with a as (select 1), b as (select * from a) select * from b", "with b as (select * from a) select * from b"), [
     { name: "b", status: "affected" },
