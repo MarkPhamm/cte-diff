@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, numericKey, order, pinRule, pretty, tsv, type Grid, type Key } from "../src/grid.ts";
+import { compareText, csv, fileName, hideRule, json, markdown, matches, nextSorts, numericKey, order, pinRule, pretty, sideColumn, tsv, type Grid, type Key } from "../src/grid.ts";
 
 test("a header click sorts ascending, then descending, then not at all", () => {
   const asc = nextSorts([], 2);
@@ -85,6 +85,16 @@ test("json keeps numbers and NULL as values and leaves out a missing column", ()
     { side: "left", id: 1, note: 'say "hi", then\nleave', amount: null },
     { side: "right", id: 1, note: "a|b" },
   ]);
+});
+
+test("a comparison's side column keeps its name, or steps aside for a model column called side", () => {
+  assert.equal(sideColumn(["id", "amount"]), "side");
+  assert.equal(sideColumn(["trade_id", "side"]), "side_");
+  assert.equal(sideColumn(["SIDE", "side_"]), "side__");
+  // Saved as JSON, a left row of a trades model keeps both its own side and the comparison's.
+  const cols = ["trade_id", "side"];
+  const saved = json({ cols: [sideColumn(cols), ...cols], rows: [[{ text: "left", kind: "text" }, { text: "7", kind: "num" }, { text: "buy", kind: "text" }]] });
+  assert.deepEqual(JSON.parse(saved), [{ side_: "left", trade_id: 7, side: "buy" }]);
 });
 
 test("fileName takes the CTE's name from the heading", () => {

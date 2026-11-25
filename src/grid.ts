@@ -155,6 +155,14 @@ export function json(g: Grid): string {
   return JSON.stringify(rows, null, 2) + "\n";
 }
 
+/** The header of a comparison's left/right column in a copy or a saved file: `side`, or, when the rows have a column of
+ * that name, `side_` with as many underscores as it takes to be unique, so neither value overwrites the other. */
+export function sideColumn(cols: string[]): string {
+  let name = "side";
+  while (cols.some((c) => c.toLowerCase() === name)) name += "_";
+  return name;
+}
+
 /** A file name for the rows of the view headed `heading`: the CTE's name, `-compare` for a comparison. */
 export function fileName(heading: string, comparison: boolean, ext: string): string {
   const name = heading.split(" (")[0].replace(/[^\w.-]+/g, "_").replace(/^[_.]+|_+$/g, "") || "results";
@@ -227,8 +235,9 @@ export function attach(root: Document | ShadowRoot, host: Host): void {
   /** The rows and columns as a Grid; `side` adds a comparison's left/right column. */
   const gridOf = (rows: HTMLTableRowElement[], cols: number[], side: boolean): Grid => {
     const withSide = side && comparison;
+    const names = cols.map((c) => heads[c].textContent ?? "");
     return {
-      cols: [...(withSide ? ["side"] : []), ...cols.map((c) => heads[c].textContent ?? "")],
+      cols: [...(withSide ? [sideColumn(names)] : []), ...names],
       rows: rows.map((tr) => [
         ...(withSide ? [{ text: tr.classList.contains("l") ? "left" : "right", kind: "text" as const }] : []),
         ...cols.map((c) => cellOf(tr.cells[c])),
