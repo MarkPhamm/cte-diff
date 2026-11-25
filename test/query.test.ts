@@ -26,9 +26,9 @@ test("compareQuery picks each adapter's SQL", () => {
   assert.match(bigquery, /TO_JSON_STRING\(STRUCT\(\(select count\(\*\) from __l\) AS `left`.*\)\)/);
   assert.match(bigquery, /except distinct/);
   assert.doesNotMatch(bigquery, /object_construct|json_each|::varchar/);
-  // Redshift has no row-to-JSON: the differing rows come back raw, with a __side marker and no counts row.
+  // Redshift has no row-to-JSON: the differing rows come back raw, with a __cte_diff_side marker and no counts row.
   assert.match(redshift, /select \* from __l except select \* from __r/);
-  assert.match(redshift, /'left' as __side/);
+  assert.match(redshift, /'left' as __cte_diff_side/);
   assert.doesNotMatch(redshift, /__row|counts|TO_JSON_STRING/);
 });
 
@@ -154,15 +154,27 @@ test("compareQuery's DuckDB rows take a decimal's text, not json_each's double",
   assert.ok(duckdb.includes("regexp_replace(v.value ->> '$', '(\\.[0-9]*[1-9])0+$|\\.0+$', '\\1')"));
 });
 
-test("readComparison reads Redshift's raw rows: the row's columns beside __side, no counts", () => {
+test("readComparison reads Redshift's raw rows: the row's columns beside __cte_diff_side, no counts", () => {
   const c = readComparison([
-    { __side: "left", id: 1, amount: 32 },
-    { __side: "right", id: 1, amount: 24 },
+    { __cte_diff_side: "left", id: 1, amount: 32 },
+    { __cte_diff_side: "right", id: 1, amount: 24 },
   ]);
   assert.equal(c.counts, undefined);
   assert.deepEqual(c.rows, [
     { side: "left", row: { id: 1, amount: 32 } },
     { side: "right", row: { id: 1, amount: 24 } },
+  ]);
+});
+
+test("readComparison keeps a Redshift model's own __row, __k and __side columns", () => {
+  const c = readComparison([
+    { __cte_diff_side: "left", __row: "pending", id: 1 },
+    { __cte_diff_side: "right", __k: 42, __side: "buy", id: 1 },
+  ]);
+  assert.equal(c.counts, undefined);
+  assert.deepEqual(c.rows, [
+    { side: "left", row: { __row: "pending", id: 1 } },
+    { side: "right", row: { __k: 42, __side: "buy", id: 1 } },
   ]);
 });
 

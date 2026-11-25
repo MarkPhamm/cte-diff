@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.3
+
+- On Redshift, **Compare sides** works on a model with a column named `__row`, `__k` or `__side`, and shows that column. Before, a `__row` column made the comparison fail with a JSON error, and a `__k` or `__side` column was dropped from the rows shown.
+
 ## 0.12.2
 
 - **New Comparison (Paste Two Queries)** in a multi-root workspace uses the chosen project folder's own `cteDiff.dbtArgs`, `target`, `limit` and `dbtPath`. Before, it read the workspace-level values, so a folder's `--vars` were silently ignored.
