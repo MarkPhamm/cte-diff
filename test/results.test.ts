@@ -77,8 +77,15 @@ test("rowsHtml right-aligns an integer past 2^53 and shows its digits", () => {
 
 test("comparisonHtml says when both sides match", () => {
   const html = comparisonHtml("a", { counts: { left: 2, right: 2, only_left: 0, only_right: 0 }, rows: [] }, 100);
-  assert.match(html, /Both sides return the same rows/);
+  assert.match(html, /Same distinct rows and the same row count/);
   assert.doesNotMatch(html, /<table/);
+});
+
+test("comparisonHtml doesn't claim the same rows when only how often rows repeat may differ", () => {
+  // ids (1, 1, 2) against (1, 2, 2): EXCEPT finds nothing either way, and both sides have 3 rows.
+  const html = comparisonHtml("ids", { counts: { left: 3, right: 3, only_left: 0, only_right: 0 }, rows: [] }, 100);
+  assert.doesNotMatch(html, /return the same rows/);
+  assert.match(html, /How often each row repeats isn't compared/);
 });
 
 test("a table comes with its toolbar; no rows, no toolbar", () => {

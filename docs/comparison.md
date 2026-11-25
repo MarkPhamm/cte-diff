@@ -45,7 +45,7 @@ The differing rows come back with their own columns and a `__cte_diff_side` mark
 
 On Snowflake, DuckDB and BigQuery, the result is `left EXCEPT right` and `right EXCEPT left`, plus the row count of each side. Redshift has no counts row.
 
-`EXCEPT` compares distinct rows. If the only change is duplicated rows, the counts differ but no rows are listed. The panel says so: "Same distinct rows; the counts differ only by duplicates." Redshift has no counts to show that, so a duplicate-only change reads as no difference there.
+`EXCEPT` compares distinct rows. If the only change is duplicated rows, the counts differ but no rows are listed. The panel says so: "Same distinct rows; the counts differ only by duplicates." With equal counts it says "Same distinct rows and the same row count": a row can still repeat a different number of times on each side, as ids `1, 1, 2` against `1, 2, 2` do. Redshift has no counts to show that, so a duplicate-only change reads as no difference there.
 
 ## How CTEs are marked
 
