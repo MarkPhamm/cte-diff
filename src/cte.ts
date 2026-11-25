@@ -20,7 +20,7 @@ export interface Parsed {
 }
 
 interface Token {
-  kind: "word" | "quoted" | "punct" | "jinja" | "string";
+  kind: "word" | "quoted" | "punct" | "jinja" | "string" | "comment";
   text: string;
   start: number;
   end: number;
@@ -56,8 +56,9 @@ function isHashComment(sql: string, at: number): boolean {
   return line === "" || /[,(]$/.test(line);
 }
 
-/** Tokens outside strings and comments: words, "quoted identifiers", single punctuation, and whole Jinja tags. */
-function* tokens(sql: string, withStrings = false): Generator<Token> {
+/** Tokens outside strings and comments: words, "quoted identifiers", single punctuation, and whole Jinja tags.
+ * `withStrings` adds string literals; `withComments` adds line comments, each with the line break that ends it. */
+function* tokens(sql: string, withStrings = false, withComments = false): Generator<Token> {
   let i = 0;
   const n = sql.length;
   const skipTo = (close: string, from: number) => {
@@ -68,7 +69,11 @@ function* tokens(sql: string, withStrings = false): Generator<Token> {
     const c = sql[i];
     const two = sql.slice(i, i + 2);
     if (/\s/.test(c)) i++;
-    else if (two === "--" || (two === "//" && !isDivision(sql, i)) || (c === "#" && isHashComment(sql, i))) i = skipTo("\n", i);
+    else if (two === "--" || (two === "//" && !isDivision(sql, i)) || (c === "#" && isHashComment(sql, i))) {
+      const start = i;
+      i = skipTo("\n", i);
+      if (withComments) yield { kind: "comment", text: sql.slice(start, i), start, end: i };
+    }
     else if (two === "/*") i = skipTo("*/", i + 2);
     else if (two === "{{" || two === "{%" || two === "{#") {
       const start = i;
@@ -303,10 +308,10 @@ interface Positioned {
 }
 
 /** Tokens in `[start, end)` with their parenthesis depth, the range's own level being 0. */
-function tokensInRange(sql: string, start: number, end: number, withStrings = false): Positioned[] {
+function tokensInRange(sql: string, start: number, end: number, withStrings = false, withComments = false): Positioned[] {
   const out: Positioned[] = [];
   let depth = 0;
-  for (const token of tokens(sql, withStrings)) {
+  for (const token of tokens(sql, withStrings, withComments)) {
     if (token.end <= start) continue;
     if (token.start >= end) break;
     if (token.text === ")") depth--;
@@ -728,14 +733,24 @@ export function compareCtes(left: string, right: string): CteStatus[] {
   const l = lp.ctes;
   const r = rp.ctes;
   // A CTE's text from after its name to its closing parenthesis, whitespace collapsed outside strings and quoted names;
-  // the final select after the last.
+  // the final select after the last. A line comment keeps the line break that ends it, since SQL after the break runs
+  // and SQL before it doesn't; a Jinja tag keeps the spacing inside its own quoted strings.
   const text = (sql: string, from: number, to: number) => {
     const squash = (s: string) => s.replace(/\s+/g, " ").replace(/ ?([(),;]) ?/g, "$1");
+    const jinja = (s: string) => s.split(/('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")/).map((part, i) => (i % 2 ? part : squash(part))).join("");
     let out = "";
-    for (const { token } of tokensInRange(sql, from, to, true)) {
-      if (token.kind !== "string" && token.kind !== "quoted") continue;
-      out += squash(sql.slice(from, token.start)) + token.text;
-      from = token.end;
+    for (const { token } of tokensInRange(sql, from, to, true, true)) {
+      const kept =
+        token.kind === "string" || token.kind === "quoted"
+          ? token.text
+          : token.kind === "comment"
+            ? token.text.trimEnd() + "\n"
+            : token.kind === "jinja"
+              ? jinja(token.text)
+              : undefined;
+      if (kept === undefined) continue;
+      out += squash(sql.slice(from, Math.max(from, token.start))) + kept;
+      from = Math.max(from, token.end);
     }
     return (out + squash(sql.slice(from, to))).trim();
   };
@@ -761,8 +776,12 @@ export function compareCtes(left: string, right: string): CteStatus[] {
   const ls = sets(left, lp.withStart);
   const rs = sets(right, rp.withStart);
   const vars = [...new Set([...ls.keys(), ...rs.keys()])].filter((v) => ls.get(v) !== rs.get(v));
+  // A variable used in a Jinja tag, or in a tag inside a string, such as `'{{ label }}'`.
   const usesVar = (from: number, to: number) =>
-    tokensInRange(right, from, to).some(({ token }) => token.kind === "jinja" && vars.some((v) => new RegExp(`\\b${v}\\b`).test(token.text)));
+    tokensInRange(right, from, to, true).some(({ token }) => {
+      const tags = token.kind === "jinja" ? [token.text] : token.kind === "string" ? (token.text.match(/{{.*?}}|{%.*?%}/gs) ?? []) : [];
+      return tags.some((tag) => vars.some((v) => new RegExp(`\\b${v}\\b`).test(tag)));
+    });
   const statusOf = (dirty: Set<string>, changed: boolean, from: number, to: number): Status =>
     changed ? "changed" : usesVar(from, to) || [...reads(from, to)].some((w) => dirty.has(w)) ? "affected" : "same";
   // `dirty`: names, from outer WITHs too, that are changed, added, removed or affected; whatever reads them is affected.
