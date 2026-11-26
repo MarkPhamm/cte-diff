@@ -56,7 +56,7 @@ function isHashComment(sql: string, at: number): boolean {
   return line === "" || /[,(]$/.test(line);
 }
 
-/** Tokens outside strings and comments: words, "quoted identifiers", single punctuation, and whole Jinja tags.
+/** Tokens outside strings and comments: words, "quoted" and `quoted` identifiers, single punctuation, and whole Jinja tags.
  * `withStrings` adds string literals; `withComments` adds line comments, each with the line break that ends it. */
 function* tokens(sql: string, withStrings = false, withComments = false): Generator<Token> {
   let i = 0;
@@ -92,11 +92,13 @@ function* tokens(sql: string, withStrings = false, withComments = false): Genera
         if (withStrings) yield { kind: "string", text: sql.slice(i, end), start: i, end };
         i = end;
       }
-    } else if (c === '"') {
+    } else if (c === '"' || c === "`") {
+      // A "quoted" name, or a BigQuery `quoted` one, which escapes with a backslash.
       const start = i++;
       while (i < n) {
-        if (sql[i] === '"' && sql[i + 1] === '"') i += 2;
-        else if (sql[i] === '"') break;
+        if (c === "`" && sql[i] === "\\") i += 2;
+        else if (sql[i] === c && sql[i + 1] === c) i += 2;
+        else if (sql[i] === c) break;
         else i++;
       }
       i++;
