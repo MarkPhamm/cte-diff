@@ -39,7 +39,7 @@ select 'left' as __cte_diff_side, * from __only_l
 union all select 'right' as __cte_diff_side, * from __only_r
 ```
 
-The differing rows come back with their own columns and a `__cte_diff_side` marker, and there is no counts row: the panel says so, and still says whether the sides match. Redshift's `EXCEPT` matches columns by position, so the two sides' columns must line up by count, order and type. A change to the columns errors instead of showing as a difference. And because `EXCEPT` compares distinct rows and there are no counts, a change to duplicates alone isn't shown.
+The differing rows come back with their own columns and a `__cte_diff_side` marker, and there is no counts row: the panel says so, and still says whether the sides match. Redshift's `EXCEPT` matches columns by position, not by name, and the results take the left side's column names. An added or dropped column, or one whose type no longer lines up, errors instead of showing as a difference. A renamed column, or two columns of compatible types swapped, is compared by position: a rename alone shows no differing rows, and the panel notes that column names aren't checked. And because `EXCEPT` compares distinct rows and there are no counts, a change to duplicates alone isn't shown.
 
 ## What the counts mean
 

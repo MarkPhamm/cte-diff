@@ -2,6 +2,7 @@
 
 ## 0.12.3
 
+- On Redshift, a comparison's panel says that columns are matched by position, not by name, so a renamed column isn't caught. Before, comparing `select 7 as old_name` with `select 7 as new_name` said only "No differing rows", and the docs said a column change errors.
 - A CTE named in BigQuery backticks, such as `` `orders` as (...) ``, gets ▶ Preview and ⇄ Compare sides, and so do the CTEs after it. Before, the parser stopped at the backtick, so those CTEs had no lens and no sidebar entry.
 - With two diffs open on the same file, such as `a.sql ↔ model.sql` and `b.sql ↔ model.sql`, **⇄ Compare sides** and the sidebar use the diff you are looking at. Before, they used the first of the two opened, so a comparison could run against the wrong baseline.
 - Copying or saving a comparison of a model with its own `side` column, such as a trades table of `buy` and `sell`, keeps both: the comparison's left/right column is headed `side_`. Before, **Save JSON** kept only one of the two values and CSV had two `side` columns.

@@ -82,8 +82,9 @@ select * from (
 
 /** Redshift has no row-to-JSON for an unknown column list, so its comparison runs on the rows themselves: the differing
  * rows come back with a `__cte_diff_side` marker and their own columns, and there is no counts row. The marker has a name
- * of its own, so a model's own `__side`, `__row` or `__k` column comes back as data. An added, dropped, renamed
- * or reordered column then errors in Redshift instead of showing as a difference. */
+ * of its own, so a model's own `__side`, `__row` or `__k` column comes back as data. EXCEPT lines columns up by
+ * position: an added or dropped column, or one whose type no longer lines up, errors in Redshift; a renamed column, or
+ * a reorder of compatible types, compares by position, so a rename alone reads as no difference. */
 const rawCompare = (left: string, right: string) => `with __l as (
 ${left}
 ),
