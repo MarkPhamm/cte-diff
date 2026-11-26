@@ -27,6 +27,24 @@ test("comparisonHtml without counts (Redshift) still says whether the sides matc
   );
 });
 
+test("comparisonHtml without counts (Redshift) says column names aren't checked, as when one is renamed", () => {
+  // `select 7 as old_name` against `select 7 as new_name`: Redshift's EXCEPT matches by position and returns no rows.
+  const renamed = comparisonHtml("a", readComparison([]), 100);
+  assert.match(renamed, /matched by position, not by name: a renamed column isn't caught[\s\S]*No differing rows/);
+  // With 8 on the right, both rows come back under the left side's name, and the sides still differ.
+  const changed = comparisonHtml(
+    "a",
+    readComparison([
+      { __cte_diff_side: "left", old_name: 7 },
+      { __cte_diff_side: "right", old_name: 8 },
+    ]),
+    100,
+  );
+  assert.match(changed, /matched by position[\s\S]*The sides differ/);
+  const counted = { counts: { left: 1, right: 1, only_left: 0, only_right: 0 }, rows: [] };
+  assert.doesNotMatch(comparisonHtml("a", counted, 100), /matched by position/);
+});
+
 test("setupHtml shows dbt debug's output only when it failed", () => {
   assert.match(setupHtml([["Project", "/p"]], true, "noise"), /<th>Project<\/th><td>\/p<\/td>[\s\S]*passed/);
   assert.doesNotMatch(setupHtml([], true, "noise"), /noise/);

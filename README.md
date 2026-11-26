@@ -86,7 +86,7 @@ A CTE inside another CTE's `with` gets **▶ Preview** and **⇄ Compare sides**
 
 **⇄ Compare sides** runs the CTE on both sides and lists the rows only one side returns, with each side's row count. A changed row shows as a pair, old above new, with the changed cells highlighted. Rows pair up on their id columns: `id`, or a name ending in `_id`, `_key`, `_pk` or `_sk`.
 
-Columns match by name, not position. An added, dropped or renamed column shows as a difference, not an error:
+Columns match by name, not position. An added, dropped or renamed column shows as a difference, not an error. Redshift is the exception: it matches columns by position, so a rename alone isn't caught there ([details](https://ctediff.dev/comparison/)):
 
 <img src="https://raw.githubusercontent.com/MarkPhamm/cte-diff/main/docs/assets/img/demo-final.gif" width="100%" alt="Compare on final from the sidebar: refunded only on the left, first_name only on the right">
 

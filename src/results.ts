@@ -109,7 +109,8 @@ export function comparisonHtml(what: string, c: Comparison, limit: number, meta?
       ]
     : [];
   let body = heading(what, stats, meta);
-  if (!k) body += '<p class="muted">Row counts unavailable.</p>';
+  // Redshift's comparison runs EXCEPT on the rows themselves, which lines columns up by position.
+  if (!k) body += `<p class="muted">Row counts unavailable. Columns are matched by position, not by name: a renamed column isn't caught.</p>`;
   const identical = k ? !k.only_left && !k.only_right : c.rows.length === 0;
   if (identical) {
     const verdict = !k ? "No differing rows." : k.left === k.right ? "Same distinct rows and the same row count. How often each row repeats isn't compared." : "Same distinct rows; the counts differ only by duplicates.";
