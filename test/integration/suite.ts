@@ -172,4 +172,17 @@ export async function run(): Promise<void> {
     return l?.find((x) => x.range.start.line === 2 && x.command?.title === "⇄ Compare sides");
   }, "Compare sides on the nested CTE");
   assert.deepEqual(nestedCompare.command?.arguments?.slice(1), ["j", ["h"]]);
+
+  // Two diffs share a file: the sidebar and Compare sides use the diff in front, not the first one opened.
+  const [shared, sameBase, otherBase] = await Promise.all(
+    ["select 1", "select 1", "select 2"].map((body) => vscode.workspace.openTextDocument({ language: "sql", content: `with s as (${body})\nselect * from s` })),
+  );
+  await vscode.commands.executeCommand("vscode.diff", sameBase.uri, shared.uri, "same ↔ shared");
+  await until(() => tree.getChildren().find((n) => n.name === "s" && n.status === "same"), "the sidebar to compare with the first diff");
+  await vscode.commands.executeCommand("vscode.diff", otherBase.uri, shared.uri, "other ↔ shared");
+  await until(() => tree.getChildren().find((n) => n.name === "s" && n.status === "changed"), "the sidebar to compare with the diff in front");
+  const group = vscode.window.tabGroups.activeTabGroup;
+  const first = group.tabs.findIndex((t) => t.label === "same ↔ shared");
+  await vscode.commands.executeCommand("workbench.action.openEditorAtIndex", first);
+  await until(() => tree.getChildren().find((n) => n.name === "s" && n.status === "same"), "the sidebar to follow the diff brought to front");
 }
