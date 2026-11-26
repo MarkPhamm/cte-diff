@@ -7,7 +7,7 @@
  * chosen warehouse (BigQuery, DuckDB, Redshift or Snowflake) while the rows always come from DuckDB. Bundled by
  * `npm run site:js` into docs/javascripts/playground.js. */
 import { compareCtes, cteQuery, parse, type Status } from "../src/cte.ts";
-import { compareQuery, forAdapter, readComparison, type Row } from "../src/query.ts";
+import { compareQuery, forAdapter, limitComparison, readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
 import { after, before, forDuckdb, tables } from "./sample.ts";
 import { button, diffRows, esc, highlight, lensLines, resultsPanel, sidebarList, summary, track, type Act, type Side } from "./ui.ts";
@@ -47,9 +47,10 @@ function duck(onState: (s: string) => void): Promise<Conn> {
   return engine;
 }
 
-/** The rows of `sql` as dbt show would give them: numbers as numbers, dates and the rest as text. */
-async function rowsOf(conn: Conn, sql: string): Promise<Row[]> {
-  await conn.query(`create or replace temp table __result as ${sql}`);
+/** The first `limit` rows of `sql` as dbt show would give them: numbers as numbers, dates and the rest as text. The
+ * limit wraps the query, as `dbt show --limit` does, so a large result is never built or sent to the page whole. */
+async function rowsOf(conn: Conn, sql: string, limit: number): Promise<Row[]> {
+  await conn.query(`create or replace temp table __result as select * from (\n${sql}\n) limit ${limit}`);
   const cols = (await conn.query("describe __result")).toArray().map((r) => r.toJSON() as { column_name: string; column_type: string });
   const pick = cols.map(({ column_name, column_type }) => {
     const q = `"${column_name.replace(/"/g, '""')}"`;
@@ -184,9 +185,10 @@ if (root) {
     if (!near) return;
     show(runningHtml(what) + (engineEl.dataset.state === "ready" ? "" : '<p class="muted">Loading DuckDB into your browser, once (about 7 MB)…</p>'));
     try {
-      const rows = (await rowsOf(await duck(setEngine), forDuckdb(sql))).slice(0, 100); // dbt show --limit 100
+      // As the extension asks dbt: 100 rows, and one more for a comparison's counts row.
+      const rows = await rowsOf(await duck(setEngine), forDuckdb(sql), sel.act === "compare" ? 101 : 100);
       if (my !== latest) return;
-      show(sel.act === "compare" ? comparisonHtml(what, readComparison(rows), 100) : rowsHtml(what, rows, 100));
+      show(sel.act === "compare" ? comparisonHtml(what, limitComparison(readComparison(rows), 100), 100) : rowsHtml(what, rows, 100));
     } catch (e) {
       if (my !== latest) return;
       show(
