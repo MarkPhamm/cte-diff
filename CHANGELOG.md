@@ -2,6 +2,7 @@
 
 ## 0.12.3
 
+- With two diffs open on the same file, such as `a.sql ↔ model.sql` and `b.sql ↔ model.sql`, **⇄ Compare sides** and the sidebar use the diff you are looking at. Before, they used the first of the two opened, so a comparison could run against the wrong baseline.
 - Copying or saving a comparison of a model with its own `side` column, such as a trades table of `buy` and `sell`, keeps both: the comparison's left/right column is headed `side_`. Before, **Save JSON** kept only one of the two values and CSV had two `side` columns.
 - The sidebar marks a CTE **changed** when SQL moves onto or off a line comment's line, such as `+ 5` joining `-- adjustment`, which changes what runs. Before, the line break counted as formatting and the CTE showed as unchanged.
 - A `{% set %}` before the `with` whose string gains or loses a space, such as `'a b'` to `'a  b'`, marks the CTEs that use it **reads a changed CTE**, including where it is used inside a string (`'{{ label }}'`). Before, the sidebar said **No CTE changed**.

@@ -4,18 +4,18 @@
 import * as vscode from "vscode";
 import { branches, findCte, nestedCtes, parse, subqueries } from "./cte.ts";
 
-/** Which side of an open diff editor `uri` is on, and the other side's URI. */
+/** Which side of an open diff editor `uri` is on, and the other side's URI. When several diffs hold `uri`, the one in
+ * front wins: the active group's visible tab, then another group's, then the first found. */
 export function diffOf(uri: vscode.Uri): { left: vscode.Uri; right: vscode.Uri } | undefined {
   const key = uri.toString();
-  for (const group of vscode.window.tabGroups.all) {
-    for (const tab of group.tabs) {
-      const input = tab.input;
-      if (input instanceof vscode.TabInputTextDiff && (input.original.toString() === key || input.modified.toString() === key)) {
-        return { left: input.original, right: input.modified };
-      }
-    }
-  }
-  return undefined;
+  const groups = vscode.window.tabGroups;
+  const ordered = [groups.activeTabGroup, ...groups.all.filter((g) => g !== groups.activeTabGroup)];
+  const holding = ordered.flatMap((g) => g.tabs).filter((t) => {
+    const input = t.input;
+    return input instanceof vscode.TabInputTextDiff && (input.original.toString() === key || input.modified.toString() === key);
+  });
+  const input = (holding.find((t) => t.isActive) ?? holding[0])?.input;
+  return input instanceof vscode.TabInputTextDiff ? { left: input.original, right: input.modified } : undefined;
 }
 
 export class CteLens implements vscode.CodeLensProvider {
