@@ -96,6 +96,15 @@ test("strings with escapes, $$ blocks and with recursive", () => {
   assert.deepEqual(names(sql), ["a", "b"]);
 });
 
+test("a CTE named in BigQuery backticks, and a backticked table holding a quote", () => {
+  assert.deepEqual(names("with `orders` as (select 1) select * from `orders`"), ["`orders`"]);
+  assert.deepEqual(names("with a as (select 1), `b` as (select * from a) select * from `b`"), ["a", "`b`"]);
+  assert.deepEqual(names("with a as (select * from `my-project.it's.t`), b as (select 2) select * from b"), ["a", "b"]);
+  assert.equal(cteQuery("with a as (select 1), `b` as (select * from a) select * from `b`", "`b`"), "with a as (select 1), `b` as (select * from a)\nselect * from `b`");
+  const statuses = compareCtes("with `a` as (select 1), b as (select * from `a`) select * from b", "with `a` as (select 2), b as (select * from `a`) select * from b");
+  assert.deepEqual(statuses.map((s) => [s.name, s.status]), [["`a`", "changed"], ["b", "affected"], [undefined, "affected"]]);
+});
+
 test("a MATERIALIZED or NOT MATERIALIZED hint before the body", () => {
   const sql = "with a as materialized (select 1 as id), b as not materialized (select * from a), c as (select * from b) select * from c";
   assert.deepEqual(names(sql), ["a", "b", "c"]);
