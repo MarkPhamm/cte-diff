@@ -1,6 +1,6 @@
 /* The example on the landing page: jaffle_shop's orders model, before and after a change, and made-up tables to run it
  * on. Fictional data only. */
-import { forAdapter } from "../src/query.ts";
+import { forAdapter, isExactNumber, type Row } from "../src/query.ts";
 
 export const before = `with orders as (
     select * from {{ ref('stg_orders') }}
@@ -93,3 +93,35 @@ create table stg_payments as select payment_id, order_id, amount::double as amou
  * comparison's adapter Jinja its DuckDB branch. Other Jinja stays, and DuckDB reports it. */
 export const forDuckdb = (sql: string) =>
   forAdapter(sql.replace(/\{\{\s*(?:ref\(\s*|source\(\s*'[^']*'\s*,\s*)'([^']+)'\s*\)\s*\}\}/g, "$1"), "duckdb");
+
+/** A column of the playground's result, as DuckDB's `describe` gives it. */
+export type Column = { column_name: string; column_type: string };
+
+/** Types duckdb-wasm hands back as a JS number, string or boolean as they are. */
+const AS_IS = /^(INTEGER|SMALLINT|TINYINT|DOUBLE|FLOAT|VARCHAR|BOOLEAN)$/;
+/** Number types a double holds exactly, read as one. */
+const DOUBLE = /^(UINTEGER|USMALLINT|UTINYINT|REAL)$/;
+/** Number types a double may round (64-bit and wider integers, decimals); they come back as text, then showRow reads them. */
+const WIDE = /^(BIGINT|HUGEINT|UHUGEINT|UBIGINT|DECIMAL)/;
+
+/** The select list that reads the playground's result as dbt show gives it: numbers as numbers, dates and the rest as
+ * text. A wide number is read as text, so showRow can keep the digits a double would round. */
+export function showColumns(cols: Column[]): string {
+  return cols
+    .map(({ column_name, column_type }) => {
+      const q = `"${column_name.replace(/"/g, '""')}"`;
+      return AS_IS.test(column_type) ? q : DOUBLE.test(column_type) ? `${q}::double as ${q}` : `${q}::varchar as ${q}`;
+    })
+    .join(", ");
+}
+
+/** A row read with showColumns: a wide number becomes a number, or stays its digits when a double would round it, as
+ * the extension's dbt reader keeps it (9007199254740993 stays "9007199254740993"). */
+export function showRow(row: Row, cols: Column[]): Row {
+  const out: Row = { ...row };
+  for (const { column_name, column_type } of cols) {
+    const v = out[column_name];
+    if (WIDE.test(column_type) && typeof v === "string") out[column_name] = isExactNumber(v) ? v : Number(v);
+  }
+  return out;
+}
