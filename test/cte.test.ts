@@ -105,6 +105,15 @@ test("a CTE named in BigQuery backticks, and a backticked table holding a quote"
   assert.deepEqual(statuses.map((s) => [s.name, s.status]), [["`a`", "changed"], ["b", "affected"], [undefined, "affected"]]);
 });
 
+test("a CTE backticked on only its declaration, or only its reference, still marks its readers affected", () => {
+  const status = (l: string, r: string) => compareCtes(l, r).map((s) => [s.name, s.status]);
+  const declared = (n: number) => `with \`sales\` as (select ${n} as units),\ndaily as (select * from sales)\nselect * from daily`;
+  assert.deepEqual(status(declared(1), declared(2)), [["`sales`", "changed"], ["daily", "affected"], [undefined, "affected"]]);
+  const referenced = (n: number) => `with sales as (select ${n} as units),\ndaily as (select * from \`sales\`)\nselect * from daily`;
+  assert.deepEqual(status(referenced(1), referenced(2)), [["sales", "changed"], ["daily", "affected"], [undefined, "affected"]]);
+  assert.ok(cteQuery("with `sales` as (select 1) select * from sales", "sales").startsWith("with `sales` as"), "found by its bare name");
+});
+
 test("a MATERIALIZED or NOT MATERIALIZED hint before the body", () => {
   const sql = "with a as materialized (select 1 as id), b as not materialized (select * from a), c as (select * from b) select * from c";
   assert.deepEqual(names(sql), ["a", "b", "c"]);

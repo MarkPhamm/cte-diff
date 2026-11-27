@@ -254,8 +254,11 @@ export function jinjaClosers(sql: string): string {
   return open.reverse().map((tag) => `\n{% end${tag} %}`).join("");
 }
 
-const norm = (s: string) => (s.startsWith('"') ? s : s.toUpperCase());
+/** A name as the warehouse resolves it: a double-quoted name exactly; BigQuery's backticks dropped from a single
+ * identifier, so `` `sales` `` and `sales` are one CTE; else case-insensitive. */
+const norm = (s: string) => (s.startsWith('"') ? s : s.replace(/^`([^`.]*)`$/, "$1").toUpperCase());
 
+/** Whether two spellings of a name refer to the same CTE or table. */
 export function sameName(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
