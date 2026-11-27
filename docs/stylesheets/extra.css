@@ -243,3 +243,22 @@
   .md-header { view-transition-name: qd-header; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: var(--bp-ease-out); }
 }
+
+/* the user flow diagram: a BPMN swimlane drawn in the site's ink, rules and font; scrolls sideways on phones */
+.md-typeset .uf { margin: 1.5em 0; overflow-x: auto; }
+.uf svg { display: block; width: 100%; min-width: 38rem; max-width: 46rem; height: auto; margin: 0 auto; }
+.uf text { font-family: var(--bp-sans); font-size: 13px; fill: var(--bp-ink); }
+.uf text.c { text-anchor: middle; dominant-baseline: middle; }
+.uf .uf-small { font-size: 12px; fill: var(--bp-ink-2); }
+.uf .uf-lane { font-size: 13px; font-weight: 600; }
+.uf .uf-pool { fill: var(--bp-sheet); stroke: var(--bp-rule-strong); }
+.uf .uf-lane-head { fill: var(--bp-paper); }
+.uf .uf-rule { stroke: var(--bp-rule-strong); }
+.uf .uf-task, .uf .uf-gw, .uf .uf-start { fill: var(--bp-sheet); stroke: var(--bp-ink); stroke-width: 1.5; }
+.uf .uf-end { fill: var(--bp-sheet); stroke: var(--bp-ink); stroke-width: 3.5; }
+.uf .uf-flow, .uf .uf-join { fill: none; stroke: var(--bp-ink); stroke-width: 1.4; }
+.uf .uf-flow { marker-end: url(#uf-arrow); }
+.uf .uf-head { fill: var(--bp-ink); }
+.uf .uf-bracket { fill: none; stroke: var(--bp-ink-3); stroke-width: 1.2; }
+.uf .uf-assoc { fill: none; stroke: var(--bp-ink-3); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.md-typeset .uf figcaption { max-width: none; font-size: .7rem; color: var(--bp-ink-3); }
