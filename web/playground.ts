@@ -9,7 +9,7 @@
 import { compareCtes, cteQuery, parse, type Status } from "../src/cte.ts";
 import { compareQuery, forAdapter, limitComparison, readComparison, type Row } from "../src/query.ts";
 import { comparisonHtml, rowsHtml, runningHtml } from "../src/results.ts";
-import { after, before, forDuckdb, tables } from "./sample.ts";
+import { after, before, forDuckdb, showColumns, showRow, tables, type Column } from "./sample.ts";
 import { button, diffRows, esc, highlight, lensLines, resultsPanel, sidebarList, summary, track, type Act, type Side } from "./ui.ts";
 
 const DUCKDB = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.32.0/+esm";
@@ -51,13 +51,9 @@ function duck(onState: (s: string) => void): Promise<Conn> {
  * limit wraps the query, as `dbt show --limit` does, so a large result is never built or sent to the page whole. */
 async function rowsOf(conn: Conn, sql: string, limit: number): Promise<Row[]> {
   await conn.query(`create or replace temp table __result as select * from (\n${sql}\n) limit ${limit}`);
-  const cols = (await conn.query("describe __result")).toArray().map((r) => r.toJSON() as { column_name: string; column_type: string });
-  const pick = cols.map(({ column_name, column_type }) => {
-    const q = `"${column_name.replace(/"/g, '""')}"`;
-    if (/^(INTEGER|SMALLINT|TINYINT|DOUBLE|FLOAT|VARCHAR|BOOLEAN)$/.test(column_type)) return q;
-    return /^(BIGINT|HUGEINT|UBIGINT|UINTEGER|USMALLINT|UTINYINT|DECIMAL|REAL)/.test(column_type) ? `${q}::double as ${q}` : `${q}::varchar as ${q}`;
-  });
-  return (await conn.query(`select ${pick.join(", ") || "*"} from __result`)).toArray().map((r) => r.toJSON());
+  const cols = (await conn.query("describe __result")).toArray().map((r) => r.toJSON() as Column);
+  const rows = (await conn.query(`select ${showColumns(cols) || "*"} from __result`)).toArray().map((r) => r.toJSON());
+  return rows.map((r) => showRow(r, cols));
 }
 
 const root = document.getElementById("qp");
