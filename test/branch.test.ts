@@ -23,6 +23,17 @@ test("branchChoices puts the last-used branch first, unless it is gone or checke
   assert.deepEqual(branchChoices(refs, "qa", "qa"), ["dev", "main", "origin/main", "origin/qa"]);
 });
 
+test("branchChoices keeps real branches whose name ends in /HEAD, and leaves out only a remote's default-branch pointer", () => {
+  const withHead = [
+    { type: 0, name: "main" },
+    { type: 0, name: "release/HEAD" },
+    { type: 1, name: "origin/HEAD" },
+    { type: 1, name: "origin/release/HEAD" },
+  ];
+  assert.deepEqual(branchChoices(withHead, "main"), ["release/HEAD", "origin/release/HEAD"]);
+  assert.deepEqual(branchChoices(withHead, "main", "origin/release/HEAD"), ["origin/release/HEAD", "release/HEAD"]);
+});
+
 test("refLabel names a branch or a short commit, not HEAD or the index", () => {
   const q = (ref: string) => JSON.stringify({ path: "/p/orders.sql", ref });
   assert.equal(refLabel(q("qa")), "qa");
