@@ -20,3 +20,14 @@ test("the playground reads BIGINT and DECIMAL columns as text, so a value a doub
   assert.deepEqual(read({ id: "9007199254740992", amount: "5.00000000000000000", n: 1, day: null }), { id: 9007199254740992, amount: 5, n: 1, day: null });
   assert.deepEqual(read({ id: "42", amount: null, n: null, day: null }), { id: 42, amount: null, n: null, day: null });
 });
+
+test("the playground keeps a list of wide numbers as its text, so BIGINT[] and DECIMAL[] lists show every element", () => {
+  const cols = [
+    { column_name: "ids", column_type: "BIGINT[]" },
+    { column_name: "amounts", column_type: "DECIMAL(10,2)[]" },
+  ];
+  assert.equal(showColumns(cols), `"ids"::varchar as "ids", "amounts"::varchar as "amounts"`);
+  const read = (row: Record<string, unknown>) => showRow(row, cols);
+  assert.deepEqual(read({ ids: "[1, 9007199254740993]", amounts: "[1.50, 2.25]" }), { ids: "[1, 9007199254740993]", amounts: "[1.50, 2.25]" });
+  assert.deepEqual(read({ ids: "[]", amounts: null }), { ids: "[]", amounts: null });
+});

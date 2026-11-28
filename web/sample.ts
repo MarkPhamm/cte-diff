@@ -101,8 +101,9 @@ export type Column = { column_name: string; column_type: string };
 const AS_IS = /^(INTEGER|SMALLINT|TINYINT|DOUBLE|FLOAT|VARCHAR|BOOLEAN)$/;
 /** Number types a double holds exactly, read as one. */
 const DOUBLE = /^(UINTEGER|USMALLINT|UTINYINT|REAL)$/;
-/** Number types a double may round (64-bit and wider integers, decimals); they come back as text, then showRow reads them. */
-const WIDE = /^(BIGINT|HUGEINT|UHUGEINT|UBIGINT|DECIMAL)/;
+/** Number types a double may round (64-bit and wider integers, decimals); they come back as text, then showRow reads them.
+ * Only a single value: a list of them, such as BIGINT[], stays its text, "[1, 2]". */
+const WIDE = /^(BIGINT|HUGEINT|UHUGEINT|UBIGINT|DECIMAL(\(\d+,\s*\d+\))?)$/;
 
 /** The select list that reads the playground's result as dbt show gives it: numbers as numbers, dates and the rest as
  * text. A wide number is read as text, so showRow can keep the digits a double would round. */
