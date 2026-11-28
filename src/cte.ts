@@ -79,7 +79,7 @@ function* tokens(sql: string, withStrings = false, withComments = false): Genera
     else if (two === "/*") i = skipTo("*/", i + 2);
     else if (two === "{{" || two === "{%" || two === "{#") {
       const start = i;
-      i = skipTo(two === "{{" ? "}}" : two === "{%" ? "%}" : "#}", i + 2);
+      i = two === "{#" ? skipTo("#}", i + 2) : (jinjaTagEnd(sql, i, two === "{{" ? "}}" : "%}") ?? skipTo(two === "{{" ? "}}" : "%}", i + 2));
       const end = two === "{%" ? silentBlockEnd(sql, start, i) : undefined;
       if (end === undefined) yield { kind: "jinja", text: sql.slice(start, i), start, end: i };
       else {
@@ -137,6 +137,27 @@ function silentBlockEnd(sql: string, start: number, tagEnd: number): number | un
     if (t[1]) {
       if (--depth === 0) return t.index + t[0].length;
     } else if (!(tag === "set" && t[3].includes("="))) depth++;
+  }
+  return undefined;
+}
+
+/** Offset past the `close` (`}}` or `%}`) that ends the Jinja tag opened at `from`, as Jinja reads it: past its quoted
+ * strings and the braces of a dict inside it, so `{{ config(meta={'a': {'b': 1}}) }}` ends at its last `}}`. Undefined
+ * when it never closes that way. */
+function jinjaTagEnd(sql: string, from: number, close: string): number | undefined {
+  let depth = 0;
+  for (let i = from + 2; i < sql.length; ) {
+    const c = sql[i];
+    if (depth === 0 && sql.startsWith(close, i)) return i + close.length;
+    if (c === "'" || c === '"') {
+      i++;
+      while (i < sql.length && sql[i] !== c) i += sql[i] === "\\" ? 2 : 1;
+      i++;
+    } else {
+      if (c === "{") depth++;
+      else if (c === "}" && depth > 0) depth--;
+      i++;
+    }
   }
   return undefined;
 }
