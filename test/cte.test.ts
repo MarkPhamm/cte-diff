@@ -538,3 +538,21 @@ test("a branch ending in a dollar-quoted string keeps it", () => {
   assert.equal(branchQuery(tricky, c.start), "select $$a union all (b$$");
   assert.equal(branchQuery(tricky, d.start), "select $$c)$$");
 });
+
+test("parse: a {% set %}, {% call %} or {% macro %} block before WITH is Jinja, not the model's SQL", () => {
+  const body = "with payments as (select * from {{ ref('stg_payments') }}), pivoted as (select * from payments)\nselect * from pivoted";
+  const heads = [
+    "{% set q %}\nselect distinct method from {{ ref('raw') }} order by 1\n{% endset %}\n{% set results = run_query(q) %}\n",
+    "{%- set q -%}select count(*) from {{ ref('raw') }} where x = '{{ var(\"x\") }}'{%- endset -%}\n",
+    "{% call statement('m', fetch_result=True) %}select (1){% endcall %}\n",
+    "{% macro cols() %}{% set inner %}select 1{% endset %}a, b{% endmacro %}\n",
+  ];
+  for (const head of heads) {
+    const sql = head + body;
+    assert.deepEqual(parse(sql).ctes.map((c) => c.name), ["payments", "pivoted"], head);
+    assert.equal(cteQuery(sql, "payments"), `${head}with payments as (select * from {{ ref('stg_payments') }})\nselect * from payments`);
+    assert.deepEqual(subqueries(sql), [], head);
+  }
+  // An open set block stays open: the CTE cut inside it still gets its closer.
+  assert.equal(jinjaClosers("{% set q %}select 1"), "\n{% endset %}");
+});

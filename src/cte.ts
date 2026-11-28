@@ -24,6 +24,8 @@ interface Token {
   text: string;
   start: number;
   end: number;
+  /** A Jinja block whose body isn't output, read whole: `{% set x %}...{% endset %}`, `{% call %}` or `{% macro %}`. */
+  block?: boolean;
 }
 
 const isWord = (t: Token | undefined, w: string) => t?.kind === "word" && t.text.toLowerCase() === w;
@@ -78,7 +80,12 @@ function* tokens(sql: string, withStrings = false, withComments = false): Genera
     else if (two === "{{" || two === "{%" || two === "{#") {
       const start = i;
       i = skipTo(two === "{{" ? "}}" : two === "{%" ? "%}" : "#}", i + 2);
-      yield { kind: "jinja", text: sql.slice(start, i), start, end: i };
+      const end = two === "{%" ? silentBlockEnd(sql, start, i) : undefined;
+      if (end === undefined) yield { kind: "jinja", text: sql.slice(start, i), start, end: i };
+      else {
+        yield { kind: "jinja", text: sql.slice(start, end), start, end, block: true };
+        i = end;
+      }
     } else if (two === "$$") {
       const end = skipTo("$$", i + 2);
       if (withStrings) yield { kind: "string", text: sql.slice(i, end), start: i, end };
@@ -111,6 +118,27 @@ function* tokens(sql: string, withStrings = false, withComments = false): Genera
       yield { kind: "punct", text: c, start: i, end: ++i };
     }
   }
+}
+
+/** Jinja blocks whose body is not output: a query built for `run_query`, a statement, a macro. */
+const SILENT_BLOCK = /^{%[-+]?\s*(set|call|macro)\b([^]*?)[-+]?%}$/;
+
+/** When the tag from `start` to `tagEnd` opens a block whose body isn't output (`{% set x %}`, not `{% set x = 1 %}`;
+ * `{% call %}`; `{% macro %}`), the offset past its matching end tag; undefined for any other tag, or a block left open. */
+function silentBlockEnd(sql: string, start: number, tagEnd: number): number | undefined {
+  const m = SILENT_BLOCK.exec(sql.slice(start, tagEnd));
+  if (!m || (m[1] === "set" && m[2].includes("="))) return undefined;
+  const tag = m[1];
+  const tags = /{%[-+]?\s*(end)?(\w+)([^]*?)%}/g;
+  tags.lastIndex = tagEnd;
+  let depth = 1;
+  for (let t = tags.exec(sql); t; t = tags.exec(sql)) {
+    if (t[2] !== tag) continue;
+    if (t[1]) {
+      if (--depth === 0) return t.index + t[0].length;
+    } else if (!(tag === "set" && t[3].includes("="))) depth++;
+  }
+  return undefined;
 }
 
 /** The top-level CTEs. Lenient: stops at the first thing it doesn't understand and keeps what it found. */
@@ -242,7 +270,7 @@ const JINJA_BLOCKS = new Set(["if", "for", "macro", "call", "filter", "set", "wi
 export function jinjaClosers(sql: string): string {
   const open: string[] = [];
   for (const t of tokens(sql)) {
-    if (t.kind !== "jinja" || !t.text.startsWith("{%")) continue;
+    if (t.kind !== "jinja" || t.block || !t.text.startsWith("{%")) continue;
     const m = /^{%[-+]?\s*(\w+)([^]*?)[-+]?%}$/.exec(t.text);
     if (!m) continue;
     const [, tag, rest] = m;
