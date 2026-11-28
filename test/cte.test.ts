@@ -556,3 +556,18 @@ test("parse: a {% set %}, {% call %} or {% macro %} block before WITH is Jinja, 
   // An open set block stays open: the CTE cut inside it still gets its closer.
   assert.equal(jinjaClosers("{% set q %}select 1"), "\n{% endset %}");
 });
+
+test("parse: a Jinja tag ends at its own }} or %}, not at a nested dict's closing braces or one inside a string", () => {
+  const body = "\nwith orders as (select * from {{ ref('stg_orders') }})\nselect * from orders";
+  const heads = [
+    "{{ config(materialized='table', meta={'owner': {'team': 'finance'}}) }}",
+    "{{ config(partition_by={'field': 'id', 'data_type': 'int64', 'range': {'start': 0, 'end': 100, 'interval': 10}}) }}",
+    "{{ config(alias='a}}b', tags=[\"x%}\"]) }}",
+    "{% set m = {'a': {'b': 1}} %}",
+  ];
+  for (const head of heads) {
+    const sql = head + body;
+    assert.deepEqual(parse(sql).ctes.map((c) => c.name), ["orders"], head);
+    assert.equal(cteQuery(sql, "orders"), `${head}\nwith orders as (select * from {{ ref('stg_orders') }})\nselect * from orders`);
+  }
+});
