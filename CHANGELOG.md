@@ -2,6 +2,7 @@
 
 ## 0.12.3
 
+- A model that builds a `run_query` query in a `{% set payment_methods_query %}...{% endset %}` block before its `with`, as in dbt's Jinja docs, gets ▶ Preview and ⇄ Compare sides on its CTEs, and they show in the sidebar. The same goes for a `{% call statement() %}` or `{% macro %}` block there. Before, the parser read the block's SQL as the model's own and found no CTEs.
 - **Compare with Branch** offers a branch whose name ends in `/HEAD`, such as `release/HEAD` or `origin/release/HEAD`. Before, it left those out with the remote's `origin/HEAD` pointer, and with no other branch said "This repository has no other branch to compare with".
 - On Redshift, a comparison's panel says that columns are matched by position, not by name, so a renamed column isn't caught. Before, comparing `select 7 as old_name` with `select 7 as new_name` said only "No differing rows", and the docs said a column change errors.
 - A CTE named in BigQuery backticks, such as `` `orders` as (...) ``, gets ▶ Preview and ⇄ Compare sides, and so do the CTEs after it. Before, the parser stopped at the backtick, so those CTEs had no lens and no sidebar entry.
