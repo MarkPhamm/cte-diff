@@ -2,6 +2,7 @@
 
 ## 0.12.3
 
+- **Compare with Branch** offers a branch whose name ends in `/HEAD`, such as `release/HEAD` or `origin/release/HEAD`. Before, it left those out with the remote's `origin/HEAD` pointer, and with no other branch said "This repository has no other branch to compare with".
 - On Redshift, a comparison's panel says that columns are matched by position, not by name, so a renamed column isn't caught. Before, comparing `select 7 as old_name` with `select 7 as new_name` said only "No differing rows", and the docs said a column change errors.
 - A CTE named in BigQuery backticks, such as `` `orders` as (...) ``, gets ▶ Preview and ⇄ Compare sides, and so do the CTEs after it. Before, the parser stopped at the backtick, so those CTEs had no lens and no sidebar entry.
 - A CTE backticked on only one side of its use, such as `` `sales` as (...) `` read as `from sales`, counts as one name, so a change to it marks its readers **reads a changed CTE**. Before, the sidebar marked them unchanged.

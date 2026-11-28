@@ -3,11 +3,12 @@
 /** A git ref as VS Code's Git extension lists it: type 0 is a local branch, 1 a remote one, 2 a tag. */
 export type Ref = { type: number; name?: string };
 
-/** The branches to pick from: the last-used one first, then local, then remote. Leaves out tags, the current branch and remote HEADs. */
+/** The branches to pick from: the last-used one first, then local, then remote. Leaves out tags, the current branch and each remote's
+ * default-branch pointer (`origin/HEAD`), but keeps a real branch whose name ends in /HEAD, such as `release/HEAD`. */
 export function branchChoices(refs: Ref[], current?: string, last?: string): string[] {
   const names = (type: number) =>
     refs
-      .filter((r) => r.type === type && r.name && r.name !== current && !r.name.endsWith("/HEAD"))
+      .filter((r) => r.type === type && r.name && r.name !== current && !(type === 1 && /^[^/]+\/HEAD$/.test(r.name)))
       .map((r) => r.name!)
       .sort((a, b) => a.localeCompare(b));
   const all = [...names(0), ...names(1)];
